@@ -1,0 +1,30 @@
+# === ROS 2 Build Files ===
+build/
+install/
+log/
+src/build
+# === CMake and Colcon Caches ===
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+ament_cmake_environment_hooks/
+.colcon/
+
+# === ROS 2 Launch/Params/Generated ===
+*.launch.py~
+*.launch.xml~
+*.yaml~
+*.params.yaml~
+
+# === General ===
+*.pyc
+*.pyo
+__pycache__/
+*.swp
+*.swo
+
+# === IDE/Editor Specific ===
+
+# VS C
+

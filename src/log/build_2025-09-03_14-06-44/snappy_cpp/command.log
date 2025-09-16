@@ -1,0 +1,2 @@
+Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+Invoked command in '/home/kraken/snappyNano/src/build/snappy_cpp' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install

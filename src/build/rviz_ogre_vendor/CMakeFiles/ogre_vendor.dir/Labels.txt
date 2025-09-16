@@ -1,0 +1,12 @@
+# Target labels
+ ogre_vendor
+# Source files and their labels
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/ogre_vendor
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/ogre_vendor.rule
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/ogre_vendor-complete.rule
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-build.rule
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-configure.rule
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-download.rule
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-install.rule
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-mkdir.rule
+/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-patch.rule

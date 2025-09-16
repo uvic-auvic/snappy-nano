@@ -1,0 +1,428 @@
+-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found ament_cmake_vendor_package: 1.3.12 (/opt/ros/humble/share/ament_cmake_vendor_package/cmake)
+-- Found ament_lint_auto: 0.12.14 (/opt/ros/humble/share/ament_lint_auto/cmake)
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/kraken/snappyNano/src/build/rviz_ogre_vendor
+[ 14%] [34m[1mCreating directories for 'ogre_vendor'[0m
+[ 28%] [34m[1mPerforming download step for 'ogre_vendor'[0m
+[34m=== [1m./ogre_vendor[22m (git) ===[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint: 
+hint: 	git config --global init.defaultBranch <name>
+hint: 
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint: 
+hint: 	git branch -m <name>
+Initialized empty Git repository in /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/.git/
+
+From https://github.com/OGRECave/ogre
+ * [new tag]         v1.12.10   -> v1.12.10
+Note: switching to 'v1.12.10'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+HEAD is now at 93d7eb5 Terrain: QuadTreeNode - use private inheritance instead of aggregation
+
+[ 42%] [34m[1mPerforming patch step for 'ogre_vendor'[0m
+Applying patch: /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor/patches/0001-pragma.patch
+Applying patch: /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor/patches/0002-relocatable.patch
+Applying patch: /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor/patches/0003-c4267.patch
+Applying patch: /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor/patches/0004-featuresummary-rename.patch
+Applying patch: /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor/patches/0005-mangle-library-names-used-by-rviz.patch
+[ 57%] [34m[1mPerforming configure step for 'ogre_vendor'[0m
+loading initial cache file /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-config.cmake
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring OGRE 1.12.10
+-- Check size of void*
+-- Check size of void* - done
+-- Performing Test OGRE_GCC_HAS_SSE
+-- Performing Test OGRE_GCC_HAS_SSE - Success
+-- Search path: /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-build/Dependencies;/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/Dependencies;/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-build/../Dependencies;/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/../Dependencies
+-- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.2.11") 
+-- Looking for ZZip...
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.2") 
+-- Checking for module 'zziplib'
+--   No package 'zziplib' found
+-- Could not locate ZZip
+-- Looking for FreeImage...
+-- Checking for module 'freeimage'
+--   No package 'freeimage' found
+-- Could not locate FreeImage
+-- Found Freetype: /usr/lib/x86_64-linux-gnu/libfreetype.so (found version "2.11.1") 
+-- Found X11: /usr/include   
+-- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so
+-- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so - found
+-- Looking for gethostbyname
+-- Looking for gethostbyname - found
+-- Looking for connect
+-- Looking for connect - found
+-- Looking for remove
+-- Looking for remove - found
+-- Looking for shmat
+-- Looking for shmat - found
+-- Looking for IceConnectionNumber in ICE
+-- Looking for IceConnectionNumber in ICE - found
+-- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so   
+-- Looking for Cg...
+-- Cg_PREFIX_PATH changed.
+-- Checking for module 'Cg'
+--   No package 'Cg' found
+-- Could not locate Cg
+-- Found PythonInterp: /usr/bin/python3.10 (found version "3.10.12") 
+-- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.10.so (found version "3.10.12") 
+-- Looking for Softimage...
+-- Softimage_PREFIX_PATH changed.
+-- Could not locate Softimage
+-- Looking for strtol_l
+-- Looking for strtol_l - found
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+-- Downloading imgui
+-- 
+-----------------------------------------------------------------------------
+-- The following external packages were located on your system.
+-- This installation will have the extra features provided by these packages.
++ zlib
++ freetype
++ X11
++ OpenGL
++ OpenGL ES 2.x
++ OpenEXR
++ Python
++ SDL2
++ Qt
+-----------------------------------------------------------------------------
+-- The following OPTIONAL packages could NOT be located on your system.
+-- Consider installing them to enable more features from this software.
++ zziplib: Extract data from zip archives <http://zziplib.sourceforge.net>
++ freeimage: Support for commonly used graphics image formats <http://freeimage.sourceforge.net>
++ cg: C for graphics shader language <http://developer.nvidia.com/object/cg_toolkit.html>
++ SWIG: Language bindings (Python, Java, C#) for OGRE <http://www.swig.org/>
++ pugixml: Needed for XMLConverter and DotScene Plugin <https://pugixml.org/>
++ Assimp: Needed for the AssimpLoader Plugin <https://www.assimp.org/>
++ Doxygen: Tool for building API documentation <http://doxygen.org>
++ Softimage: Softimage SDK needed for building XSIExporter <FALSE>
+-----------------------------------------------------------------------------
+
+-- 
+----------------------------------------------------------------------------
+  FEATURE SUMMARY
+----------------------------------------------------------------------------
+
+Building components:
+  + MeshLodGenerator
+  + Overlay
+  + Overlay Dear Imgui
+  + Paging
+  + Property
+  + RTShader System
+  + RTShader System Shaders
+  + Terrain
+  + Volume
+Building plugins:
+  + BSP scene manager
+  + Octree scene manager
+  + OpenEXR image codec
+  + STBI codec (generic)
+  + Portal connected zone scene manager
+  + Particle FX
+Building rendersystems:
+  + OpenGL
+  + OpenGL 3+
+Building core features:
+  + Mesh Lod
+  + DDS image codec (.dds)
+  + ETC image codec (.pkm, .ktx) 
+  + ASTC image codec (.astc)
+  + Nodeless positioning of Lights and Cameras [DEPRECATED]
+
+Build type:                      shared
+Thread safety:                   none
+ResourceManager behaviour:       strict
+Use double precision:            disabled
+Nodes inherit transform:         disabled
+Assert mode:                     release exceptions
+
+----------------------------------------------------------------------------
+
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-build
+[ 71%] [34m[1mPerforming build step for 'ogre_vendor'[0m
+[  0%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/cmake_pch.hxx.gch[0m
+[  1%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreArchive.cpp.o[0m
+[  1%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreBillboard.cpp.o[0m
+[  1%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreAutoParamDataSource.cpp.o[0m
+[  2%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreAnimationTrack.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreASTCCodec.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreAnimable.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreAnimationState.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreBillboardChain.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreAlignedAllocator.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreAxisAlignedBox.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreAnimation.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreArchiveManager.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreBillboardSet.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreBillboardParticleRenderer.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCodec.cpp.o[0m
+[  3%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreBone.cpp.o[0m
+[  4%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCamera.cpp.o[0m
+[  4%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreColourValue.cpp.o[0m
+[  4%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCommon.cpp.o[0m
+[  4%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCompositionPass.cpp.o[0m
+[  5%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCompositionTargetPass.cpp.o[0m
+[  5%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCompositionTechnique.cpp.o[0m
+[  5%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCompositor.cpp.o[0m
+[  5%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCompositorChain.cpp.o[0m
+[  6%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCompositorInstance.cpp.o[0m
+[  6%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreCompositorManager.cpp.o[0m
+[  6%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreConfigFile.cpp.o[0m
+[  6%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreControllerManager.cpp.o[0m
+[  6%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreConvexBody.cpp.o[0m
+[  7%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDataStream.cpp.o[0m
+[  7%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDefaultDebugDrawer.cpp.o[0m
+[  7%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDefaultHardwareBufferManager.cpp.o[0m
+[  7%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDefaultSceneQueries.cpp.o[0m
+[  7%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDeflate.cpp.o[0m
+[  8%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDepthBuffer.cpp.o[0m
+[  8%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDistanceLodStrategy.cpp.o[0m
+[  8%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDualQuaternion.cpp.o[0m
+[  8%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDynLib.cpp.o[0m
+[  8%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDynLibManager.cpp.o[0m
+[  9%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreEdgeListBuilder.cpp.o[0m
+[  9%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreEntity.cpp.o[0m
+[  9%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreException.cpp.o[0m
+[  9%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreExternalTextureSource.cpp.o[0m
+[ 10%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreExternalTextureSourceManager.cpp.o[0m
+[ 10%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreFileSystem.cpp.o[0m
+[ 10%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreFrustum.cpp.o[0m
+[ 10%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreGpuProgram.cpp.o[0m
+[ 10%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreGpuProgramManager.cpp.o[0m
+[ 11%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreGpuProgramParams.cpp.o[0m
+[ 11%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreGpuProgramUsage.cpp.o[0m
+[ 11%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHardwareBufferManager.cpp.o[0m
+[ 11%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHardwareIndexBuffer.cpp.o[0m
+[ 11%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHardwareOcclusionQuery.cpp.o[0m
+[ 12%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHardwarePixelBuffer.cpp.o[0m
+[ 12%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHardwareUniformBuffer.cpp.o[0m
+[ 12%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHardwareVertexBuffer.cpp.o[0m
+[ 12%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHighLevelGpuProgram.cpp.o[0m
+[ 12%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreHighLevelGpuProgramManager.cpp.o[0m
+[ 13%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreImage.cpp.o[0m
+[ 13%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreInstanceBatch.cpp.o[0m
+[ 13%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreInstanceBatchHW.cpp.o[0m
+[ 13%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreInstanceBatchHW_VTF.cpp.o[0m
+[ 13%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreInstanceBatchShader.cpp.o[0m
+[ 14%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreInstanceBatchVTF.cpp.o[0m
+[ 14%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreInstanceManager.cpp.o[0m
+[ 14%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreInstancedEntity.cpp.o[0m
+[ 14%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreKeyFrame.cpp.o[0m
+[ 15%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreLight.cpp.o[0m
+[ 15%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreLodStrategy.cpp.o[0m
+[ 15%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreLodStrategyManager.cpp.o[0m
+[ 15%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreLog.cpp.o[0m
+[ 15%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreLogManager.cpp.o[0m
+[ 16%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreManualObject.cpp.o[0m
+[ 16%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMaterial.cpp.o[0m
+[ 16%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMaterialManager.cpp.o[0m
+[ 16%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMaterialSerializer.cpp.o[0m
+[ 16%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMath.cpp.o[0m
+[ 17%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMatrix3.cpp.o[0m
+[ 17%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMatrix4.cpp.o[0m
+[ 17%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMesh.cpp.o[0m
+[ 17%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMeshManager.cpp.o[0m
+[ 17%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMeshSerializer.cpp.o[0m
+[ 18%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMeshSerializerImpl.cpp.o[0m
+[ 18%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMovableObject.cpp.o[0m
+[ 18%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMovablePlane.cpp.o[0m
+[ 18%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreMurmurHash3.cpp.o[0m
+[ 19%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreNode.cpp.o[0m
+[ 19%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreNumerics.cpp.o[0m
+[ 19%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreOptimisedUtil.cpp.o[0m
+[ 19%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreOptimisedUtilGeneral.cpp.o[0m
+[ 19%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreOptimisedUtilSSE.cpp.o[0m
+[ 20%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreParticle.cpp.o[0m
+[ 20%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreParticleEmitter.cpp.o[0m
+[ 20%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreParticleEmitterCommands.cpp.o[0m
+[ 20%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreParticleIterator.cpp.o[0m
+[ 20%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreParticleSystem.cpp.o[0m
+[ 21%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreParticleSystemManager.cpp.o[0m
+[ 21%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePass.cpp.o[0m
+[ 21%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePatchMesh.cpp.o[0m
+[ 21%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePatchSurface.cpp.o[0m
+[ 21%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePixelCountLodStrategy.cpp.o[0m
+[ 22%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePixelFormat.cpp.o[0m
+[ 22%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePlatformInformation.cpp.o[0m
+[ 22%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePolygon.cpp.o[0m
+[ 22%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePose.cpp.o[0m
+[ 22%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePredefinedControllers.cpp.o[0m
+[ 23%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgrePrefabFactory.cpp.o[0m
+[ 23%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreProfiler.cpp.o[0m
+[ 23%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreQuaternion.cpp.o[0m
+[ 23%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRectangle2D.cpp.o[0m
+[ 24%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderQueue.cpp.o[0m
+[ 24%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderQueueInvocation.cpp.o[0m
+[ 24%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderQueueSortingGrouping.cpp.o[0m
+[ 24%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderSystem.cpp.o[0m
+[ 24%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderSystemCapabilities.cpp.o[0m
+[ 25%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderSystemCapabilitiesManager.cpp.o[0m
+[ 25%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderSystemCapabilitiesSerializer.cpp.o[0m
+[ 25%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderTarget.cpp.o[0m
+[ 25%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderTexture.cpp.o[0m
+[ 25%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderToVertexBuffer.cpp.o[0m
+[ 26%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderWindow.cpp.o[0m
+[ 26%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRenderable.cpp.o[0m
+[ 26%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreResource.cpp.o[0m
+[ 26%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreResourceBackgroundQueue.cpp.o[0m
+[ 26%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreResourceGroupManager.cpp.o[0m
+[ 27%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreResourceManager.cpp.o[0m
+[ 27%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRibbonTrail.cpp.o[0m
+[ 27%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRoot.cpp.o[0m
+[ 27%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreRotationSpline.cpp.o[0m
+[ 28%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSceneLoaderManager.cpp.o[0m
+[ 28%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSceneManager.cpp.o[0m
+[ 28%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSceneManagerEnumerator.cpp.o[0m
+[ 28%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSceneNode.cpp.o[0m
+[ 28%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSceneQuery.cpp.o[0m
+[ 28%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowRenderer.cpp.o[0m
+[ 28%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowCameraSetupPlaneOptimal.cpp.o[0m
+[ 29%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowCaster.cpp.o[0m
+[ 29%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowTextureManager.cpp.o[0m
+[ 29%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowCameraSetupLiSPSM.cpp.o[0m
+[ 29%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowCameraSetupPSSM.cpp.o[0m
+[ 29%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSerializer.cpp.o[0m
+[ 30%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowCameraSetup.cpp.o[0m
+[ 30%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowCameraSetupFocused.cpp.o[0m
+[ 30%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreScriptParser.cpp.o[0m
+[ 30%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreScriptLexer.cpp.o[0m
+[ 30%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreScriptTranslator.cpp.o[0m
+[ 30%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreShadowVolumeExtrudeProgram.cpp.o[0m
+[ 31%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreScriptCompiler.cpp.o[0m
+[ 31%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSimpleRenderable.cpp.o[0m
+[ 32%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSimpleSpline.cpp.o[0m
+[ 32%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSkeleton.cpp.o[0m
+[ 32%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSkeletonInstance.cpp.o[0m
+[ 32%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSkeletonManager.cpp.o[0m
+[ 33%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSkeletonSerializer.cpp.o[0m
+[ 33%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSkyRenderer.cpp.o[0m
+[ 33%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreStaticGeometry.cpp.o[0m
+[ 33%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreStreamSerialiser.cpp.o[0m
+[ 33%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreString.cpp.o[0m
+[ 34%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreStringConverter.cpp.o[0m
+[ 34%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreStringInterface.cpp.o[0m
+[ 34%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSubEntity.cpp.o[0m
+[ 34%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSubMesh.cpp.o[0m
+[ 34%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreTagPoint.cpp.o[0m
+[ 35%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreTangentSpaceCalc.cpp.o[0m
+[ 35%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreTechnique.cpp.o[0m
+[ 35%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreVector.cpp.o[0m
+[ 36%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreViewport.cpp.o[0m
+[ 36%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreVertexIndexData.cpp.o[0m
+[ 36%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreUserObjectBindings.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreTimer.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreUnifiedHighLevelGpuProgram.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreTextureUnitState.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreWireBoundingBox.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreTextureManager.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreWorkQueue.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreTexture.cpp.o[0m
+[ 37%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreDDSCodec.cpp.o[0m
+[ 38%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreETCCodec.cpp.o[0m
+[ 38%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/GLX/OgreFileSystemLayer.cpp.o[0m
+[ 38%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/OgreSearchOps.cpp.o[0m
+[ 38%] [32mBuilding CXX object OgreMain/CMakeFiles/OgreMain.dir/src/Threading/OgreDefaultWorkQueueStandard.cpp.o[0m
+[ 38%] [32m[1mLinking CXX shared library ../lib/libOgreMain.so[0m
+[ 38%] Built target OgreMain
+[ 38%] [32mBuilding CXX object PlugIns/EXRCodec/CMakeFiles/Codec_EXR.dir/src/O_IStream.cpp.o[0m
+[ 38%] [32mBuilding CXX object PlugIns/EXRCodec/CMakeFiles/Codec_EXR.dir/src/OgreEXRCodec.cpp.o[0m
+[ 38%] [32mBuilding CXX object PlugIns/STBICodec/CMakeFiles/Codec_STBI.dir/src/OgreSTBICodec.cpp.o[0m
+[ 38%] [32mBuilding CXX object Components/Property/CMakeFiles/OgreProperty.dir/src/OgreProperty.cpp.o[0m
+[ 38%] [32mBuilding CXX object PlugIns/BSPSceneManager/CMakeFiles/Plugin_BSPSceneManager.dir/src/OgreBspLevel.cpp.o[0m
+[ 39%] [32mBuilding CXX object PlugIns/OctreeSceneManager/CMakeFiles/Plugin_OctreeSceneManager.dir/src/OgreOctree.cpp.o[0m
+[ 39%] [32mBuilding CXX object Components/RTShaderSystem/CMakeFiles/OgreRTShaderSystem.dir/cmake_pch.hxx.gch[0m
+[ 39%] [32mBuilding CXX object Components/Paging/CMakeFiles/OgrePaging.dir/src/OgreGrid2DPageStrategy.cpp.o[0m
+[ 39%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreAreaEmitter.cpp.o[0m
+[ 39%] [32mBuilding CXX object Components/Volume/CMakeFiles/OgreVolume.dir/src/OgreVolumeCSGSource.cpp.o[0m
+[ 39%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgreAntiPortal.cpp.o[0m
+[ 39%] [32mBuilding CXX object RenderSystems/GLSupport/CMakeFiles/OgreGLSupport.dir/src/GLX/OgreGLXContext.cpp.o[0m
+[ 40%] [32mBuilding CXX object Components/MeshLodGenerator/CMakeFiles/OgreMeshLodGenerator.dir/cmake_pch.hxx.gch[0m
+[ 40%] [32mBuilding CXX object Components/Paging/CMakeFiles/OgrePaging.dir/src/OgreGrid3DPageStrategy.cpp.o[0m
+[ 40%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreBoxEmitter.cpp.o[0m
+[ 40%] [32mBuilding CXX object Components/Volume/CMakeFiles/OgreVolume.dir/src/OgreVolumeCacheSource.cpp.o[0m
+[ 40%] [32mBuilding CXX object PlugIns/OctreeSceneManager/CMakeFiles/Plugin_OctreeSceneManager.dir/src/OgreOctreeCamera.cpp.o[0m
+[ 41%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgreCapsule.cpp.o[0m
+[ 42%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreColourFaderAffector.cpp.o[0m
+[ 42%] [32mBuilding CXX object Components/Volume/CMakeFiles/OgreVolume.dir/src/OgreVolumeChunk.cpp.o[0m
+[ 42%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgreDefaultZone.cpp.o[0m
+[ 43%] [32m[1mLinking CXX shared library ../../lib/libOgreProperty.so[0m
+[ 43%] Built target OgreProperty
+[ 44%] [32mBuilding CXX object PlugIns/BSPSceneManager/CMakeFiles/Plugin_BSPSceneManager.dir/src/OgreBspNode.cpp.o[0m
+[ 45%] [32mBuilding CXX object Components/Overlay/CMakeFiles/OgreOverlay.dir/src/OgreBorderPanelOverlayElement.cpp.o[0m
+[ 45%] [32mBuilding CXX object PlugIns/OctreeSceneManager/CMakeFiles/Plugin_OctreeSceneManager.dir/src/OgreOctreeNode.cpp.o[0m
+[ 45%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreColourFaderAffector2.cpp.o[0m
+[ 45%] [32mBuilding CXX object RenderSystems/GLSupport/CMakeFiles/OgreGLSupport.dir/src/GLX/OgreGLXGLSupport.cpp.o[0m
+[ 45%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreColourImageAffector.cpp.o[0m
+[ 45%] [32m[1mLinking CXX shared library ../../lib/Codec_EXR.so[0m
+[ 45%] Built target Codec_EXR
+[ 45%] [32mBuilding CXX object Components/Overlay/CMakeFiles/OgreOverlay.dir/src/OgreFont.cpp.o[0m
+[ 46%] [32mBuilding CXX object Components/Paging/CMakeFiles/OgrePaging.dir/src/OgrePage.cpp.o[0m
+[ 46%] [32mBuilding CXX object PlugIns/OctreeSceneManager/CMakeFiles/Plugin_OctreeSceneManager.dir/src/OgreOctreePlugin.cpp.o[0m
+[ 46%] [32mBuilding CXX object Components/Overlay/CMakeFiles/OgreOverlay.dir/src/OgreFontManager.cpp.o[0m
+[ 46%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreColourInterpolatorAffector.cpp.o[0m
+[ 46%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgrePCPlane.cpp.o[0m
+[ 47%] [32mBuilding CXX object Components/Volume/CMakeFiles/OgreVolume.dir/src/OgreVolumeChunkHandler.cpp.o[0m
+[ 47%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreCylinderEmitter.cpp.o[0m
+[ 47%] [32mBuilding CXX object RenderSystems/GLSupport/CMakeFiles/OgreGLSupport.dir/src/GLX/OgreGLXRenderTexture.cpp.o[0m
+[ 47%] [32mBuilding CXX object PlugIns/BSPSceneManager/CMakeFiles/Plugin_BSPSceneManager.dir/src/OgreBspSceneLoader.cpp.o[0m
+[ 47%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgrePCZCamera.cpp.o[0m
+[ 47%] [32mBuilding CXX object Components/Paging/CMakeFiles/OgrePaging.dir/src/OgrePageContent.cpp.o[0m
+[ 47%] [32mBuilding CXX object Components/Volume/CMakeFiles/OgreVolume.dir/src/OgreVolumeDualGridGenerator.cpp.o[0m
+[ 48%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreDeflectorPlaneAffector.cpp.o[0m
+[ 48%] [32mBuilding CXX object PlugIns/BSPSceneManager/CMakeFiles/Plugin_BSPSceneManager.dir/src/OgreBspSceneManager.cpp.o[0m
+[ 48%] [32mBuilding CXX object Components/Paging/CMakeFiles/OgrePaging.dir/src/OgrePageContentCollection.cpp.o[0m
+[ 49%] [32mBuilding CXX object PlugIns/OctreeSceneManager/CMakeFiles/Plugin_OctreeSceneManager.dir/src/OgreOctreeSceneManager.cpp.o[0m
+[ 50%] [32m[1mLinking CXX shared library ../../lib/Codec_STBI.so[0m
+[ 50%] Built target Codec_STBI
+[ 50%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgrePCZFrustum.cpp.o[0m
+[ 51%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgrePCZLight.cpp.o[0m
+[ 51%] [32mBuilding CXX object Components/Paging/CMakeFiles/OgrePaging.dir/src/OgrePageManager.cpp.o[0m
+[ 51%] [32mBuilding CXX object PlugIns/ParticleFX/CMakeFiles/Plugin_ParticleFX.dir/src/OgreDirectionRandomiserAffector.cpp.o[0m
+[ 51%] [32mBuilding CXX object Components/Paging/CMakeFiles/OgrePaging.dir/src/OgrePagedWorld.cpp.o[0m
+[ 51%] [32mBuilding CXX object Components/Overlay/CMakeFiles/OgreOverlay.dir/src/OgreImGuiOverlay.cpp.o[0m
+[ 51%] [32mBuilding CXX object PlugIns/OctreeSceneManager/CMakeFiles/Plugin_OctreeSceneManager.dir/src/OgreOctreeSceneManagerDll.cpp.o[0m
+[ 51%] [32mBuilding CXX object PlugIns/OctreeSceneManager/CMakeFiles/Plugin_OctreeSceneManager.dir/src/OgreOctreeSceneQuery.cpp.o[0m
+[ 51%] [32mBuilding CXX object PlugIns/PCZSceneManager/CMakeFiles/Plugin_PCZSceneManager.dir/src/OgrePCZPlugin.cpp.o[0m

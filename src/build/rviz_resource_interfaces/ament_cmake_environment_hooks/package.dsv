@@ -1,0 +1,4 @@
+source;share/rviz_resource_interfaces/local_setup.bash
+source;share/rviz_resource_interfaces/local_setup.dsv
+source;share/rviz_resource_interfaces/local_setup.sh
+source;share/rviz_resource_interfaces/local_setup.zsh

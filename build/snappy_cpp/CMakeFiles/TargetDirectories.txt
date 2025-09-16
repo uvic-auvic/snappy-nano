@@ -1,0 +1,10 @@
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/uninstall.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/snappy_cpp_uninstall.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/helloWorld.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/test.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/edit_cache.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/rebuild_cache.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/list_install_components.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/install.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/install/local.dir
+/home/kraken/snappyNano/build/snappy_cpp/CMakeFiles/install/strip.dir

@@ -1,0 +1,6 @@
+{
+  "package_name": "rviz_resource_interfaces",
+  "non_idl_tuples": [
+    "/home/kraken/snappyNano/src/rviz/rviz_resource_interfaces:srv/GetResource.srv"
+  ]
+}

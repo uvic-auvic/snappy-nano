@@ -1,0 +1,15 @@
+OgreMain/CMakeFiles/OgreMain.dir/src/OgreConfigFile.cpp.o: \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/src/OgreConfigFile.cpp \
+ /usr/include/stdc-predef.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/src/OgreStableHeaders.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreConfigFile.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgrePrerequisites.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreCommon.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreStringVector.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreIteratorWrapper.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreHeaderPrefix.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreHeaderSuffix.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreResourceGroupManager.h \
+ /usr/include/c++/11/iostream \
+ /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
+ /usr/include/c++/11/ostream /usr/include/c++/11/istream

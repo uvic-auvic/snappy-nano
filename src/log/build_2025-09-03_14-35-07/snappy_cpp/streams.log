@@ -1,0 +1,22 @@
+[0.044s] Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/kraken/snappyNano/src/build/snappy_cpp -- -j14 -l14
+[0.165s] [100%] Built target helloWorld
+[0.199s] Invoked command in '/home/kraken/snappyNano/src/build/snappy_cpp' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/kraken/snappyNano/src/build/snappy_cpp -- -j14 -l14
+[0.224s] Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/kraken/snappyNano/src/build/snappy_cpp
+[0.241s] -- Install configuration: ""
+[0.241s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/lib/snappy_cpp/helloWorld
+[0.242s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/ament_index/resource_index/package_run_dependencies/snappy_cpp
+[0.242s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/ament_index/resource_index/parent_prefix_path/snappy_cpp
+[0.242s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/environment/ament_prefix_path.sh
+[0.242s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/environment/ament_prefix_path.dsv
+[0.243s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/environment/path.sh
+[0.243s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/environment/path.dsv
+[0.243s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/local_setup.bash
+[0.243s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/local_setup.sh
+[0.243s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/local_setup.zsh
+[0.243s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/local_setup.dsv
+[0.243s] -- Installing: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/package.dsv
+[0.243s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/ament_index/resource_index/packages/snappy_cpp
+[0.244s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/cmake/snappy_cppConfig.cmake
+[0.244s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/cmake/snappy_cppConfig-version.cmake
+[0.244s] -- Up-to-date: /home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/package.xml
+[0.247s] Invoked command in '/home/kraken/snappyNano/src/build/snappy_cpp' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/kraken/snappyNano/src/build/snappy_cpp

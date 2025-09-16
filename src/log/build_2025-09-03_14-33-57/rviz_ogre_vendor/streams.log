@@ -1,0 +1,25 @@
+[0.036s] Invoking command in '/home/kraken/snappyNano/src/build/rviz_ogre_vendor': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install/rviz_ogre_vendor
+[0.065s] -- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.336s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.508s] [31mCMake Error at CMakeLists.txt:5 (find_package):
+[0.508s]   By not providing "Findament_cmake_vendor_package.cmake" in
+[0.508s]   CMAKE_MODULE_PATH this project has asked CMake to find a package
+[0.508s]   configuration file provided by "ament_cmake_vendor_package", but CMake did
+[0.508s]   not find one.
+[0.508s] 
+[0.508s]   Could not find a package configuration file provided by
+[0.508s]   "ament_cmake_vendor_package" with any of the following names:
+[0.508s] 
+[0.508s]     ament_cmake_vendor_packageConfig.cmake
+[0.508s]     ament_cmake_vendor_package-config.cmake
+[0.508s] 
+[0.508s]   Add the installation prefix of "ament_cmake_vendor_package" to
+[0.509s]   CMAKE_PREFIX_PATH or set "ament_cmake_vendor_package_DIR" to a directory
+[0.509s]   containing one of the above files.  If "ament_cmake_vendor_package"
+[0.509s]   provides a separate development package or SDK, be sure it has been
+[0.509s]   installed.
+[0.509s] 
+[0.509s] [0m
+[0.509s] -- Configuring incomplete, errors occurred!
+[0.509s] See also "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/CMakeOutput.log".
+[0.512s] Invoked command in '/home/kraken/snappyNano/src/build/rviz_ogre_vendor' returned '1': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install/rviz_ogre_vendor

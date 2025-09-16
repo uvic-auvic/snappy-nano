@@ -1,0 +1,17 @@
+OgreMain/CMakeFiles/OgreMain.dir/src/OgreSkeletonSerializer.cpp.o: \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/src/OgreSkeletonSerializer.cpp \
+ /usr/include/stdc-predef.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/src/OgreStableHeaders.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreSkeletonFileFormat.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgrePrerequisites.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreSkeletonSerializer.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreSerializer.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreAnimation.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreAnimationTrack.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreKeyFrame.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreVector.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreQuaternion.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreAny.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreHardwareVertexBuffer.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreHeaderPrefix.h \
+ /home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor/OgreMain/include/OgreHeaderSuffix.h

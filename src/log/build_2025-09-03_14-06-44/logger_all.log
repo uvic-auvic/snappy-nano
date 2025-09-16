@@ -1,0 +1,335 @@
+[0.149s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build', '--merge-install']
+[0.149s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=True, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=14, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x75ad4ffdcc70>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x75ad4ffdc730>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x75ad4ffdc730>>, mixin_verb=('build',))
+[0.324s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.324s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.324s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.324s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.324s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.324s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.324s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/kraken/snappyNano/src'
+[0.324s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.325s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.342s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extensions ['ignore', 'ignore_ament_install']
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'ignore'
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'ignore_ament_install'
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extensions ['colcon_pkg']
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'colcon_pkg'
+[0.343s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extensions ['colcon_meta']
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'colcon_meta'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extensions ['ros']
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'ros'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extensions ['cmake', 'python']
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'cmake'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'python'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extensions ['python_setup_py']
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz) by extension 'python_setup_py'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/build) by extensions ['ignore', 'ignore_ament_install']
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/build) by extension 'ignore'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/build) ignored
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extensions ['ignore', 'ignore_ament_install']
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'ignore'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'ignore_ament_install'
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extensions ['colcon_pkg']
+[0.344s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'colcon_pkg'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extensions ['colcon_meta']
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'colcon_meta'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extensions ['ros']
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'ros'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extensions ['cmake', 'python']
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'cmake'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'python'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extensions ['python_setup_py']
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/docs) by extension 'python_setup_py'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/install) by extensions ['ignore', 'ignore_ament_install']
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/install) by extension 'ignore'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/install) ignored
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/log) by extensions ['ignore', 'ignore_ament_install']
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/log) by extension 'ignore'
+[0.345s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/log) ignored
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extensions ['ignore', 'ignore_ament_install']
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extension 'ignore'
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extension 'ignore_ament_install'
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extensions ['colcon_pkg']
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extension 'colcon_pkg'
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extensions ['colcon_meta']
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extension 'colcon_meta'
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extensions ['ros']
+[0.346s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz2) by extension 'ros'
+[0.352s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz2' with type 'ros.ament_cmake' and name 'rviz2'
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extensions ['ignore', 'ignore_ament_install']
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extension 'ignore'
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extension 'ignore_ament_install'
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extensions ['colcon_pkg']
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extension 'colcon_pkg'
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extensions ['colcon_meta']
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extension 'colcon_meta'
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extensions ['ros']
+[0.353s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_assimp_vendor) by extension 'ros'
+[0.354s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_assimp_vendor' with type 'ros.ament_cmake' and name 'rviz_assimp_vendor'
+[0.354s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extensions ['ignore', 'ignore_ament_install']
+[0.354s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extension 'ignore'
+[0.355s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extension 'ignore_ament_install'
+[0.355s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extensions ['colcon_pkg']
+[0.355s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extension 'colcon_pkg'
+[0.355s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extensions ['colcon_meta']
+[0.355s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extension 'colcon_meta'
+[0.355s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extensions ['ros']
+[0.355s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_common) by extension 'ros'
+[0.358s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_common' with type 'ros.ament_cmake' and name 'rviz_common'
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extensions ['ignore', 'ignore_ament_install']
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extension 'ignore'
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extension 'ignore_ament_install'
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extensions ['colcon_pkg']
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extension 'colcon_pkg'
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extensions ['colcon_meta']
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extension 'colcon_meta'
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extensions ['ros']
+[0.358s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_default_plugins) by extension 'ros'
+[0.362s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_default_plugins' with type 'ros.ament_cmake' and name 'rviz_default_plugins'
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extensions ['ignore', 'ignore_ament_install']
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extension 'ignore'
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extension 'ignore_ament_install'
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extensions ['colcon_pkg']
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extension 'colcon_pkg'
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extensions ['colcon_meta']
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extension 'colcon_meta'
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extensions ['ros']
+[0.362s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_ogre_vendor) by extension 'ros'
+[0.364s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_ogre_vendor' with type 'ros.ament_cmake' and name 'rviz_ogre_vendor'
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extensions ['ignore', 'ignore_ament_install']
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extension 'ignore'
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extension 'ignore_ament_install'
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extensions ['colcon_pkg']
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extension 'colcon_pkg'
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extensions ['colcon_meta']
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extension 'colcon_meta'
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extensions ['ros']
+[0.364s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering) by extension 'ros'
+[0.366s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_rendering' with type 'ros.ament_cmake' and name 'rviz_rendering'
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extensions ['ignore', 'ignore_ament_install']
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extension 'ignore'
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extension 'ignore_ament_install'
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extensions ['colcon_pkg']
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extension 'colcon_pkg'
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extensions ['colcon_meta']
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extension 'colcon_meta'
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extensions ['ros']
+[0.366s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_rendering_tests) by extension 'ros'
+[0.367s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_rendering_tests' with type 'ros.ament_cmake' and name 'rviz_rendering_tests'
+[0.367s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extensions ['ignore', 'ignore_ament_install']
+[0.367s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extension 'ignore'
+[0.367s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extension 'ignore_ament_install'
+[0.368s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extensions ['colcon_pkg']
+[0.368s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extension 'colcon_pkg'
+[0.368s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extensions ['colcon_meta']
+[0.368s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extension 'colcon_meta'
+[0.368s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extensions ['ros']
+[0.368s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_resource_interfaces) by extension 'ros'
+[0.368s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_resource_interfaces' with type 'ros.ament_cmake' and name 'rviz_resource_interfaces'
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extensions ['ignore', 'ignore_ament_install']
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extension 'ignore'
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extension 'ignore_ament_install'
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extensions ['colcon_pkg']
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extension 'colcon_pkg'
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extensions ['colcon_meta']
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extension 'colcon_meta'
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extensions ['ros']
+[0.369s] Level 1:colcon.colcon_core.package_identification:_identify(rviz/rviz_visual_testing_framework) by extension 'ros'
+[0.371s] DEBUG:colcon.colcon_core.package_identification:Package 'rviz/rviz_visual_testing_framework' with type 'ros.ament_cmake' and name 'rviz_visual_testing_framework'
+[0.371s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['ignore', 'ignore_ament_install']
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'ignore'
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'ignore_ament_install'
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['colcon_pkg']
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'colcon_pkg'
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['colcon_meta']
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'colcon_meta'
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['ros']
+[0.372s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'ros'
+[0.373s] DEBUG:colcon.colcon_core.package_identification:Package 'snappy_cpp' with type 'ros.ament_cmake' and name 'snappy_cpp'
+[0.373s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.374s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.374s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.374s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.374s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.409s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.409s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.410s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.411s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'cmake_args' from command line to 'None'
+[0.411s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'cmake_target' from command line to 'None'
+[0.411s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'cmake_clean_cache' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'cmake_clean_first' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'cmake_force_configure' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'ament_cmake_args' from command line to 'None'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'catkin_cmake_args' from command line to 'None'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_assimp_vendor' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.412s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_assimp_vendor' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_assimp_vendor', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_assimp_vendor', 'symlink_install': False, 'test_result_base': None}
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'cmake_args' from command line to 'None'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'cmake_target' from command line to 'None'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'cmake_clean_cache' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'cmake_clean_first' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'cmake_force_configure' from command line to 'False'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'ament_cmake_args' from command line to 'None'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'catkin_cmake_args' from command line to 'None'
+[0.412s] Level 5:colcon.colcon_core.verb:set package 'rviz_ogre_vendor' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.413s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_ogre_vendor' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_ogre_vendor', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_ogre_vendor', 'symlink_install': False, 'test_result_base': None}
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'cmake_args' from command line to 'None'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'cmake_target' from command line to 'None'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'cmake_clean_cache' from command line to 'False'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'cmake_clean_first' from command line to 'False'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'cmake_force_configure' from command line to 'False'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'ament_cmake_args' from command line to 'None'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'catkin_cmake_args' from command line to 'None'
+[0.413s] Level 5:colcon.colcon_core.verb:set package 'rviz_resource_interfaces' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.413s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_resource_interfaces' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_resource_interfaces', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_resource_interfaces', 'symlink_install': False, 'test_result_base': None}
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_args' from command line to 'None'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_target' from command line to 'None'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_clean_cache' from command line to 'False'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_clean_first' from command line to 'False'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_force_configure' from command line to 'False'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'ament_cmake_args' from command line to 'None'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'catkin_cmake_args' from command line to 'None'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.414s] DEBUG:colcon.colcon_core.verb:Building package 'snappy_cpp' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/snappy_cpp', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/snappy_cpp', 'symlink_install': False, 'test_result_base': None}
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'cmake_args' from command line to 'None'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'cmake_target' from command line to 'None'
+[0.414s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'cmake_clean_cache' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'cmake_clean_first' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'cmake_force_configure' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'ament_cmake_args' from command line to 'None'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'catkin_cmake_args' from command line to 'None'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.415s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_rendering' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_rendering', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_rendering', 'symlink_install': False, 'test_result_base': None}
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'cmake_args' from command line to 'None'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'cmake_target' from command line to 'None'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'cmake_clean_cache' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'cmake_clean_first' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'cmake_force_configure' from command line to 'False'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'ament_cmake_args' from command line to 'None'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'catkin_cmake_args' from command line to 'None'
+[0.415s] Level 5:colcon.colcon_core.verb:set package 'rviz_common' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.415s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_common' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_common', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_common', 'symlink_install': False, 'test_result_base': None}
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'cmake_args' from command line to 'None'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'cmake_target' from command line to 'None'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'cmake_clean_cache' from command line to 'False'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'cmake_clean_first' from command line to 'False'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'cmake_force_configure' from command line to 'False'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'ament_cmake_args' from command line to 'None'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'catkin_cmake_args' from command line to 'None'
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_rendering_tests' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.416s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_rendering_tests' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_rendering_tests', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_rendering_tests', 'symlink_install': False, 'test_result_base': None}
+[0.416s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'cmake_args' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'cmake_target' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'cmake_clean_cache' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'cmake_clean_first' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'cmake_force_configure' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'ament_cmake_args' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'catkin_cmake_args' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_visual_testing_framework' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.417s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_visual_testing_framework' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_visual_testing_framework', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_visual_testing_framework', 'symlink_install': False, 'test_result_base': None}
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'cmake_args' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'cmake_target' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'cmake_clean_cache' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'cmake_clean_first' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'cmake_force_configure' from command line to 'False'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'ament_cmake_args' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'catkin_cmake_args' from command line to 'None'
+[0.417s] Level 5:colcon.colcon_core.verb:set package 'rviz_default_plugins' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.417s] DEBUG:colcon.colcon_core.verb:Building package 'rviz_default_plugins' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz_default_plugins', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz_default_plugins', 'symlink_install': False, 'test_result_base': None}
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'cmake_args' from command line to 'None'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'cmake_target' from command line to 'None'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'cmake_clean_cache' from command line to 'False'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'cmake_clean_first' from command line to 'False'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'cmake_force_configure' from command line to 'False'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'ament_cmake_args' from command line to 'None'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'catkin_cmake_args' from command line to 'None'
+[0.418s] Level 5:colcon.colcon_core.verb:set package 'rviz2' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.418s] DEBUG:colcon.colcon_core.verb:Building package 'rviz2' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/rviz2', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install', 'merge_install': True, 'path': '/home/kraken/snappyNano/src/rviz/rviz2', 'symlink_install': False, 'test_result_base': None}
+[0.418s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.421s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.422s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/kraken/snappyNano/src/rviz/rviz_assimp_vendor' with build type 'ament_cmake'
+[0.422s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/kraken/snappyNano/src/rviz/rviz_assimp_vendor'
+[0.425s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.426s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.426s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.429s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/kraken/snappyNano/src/rviz/rviz_ogre_vendor' with build type 'ament_cmake'
+[0.429s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/kraken/snappyNano/src/rviz/rviz_ogre_vendor'
+[0.429s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.429s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.431s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/kraken/snappyNano/src/rviz/rviz_resource_interfaces' with build type 'ament_cmake'
+[0.432s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/kraken/snappyNano/src/rviz/rviz_resource_interfaces'
+[0.432s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.432s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.460s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/kraken/snappyNano/src/snappy_cpp' with build type 'ament_cmake'
+[0.460s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/kraken/snappyNano/src/snappy_cpp'
+[0.460s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.461s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.471s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/kraken/snappyNano/src/build/rviz_assimp_vendor': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_assimp_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[0.477s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/kraken/snappyNano/src/build/rviz_ogre_vendor': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[0.489s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_resource_interfaces -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[0.490s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[1.042s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/kraken/snappyNano/src/build/rviz_assimp_vendor' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_assimp_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[1.053s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_resource_interfaces -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[1.056s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/kraken/snappyNano/src/build/rviz_ogre_vendor' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[1.058s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/kraken/snappyNano/src/build/snappy_cpp' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[1.069s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(rviz_assimp_vendor)
+[1.074s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install' for CMake module files
+[1.074s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install' for CMake config files
+[1.075s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/bin'
+[1.076s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/lib/pkgconfig/rviz_assimp_vendor.pc'
+[1.080s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/lib/python3.10/site-packages'
+[1.081s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/bin'
+[1.082s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/share/rviz_assimp_vendor/package.ps1'
+[1.083s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/kraken/snappyNano/src/install/share/rviz_assimp_vendor/package.dsv'
+[1.085s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/share/rviz_assimp_vendor/package.sh'
+[1.086s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/share/rviz_assimp_vendor/package.bash'
+[1.087s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/share/rviz_assimp_vendor/package.zsh'
+[1.088s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/kraken/snappyNano/src/install/share/colcon-core/packages/rviz_assimp_vendor)
+[1.100s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[1.101s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[1.101s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '1'
+[1.101s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[1.110s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[1.110s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[1.110s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[1.150s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[1.151s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.ps1'
+[1.153s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/kraken/snappyNano/src/install/_local_setup_util_ps1.py'
+[1.156s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.ps1'
+[1.158s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.sh'
+[1.160s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/kraken/snappyNano/src/install/_local_setup_util_sh.py'
+[1.161s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.sh'
+[1.163s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.bash'
+[1.164s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.bash'
+[1.166s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.zsh'
+[1.166s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.zsh'

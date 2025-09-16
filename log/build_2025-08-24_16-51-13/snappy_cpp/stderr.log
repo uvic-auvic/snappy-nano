@@ -1,0 +1,4 @@
+[31mCMake Error at CMakeLists.txt:17 (add_executable):
+  The target name "test" is reserved when CTest testing is enabled.
+
+[0m

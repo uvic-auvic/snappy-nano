@@ -1,0 +1,11 @@
+prefix=/home/kraken/snappyNano/src/install/rviz_ogre_vendor/opt/rviz_ogre_vendor
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: OGRE-Terrain
+Description: Outdoor terrain component for OGRE
+Version: 1.12.10
+Requires: OGRE = 1.12.10 , OGRE-Paging = 1.12.10
+Libs: -L${libdir} -lOgreTerrain
+Cflags: -I${includedir}/OGRE/Terrain 

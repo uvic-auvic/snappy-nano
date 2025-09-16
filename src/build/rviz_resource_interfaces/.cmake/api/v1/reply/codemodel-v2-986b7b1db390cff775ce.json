@@ -1,0 +1,233 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-c9032c86a3f3023e4c9a.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17
+					]
+				},
+				{
+					"build" : "rviz_resource_interfaces__py",
+					"jsonFile" : "directory-rviz_resource_interfaces__py-9cc52218373ea62c0aea.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/kraken/snappyNano/src/build/rviz_resource_interfaces/rviz_resource_interfaces__py",
+					"targetIndexes" : 
+					[
+						4
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1
+					],
+					"name" : "rviz_resource_interfaces",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_build_rviz_resource_interfaces_egg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_build_rviz_resource_interfaces_egg-b952d7d88905c81f5454.json",
+					"name" : "ament_cmake_python_build_rviz_resource_interfaces_egg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_symlink_rviz_resource_interfaces::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_symlink_rviz_resource_interfaces-626ca39fd9b7d674a5d9.json",
+					"name" : "ament_cmake_python_symlink_rviz_resource_interfaces",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces-efaefa45df12cec2299f.json",
+					"name" : "rviz_resource_interfaces",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__cpp-b0105e8d7b23cf8d602c.json",
+					"name" : "rviz_resource_interfaces__cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "rviz_resource_interfaces__py::@798d44a3dd670461f306",
+					"jsonFile" : "target-rviz_resource_interfaces__py-37ee67348590d73ce948.json",
+					"name" : "rviz_resource_interfaces__py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_generator_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_generator_c-43d6df1400b3e74bf51c.json",
+					"name" : "rviz_resource_interfaces__rosidl_generator_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_generator_py::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_generator_py-e3dbc51a7ee910023190.json",
+					"name" : "rviz_resource_interfaces__rosidl_generator_py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_c-8ca7eb1b94abfa9e8913.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_c__pyext-91fd39568e251f01669c.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_cpp-c08843c681b656f5c7dc.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_fastrtps_c-c1406c27db890d7433cf.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_fastrtps_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_fastrtps_c__pyext-520aa84f929889a03308.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_fastrtps_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_fastrtps_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_fastrtps_cpp-8f6db8cd562def9c46c5.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_fastrtps_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_introspection_c-82859b02345b3ce12e6c.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_introspection_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_introspection_c__pyext-31a66849ca4cc769536a.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_introspection_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces__rosidl_typesupport_introspection_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces__rosidl_typesupport_introspection_cpp-7063174607b7414cb5b0.json",
+					"name" : "rviz_resource_interfaces__rosidl_typesupport_introspection_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rviz_resource_interfaces_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rviz_resource_interfaces_uninstall-61b9a88359c47f4ad106.json",
+					"name" : "rviz_resource_interfaces_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-6d63d97d00845bdaf094.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/kraken/snappyNano/src/build/rviz_resource_interfaces",
+		"source" : "/home/kraken/snappyNano/src/rviz/rviz_resource_interfaces"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

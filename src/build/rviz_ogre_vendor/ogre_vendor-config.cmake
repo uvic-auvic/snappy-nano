@@ -1,0 +1,10 @@
+# CMake configuration for ogre_vendor
+set(CMAKE_C_COMPILER [=[/usr/bin/cc]=] CACHE INTERNAL "")
+set(CMAKE_CXX_COMPILER [=[/usr/bin/c++]=] CACHE INTERNAL "")
+set(CMAKE_C_FLAGS [=[]=] CACHE INTERNAL "")
+set(CMAKE_CXX_FLAGS [=[]=] CACHE INTERNAL "")
+set(CMAKE_VERBOSE_MAKEFILE [=[FALSE]=] CACHE INTERNAL "")
+set(CMAKE_BUILD_TYPE [=[]=] CACHE INTERNAL "")
+set(CMAKE_PREFIX_PATH [=[/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/install]=] CACHE INTERNAL "")
+set(BUILD_TESTING "OFF" CACHE INTERNAL "")
+set(BUILD_SHARED_LIBS ON CACHE BOOL "")

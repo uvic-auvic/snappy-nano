@@ -1,0 +1,33 @@
+[0.047s] Invoking command in '/home/kraken/snappyNano/src/build/rviz_ogre_vendor': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
+[0.165s] -- The C compiler identification is GNU 11.4.0
+[0.274s] -- The CXX compiler identification is GNU 11.4.0
+[0.287s] -- Detecting C compiler ABI info
+[0.414s] -- Detecting C compiler ABI info - done
+[0.429s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.429s] -- Detecting C compile features
+[0.430s] -- Detecting C compile features - done
+[0.436s] -- Detecting CXX compiler ABI info
+[0.579s] -- Detecting CXX compiler ABI info - done
+[0.592s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.592s] -- Detecting CXX compile features
+[0.593s] -- Detecting CXX compile features - done
+[0.607s] [31mCMake Error at CMakeLists.txt:4 (find_package):
+[0.607s]   By not providing "Findament_cmake.cmake" in CMAKE_MODULE_PATH this project
+[0.607s]   has asked CMake to find a package configuration file provided by
+[0.607s]   "ament_cmake", but CMake did not find one.
+[0.607s] 
+[0.607s]   Could not find a package configuration file provided by "ament_cmake" with
+[0.607s]   any of the following names:
+[0.608s] 
+[0.609s]     ament_cmakeConfig.cmake
+[0.609s]     ament_cmake-config.cmake
+[0.609s] 
+[0.609s]   Add the installation prefix of "ament_cmake" to CMAKE_PREFIX_PATH or set
+[0.610s]   "ament_cmake_DIR" to a directory containing one of the above files.  If
+[0.611s]   "ament_cmake" provides a separate development package or SDK, be sure it
+[0.611s]   has been installed.
+[0.611s] 
+[0.611s] [0m
+[0.611s] -- Configuring incomplete, errors occurred!
+[0.611s] See also "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/CMakeOutput.log".
+[0.626s] Invoked command in '/home/kraken/snappyNano/src/build/rviz_ogre_vendor' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install

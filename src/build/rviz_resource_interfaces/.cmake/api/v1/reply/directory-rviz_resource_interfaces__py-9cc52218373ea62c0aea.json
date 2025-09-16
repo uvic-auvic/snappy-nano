@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "rviz_resource_interfaces__py",
+		"source" : "/home/kraken/snappyNano/src/build/rviz_resource_interfaces/rviz_resource_interfaces__py"
+	}
+}

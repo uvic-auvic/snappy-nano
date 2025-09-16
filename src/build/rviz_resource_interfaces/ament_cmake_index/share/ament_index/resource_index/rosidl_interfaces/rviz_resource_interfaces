@@ -1,0 +1,4 @@
+srv/GetResource.idl
+srv/GetResource.srv
+srv/GetResource_Request.msg
+srv/GetResource_Response.msg

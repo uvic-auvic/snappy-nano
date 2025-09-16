@@ -1,0 +1,100 @@
+[0.148s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[0.148s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=14, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x704bca7d8c70>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x704bca7d8730>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x704bca7d8730>>, mixin_verb=('build',))
+[0.321s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.321s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.321s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.321s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.321s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.321s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.322s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/kraken/snappyNano/src'
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.322s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.338s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.339s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['ignore', 'ignore_ament_install']
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'ignore'
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'ignore_ament_install'
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['colcon_pkg']
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'colcon_pkg'
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['colcon_meta']
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'colcon_meta'
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extensions ['ros']
+[0.340s] Level 1:colcon.colcon_core.package_identification:_identify(snappy_cpp) by extension 'ros'
+[0.344s] DEBUG:colcon.colcon_core.package_identification:Package 'snappy_cpp' with type 'ros.ament_cmake' and name 'snappy_cpp'
+[0.344s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.344s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.344s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.344s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.344s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.374s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.375s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.376s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_args' from command line to 'None'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_target' from command line to 'None'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_clean_cache' from command line to 'False'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_clean_first' from command line to 'False'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'cmake_force_configure' from command line to 'False'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'ament_cmake_args' from command line to 'None'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'catkin_cmake_args' from command line to 'None'
+[0.377s] Level 5:colcon.colcon_core.verb:set package 'snappy_cpp' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.377s] DEBUG:colcon.colcon_core.verb:Building package 'snappy_cpp' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/kraken/snappyNano/src/build/snappy_cpp', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/kraken/snappyNano/src/install/snappy_cpp', 'merge_install': False, 'path': '/home/kraken/snappyNano/src/snappy_cpp', 'symlink_install': False, 'test_result_base': None}
+[0.378s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.380s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.380s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/kraken/snappyNano/src/snappy_cpp' with build type 'ament_cmake'
+[0.380s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/kraken/snappyNano/src/snappy_cpp'
+[0.383s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.383s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.384s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.396s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install/snappy_cpp
+[0.443s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/kraken/snappyNano/src/build/snappy_cpp' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install/snappy_cpp
+[0.460s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(snappy_cpp)
+[0.463s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/snappy_cpp' for CMake module files
+[0.463s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/snappy_cpp' for CMake config files
+[0.464s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/snappy_cpp/bin'
+[0.464s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/snappy_cpp/lib/pkgconfig/snappy_cpp.pc'
+[0.467s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/snappy_cpp/lib/python3.10/site-packages'
+[0.467s] Level 1:colcon.colcon_core.environment:checking '/home/kraken/snappyNano/src/install/snappy_cpp/bin'
+[0.468s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/package.ps1'
+[0.469s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/package.dsv'
+[0.470s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/package.sh'
+[0.471s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/package.bash'
+[0.472s] INFO:colcon.colcon_core.shell:Creating package script '/home/kraken/snappyNano/src/install/snappy_cpp/share/snappy_cpp/package.zsh'
+[0.472s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/kraken/snappyNano/src/install/snappy_cpp/share/colcon-core/packages/snappy_cpp)
+[0.484s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[0.484s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[0.484s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '1'
+[0.484s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[0.497s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[0.497s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[0.498s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[0.563s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[0.564s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.ps1'
+[0.567s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/kraken/snappyNano/src/install/_local_setup_util_ps1.py'
+[0.571s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.ps1'
+[0.573s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.sh'
+[0.574s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/kraken/snappyNano/src/install/_local_setup_util_sh.py'
+[0.575s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.sh'
+[0.577s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.bash'
+[0.579s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.bash'
+[0.580s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/kraken/snappyNano/src/install/local_setup.zsh'
+[0.581s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/kraken/snappyNano/src/install/setup.zsh'

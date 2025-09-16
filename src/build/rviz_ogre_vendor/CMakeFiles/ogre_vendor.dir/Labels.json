@@ -1,0 +1,40 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/ogre_vendor"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/ogre_vendor.rule"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/CMakeFiles/ogre_vendor-complete.rule"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-build.rule"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-configure.rule"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-download.rule"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-install.rule"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-mkdir.rule"
+		},
+		{
+			"file" : "/home/kraken/snappyNano/src/build/rviz_ogre_vendor/ogre_vendor-prefix/src/ogre_vendor-stamp/ogre_vendor-patch.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"ogre_vendor"
+		],
+		"name" : "ogre_vendor"
+	}
+}

@@ -1,0 +1,28 @@
+-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found ament_cmake_vendor_package: 1.3.12 (/opt/ros/humble/share/ament_cmake_vendor_package/cmake)
+-- Skipping vendor package build for 'assimp_vendor', which is already satisfied
+-- Found ament_lint_auto: 0.12.14 (/opt/ros/humble/share/ament_lint_auto/cmake)
+-- Added test 'lint_cmake' to check CMake code style
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/kraken/snappyNano/src/build/rviz_assimp_vendor
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/ament_index/resource_index/package_run_dependencies/rviz_assimp_vendor
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/ament_index/resource_index/parent_prefix_path/rviz_assimp_vendor
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/environment/ament_prefix_path.sh
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/environment/ament_prefix_path.dsv
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/environment/path.sh
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/environment/path.dsv
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/local_setup.bash
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/local_setup.sh
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/local_setup.zsh
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/local_setup.dsv
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/package.dsv
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/ament_index/resource_index/packages/rviz_assimp_vendor
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/cmake/rviz_assimp_vendor-extras.cmake
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/cmake/rviz_assimp_vendorConfig.cmake
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/cmake/rviz_assimp_vendorConfig-version.cmake
+-- Symlinking: /home/kraken/snappyNano/src/install/rviz_assimp_vendor/share/rviz_assimp_vendor/package.xml

@@ -1,0 +1,9 @@
+[0.071s] Invoking command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces': /usr/bin/cmake --build /home/kraken/snappyNano/src/build/rviz_resource_interfaces -- -j14 -l14
+[0.181s] failed to create symbolic link '/home/kraken/snappyNano/src/build/rviz_resource_interfaces/ament_cmake_python/rviz_resource_interfaces/rviz_resource_interfaces' because existing path cannot be removed: Is a directory
+[0.181s] [  3%] Built target rviz_resource_interfaces__cpp
+[0.182s] [ 12%] Built target rviz_resource_interfaces__rosidl_generator_c
+[0.182s] gmake[2]: *** [CMakeFiles/ament_cmake_python_symlink_rviz_resource_interfaces.dir/build.make:70: CMakeFiles/ament_cmake_python_symlink_rviz_resource_interfaces] Error 1
+[0.183s] gmake[1]: *** [CMakeFiles/Makefile2:421: CMakeFiles/ament_cmake_python_symlink_rviz_resource_interfaces.dir/all] Error 2
+[0.183s] gmake[1]: *** Waiting for unfinished jobs....
+[0.184s] gmake: *** [Makefile:146: all] Error 2
+[0.188s] Invoked command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces' returned '2': /usr/bin/cmake --build /home/kraken/snappyNano/src/build/rviz_resource_interfaces -- -j14 -l14

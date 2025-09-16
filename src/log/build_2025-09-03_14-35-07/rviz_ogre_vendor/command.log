@@ -1,0 +1,1 @@
+Invoking command in '/home/kraken/snappyNano/src/build/rviz_ogre_vendor': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_ogre_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install/rviz_ogre_vendor

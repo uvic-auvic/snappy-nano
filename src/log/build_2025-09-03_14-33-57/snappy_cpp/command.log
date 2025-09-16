@@ -1,0 +1,4 @@
+Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/kraken/snappyNano/src/build/snappy_cpp -- -j14 -l14
+Invoked command in '/home/kraken/snappyNano/src/build/snappy_cpp' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/kraken/snappyNano/src/build/snappy_cpp -- -j14 -l14
+Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/kraken/snappyNano/src/build/snappy_cpp
+Invoked command in '/home/kraken/snappyNano/src/build/snappy_cpp' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/kraken/snappyNano/src/build/snappy_cpp

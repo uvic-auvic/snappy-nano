@@ -1,0 +1,2 @@
+[0.052s] Invoking command in '/home/kraken/snappyNano/src/build/snappy_cpp': /usr/bin/cmake --build /home/kraken/snappyNano/src/build/snappy_cpp -- -j14 -l14
+[0.177s] [100%] Built target helloWorld
