@@ -1,3 +1,4 @@
+// this file is going to contain the code for the state estimator
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -13,7 +14,4 @@
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
-
-using namespace std::chrono_literals;
-using json = nlohmann:json;
 
