@@ -1,9 +1,0 @@
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/uninstall.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/rviz_assimp_vendor_uninstall.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/test.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/edit_cache.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/rebuild_cache.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/list_install_components.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/install.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/install/local.dir
-/home/kraken/snappyNano/src/build/rviz_assimp_vendor/CMakeFiles/install/strip.dir
