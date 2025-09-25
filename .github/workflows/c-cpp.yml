@@ -21,4 +21,4 @@ jobs:
       - name: Build with colcon
         run: |
           source /opt/ros/humble/setup.bash
-          colcon build --event-handlers console_cohesion+ --packages-select snappy_cpp
+          colcon build --packages-select snappy_cpp
