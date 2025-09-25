@@ -66,7 +66,7 @@ namespace motor{
             void set_motors(const int8_t* speeds);
 
             void set_leds(const int& led, const int& mode); // Which LED and blink mode
-    }
+    };
 }
 
 #endif //MOTORBOARD_HPP

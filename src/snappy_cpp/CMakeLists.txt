@@ -21,4 +21,19 @@ install(TARGETS
   helloWorld
   DESTINATION lib/${PROJECT_NAME})
 
+option(BUILD_TESTING "Build tests" OFF)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+
+  # Add gtest executables
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(unit_tests tests/test_motorboard.cpp)
+  ament_target_dependencies(unit_tests rclcpp)
+  #target_link_libraries(unit_tests <library-name>)
+
+endif()
+
+
 ament_package()
