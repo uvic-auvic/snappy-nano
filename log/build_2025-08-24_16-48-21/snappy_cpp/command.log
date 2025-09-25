@@ -1,2 +1,0 @@
-Invoking command in '/home/kraken/snappyNano/build/snappy_cpp': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/install/snappy_cpp
-Invoked command in '/home/kraken/snappyNano/build/snappy_cpp' returned '1': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/kraken/snappyNano/src/snappy_cpp -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/install/snappy_cpp
