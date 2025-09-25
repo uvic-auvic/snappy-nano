@@ -1,0 +1,35 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "*" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up ROS 2 Humble
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: humble
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-colcon-common-extensions \
+                              build-essential \
+                              libopencv-dev \
+                              librealsense2-dev || true
+          
+          # Optional: install ROS 2 dependencies from source if needed
+          sudo apt install -y ros-humble-rclcpp ros-humble-std-msgs
+
+      - name: Build with colcon
+        run: |
+          source /opt/ros/humble/setup.bash
+          colcon build --event-handlers console_cohesion+ --packages-select snappy_cpp
