@@ -23,6 +23,8 @@ ament_cmake_environment_hooks/
 __pycache__/
 *.swp
 *.swo
+.DS_STORE
+.DS_Store
 
 # === IDE/Editor Specific ===
 
