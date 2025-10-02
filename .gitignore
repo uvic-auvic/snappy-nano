@@ -1,8 +1,7 @@
 # === ROS 2 Build Files ===
-build/
-install/
-log/
-src/build
+*build/
+*install/
+*log/
 # === CMake and Colcon Caches ===
 CMakeCache.txt
 CMakeFiles/
@@ -30,4 +29,3 @@ __pycache__/
 
 # VS C
 
-src/build/
