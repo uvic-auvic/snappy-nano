@@ -210,6 +210,43 @@ helloWorld/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/build
 .PHONY : helloWorld/fast
 
+#=============================================================================
+# Target rules for targets named pressureSensor
+
+# Build rule for target.
+pressureSensor: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pressureSensor
+.PHONY : pressureSensor
+
+# fast build rule for target.
+pressureSensor/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/build
+.PHONY : pressureSensor/fast
+
+src/pressure_sensor.o: src/pressure_sensor.cpp.o
+.PHONY : src/pressure_sensor.o
+
+# target to build an object file
+src/pressure_sensor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/src/pressure_sensor.cpp.o
+.PHONY : src/pressure_sensor.cpp.o
+
+src/pressure_sensor.i: src/pressure_sensor.cpp.i
+.PHONY : src/pressure_sensor.i
+
+# target to preprocess a source file
+src/pressure_sensor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/src/pressure_sensor.cpp.i
+.PHONY : src/pressure_sensor.cpp.i
+
+src/pressure_sensor.s: src/pressure_sensor.cpp.s
+.PHONY : src/pressure_sensor.s
+
+# target to generate assembly for a file
+src/pressure_sensor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/src/pressure_sensor.cpp.s
+.PHONY : src/pressure_sensor.cpp.s
+
 src/test.o: src/test.cpp.o
 .PHONY : src/test.o
 
@@ -250,6 +287,10 @@ help:
 	@echo "... snappy_cpp_uninstall"
 	@echo "... uninstall"
 	@echo "... helloWorld"
+	@echo "... pressureSensor"
+	@echo "... src/pressure_sensor.o"
+	@echo "... src/pressure_sensor.i"
+	@echo "... src/pressure_sensor.s"
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"
