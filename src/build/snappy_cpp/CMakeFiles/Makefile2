@@ -54,10 +54,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/kraken/snappyNano/src/snappy_cpp
+CMAKE_SOURCE_DIR = /home/kraken/snappy-nano/src/snappy_cpp
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/kraken/snappyNano/src/build/snappy_cpp
+CMAKE_BINARY_DIR = /home/kraken/snappy-nano/src/build/snappy_cpp
 
 #=============================================================================
 # Directory level rules for the build root directory
@@ -83,14 +83,14 @@ clean: CMakeFiles/helloWorld.dir/clean
 CMakeFiles/uninstall.dir/all: CMakeFiles/snappy_cpp_uninstall.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/uninstall.dir/build.make CMakeFiles/uninstall.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/uninstall.dir/build.make CMakeFiles/uninstall.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles --progress-num= "Built target uninstall"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num= "Built target uninstall"
 .PHONY : CMakeFiles/uninstall.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/uninstall.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/uninstall.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
 .PHONY : CMakeFiles/uninstall.dir/rule
 
 # Convenience name for target.
@@ -109,14 +109,14 @@ CMakeFiles/uninstall.dir/clean:
 CMakeFiles/snappy_cpp_uninstall.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp_uninstall.dir/build.make CMakeFiles/snappy_cpp_uninstall.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp_uninstall.dir/build.make CMakeFiles/snappy_cpp_uninstall.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles --progress-num= "Built target snappy_cpp_uninstall"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num= "Built target snappy_cpp_uninstall"
 .PHONY : CMakeFiles/snappy_cpp_uninstall.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/snappy_cpp_uninstall.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/snappy_cpp_uninstall.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
 .PHONY : CMakeFiles/snappy_cpp_uninstall.dir/rule
 
 # Convenience name for target.
@@ -135,14 +135,14 @@ CMakeFiles/snappy_cpp_uninstall.dir/clean:
 CMakeFiles/helloWorld.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles --progress-num=1,2 "Built target helloWorld"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=1,2 "Built target helloWorld"
 .PHONY : CMakeFiles/helloWorld.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/helloWorld.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/helloWorld.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappyNano/src/build/snappy_cpp/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
 .PHONY : CMakeFiles/helloWorld.dir/rule
 
 # Convenience name for target.

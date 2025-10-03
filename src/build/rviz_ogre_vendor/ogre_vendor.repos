@@ -1,5 +1,0 @@
-repositories:
-  ogre_vendor:
-    type: git
-    url: https://github.com/OGRECave/ogre.git
-    version: v1.12.10
