@@ -1,4 +1,5 @@
 /home/kraken/snappy-nano/src/install/snappy_cpp/lib/snappy_cpp/helloWorld
+/home/kraken/snappy-nano/src/install/snappy_cpp/lib/snappy_cpp/pressureSensor
 /home/kraken/snappy-nano/src/install/snappy_cpp/share/ament_index/resource_index/package_run_dependencies/snappy_cpp
 /home/kraken/snappy-nano/src/install/snappy_cpp/share/ament_index/resource_index/parent_prefix_path/snappy_cpp
 /home/kraken/snappy-nano/src/install/snappy_cpp/share/snappy_cpp/environment/ament_prefix_path.dsv

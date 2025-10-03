@@ -38,7 +38,7 @@ public:
             100ms, std::bind(&ComputerVisionBasic::timer_callback, this));
     }
 
-    ~ComputerVisionBasic()
+    ComputerVisionBasic()
     {
         pipe_.stop();
         cv::destroyAllWindows();
