@@ -57,10 +57,13 @@ install(TARGETS
   snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 
+<<<<<<< HEAD
 # Install launch files
 install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}/)
+  DESTINATION share/${PROJECT_NAME})
 
+install(DIRECTORY worlds
+  DESTINATION share/${PROJECT_NAME})
 
 option(BUILD_TESTING "Build tests" OFF)
 
