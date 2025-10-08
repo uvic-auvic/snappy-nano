@@ -12,7 +12,7 @@
       filename="ignition-gazebo-scene-broadcaster-system"
       name="gz::sim::systems::SceneBroadcaster">
     </plugin>
-    <gravity>0 0 0</gravity>
+    <gravity>0 0 -9.81</gravity>
     
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
@@ -33,7 +33,7 @@
 
       <link name="chassis">
         <inertial>
-          <mass>1.0</mass>
+          <mass>25</mass> <!-- kg, matches displaced volume for neutral buoyancy -->
         </inertial>
 
         <collision name="collision">
@@ -115,6 +115,31 @@
       <plugin
         filename="ignition-gazebo-altimeter-system"
         name="ignition::gazebo::systems::Altimeter">
+      </plugin>
+
+      <!-- Hydrodynamics plugin configured for the chassis link -->
+      <plugin
+        filename="ignition-gazebo-hydrodynamics-system"
+        name="ignition::gazebo::systems::Hydrodynamics">
+        <fluid_density>997</fluid_density> <!-- kg/m^3, neutral fresh water -->
+        <fluid_level>0</fluid_level> <!-- z-height of calm water surface -->
+        <current_velocity>0 0 0</current_velocity> <!-- world-frame pool current -->
+        <link name="chassis">
+          <volume>0.02259273</volume> <!-- m^3 displaced; ~25 kg in fresh water -->
+          <center_of_volume>0 0 0.02</center_of_volume> <!-- buoyancy centroid offset from link frame -->
+          <added_mass>
+            <ixx>0</ixx><iyy>0</iyy><izz>0</izz> <!-- placeholder until tank data available -->
+          </added_mass>
+          <linear_damping>
+            <x>8</x><y>8</y><z>12</z> <!-- N·s/m, tune from tow-tank pull tests -->
+          </linear_damping>
+          <angular_damping>
+            <x>1.5</x><y>1.5</y><z>2</z> <!-- N·m·s, rotational drag estimates -->
+          </angular_damping>
+          <projected_area>
+            <x>0.12</x><y>0.18</y><z>0.1</z> <!-- m^2 cross-sections; refine from CAD -->
+          </projected_area>
+        </link>
       </plugin>
     </model>
 
