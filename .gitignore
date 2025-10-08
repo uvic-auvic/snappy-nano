@@ -25,6 +25,8 @@ __pycache__/
 .DS_STORE
 .DS_Store
 
+src/snappy_cpp/worlds/2025-2026_Full_ASSEMBLY.dae
+
 # === IDE/Editor Specific ===
 
 # VS C
