@@ -48,9 +48,19 @@ def generate_launch_description():
         condition=IfCondition(headless),
     )
 
-    set_resource_path = SetEnvironmentVariable(
+    resource_paths = os.pathsep.join([
+        package_share,
+        os.path.join(package_share, 'worlds'),
+    ])
+
+    set_ign_resource_path = SetEnvironmentVariable(
         name='IGN_GAZEBO_RESOURCE_PATH',
-        value=os.path.join(package_share, 'worlds'),
+        value=resource_paths,
+    )
+
+    set_gz_resource_path = SetEnvironmentVariable(
+        name='GZ_SIM_RESOURCE_PATH',
+        value=resource_paths,
     )
 
     gz_sim_process = ExecuteProcess(
@@ -66,7 +76,8 @@ def generate_launch_description():
     return LaunchDescription([
         declare_world,
         declare_headless,
-        set_resource_path,
+        set_ign_resource_path,
+        set_gz_resource_path,
         set_headless_env,
         gz_sim_process,
         parameter_bridge_process,

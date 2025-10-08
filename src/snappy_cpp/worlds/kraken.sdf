@@ -30,57 +30,61 @@
     
     <model name="auv">
       <static>false</static>
-      
-      <!-- AUV CHASSIS -->
-      
+
       <link name="chassis">
         <inertial>
           <mass>1.0</mass>
         </inertial>
+
         <collision name="collision">
-         <pose>0 0 0  1.57 0 1.57</pose>
+          <pose>0 0 0 1.57 0 1.57</pose>
           <geometry>
-     	    <mesh> <uri>file://2025-2026_Full_ASSEMBLY.dae</uri> </mesh>
-     	  </geometry>
+            <mesh>
+              <uri>2025-2026_Full_ASSEMBLY.dae</uri>
+            </mesh>
+          </geometry>
         </collision>
+
         <visual name="visual">
-        <pose>0 0 0  1.57 0 1.57</pose>
+          <pose>0 0 0 1.57 0 1.57</pose>
           <geometry>
-     	    <mesh> <uri>file://2025-2026_Full_ASSEMBLY.dae</uri> </mesh>
-     	  </geometry>
+            <mesh>
+              <uri>2025-2026_Full_ASSEMBLY.dae</uri>
+            </mesh>
+          </geometry>
         </visual>
-        
+
         <sensor name="imu" type="imu">
-        <always_on>1</always_on>
-        <update_rate>100</update_rate>
-        <visualize>true</visualize>
-        <topic>imu</topic>
-        <enable_metrics>true</enable_metrics>
-        <imu>
-          <linear_acceleration>
-            <x>
-              <noise type="gaussian">
-                <mean>0</mean>
-                <stddev>0.2</stddev>
-              </noise>
-            </x>
-            <y>
-              <noise type="gaussian">
-                <mean>0</mean>
-                <stddev>0.2</stddev>
-              </noise>
-            </y>
-            <z>
-              <noise type="gaussian">
-                <mean>0</mean>
-                <stddev>0.2</stddev>
-              </noise>
-            </z>
-          </linear_acceleration>
-        </imu>
-      </sensor>
-      
-      <sensor name="altimeter" type="altimeter">
+          <always_on>1</always_on>
+          <update_rate>100</update_rate>
+          <visualize>true</visualize>
+          <topic>imu</topic>
+          <enable_metrics>true</enable_metrics>
+          <imu>
+            <linear_acceleration>
+              <x>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.2</stddev>
+                </noise>
+              </x>
+              <y>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.2</stddev>
+                </noise>
+              </y>
+              <z>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.2</stddev>
+                </noise>
+              </z>
+            </linear_acceleration>
+          </imu>
+        </sensor>
+
+        <sensor name="altimeter" type="altimeter">
           <always_on>1</always_on>
           <update_rate>30</update_rate>
           <visualize>true</visualize>
@@ -101,751 +105,26 @@
             </vertical_velocity>
           </altimeter>
         </sensor>
-        
       </link>
-      
-      <!-- AUV CHASSIS -->
-      
-      <!-- FRONT PROPELLER -->
-      
-      <link name="F_body">
-        <pose>1.4 0 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="F_prop">
-        <pose>1.4 0.4 0 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.4 0.1 0.4</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-     	    <mesh> <uri>file://T200 PROP.dae</uri> </mesh>
-     	  </geometry>
-        </visual>
-      </link>
-      
-      <!-- FRONT PROPELLER -->
-      
-      <!-- BACK PROPELLER -->
-      
-      <link name="B_body">
-        <pose>-1.4 0 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="B_prop">
-        <pose>-1.4 0.4 0 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.4 0.1 0.4</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.4 0.1 0.4</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <!-- BACK PROPELLER -->
-      
-      <!-- LEFT PROPELLER -->
-      
-      <link name="L_body">
-        <pose>0 1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="L_prop">
-        <pose>0.4 1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.1 0.4 0.4</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.1 0.4 0.4</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <!-- LEFT PROPELLER -->
-      
-      <!-- RIGHT PROPELLER -->
-      
-      <link name="R_body">
-        <pose>0 -1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="R_prop">
-        <pose>0.4 -1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.1 0.4 0.4</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.1 0.4 0.4</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <!-- RIGHT PROPELLER -->
-      
-      <!-- FRONT LEFT PROPELLER -->
-      
-      <link name="FL_body">
-        <pose>1.4 1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="FL_prop">
-        <pose>1.4 1.1 0.4 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <!-- FRONT LEFT PROPELLER -->
-      
-      <!-- FRONT RIGHT PROPELLER -->
-      
-      <link name="FR_body">
-        <pose>1.4 -1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="FR_prop">
-        <pose>1.4 -1.1 0.4 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <!-- FRONT RIGHT PROPELLER -->
-      
-      <!-- BACK LEFT PROPELLER -->
-      
-      <link name="BL_body">
-        <pose>-1.4 1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="BL_prop">
-        <pose>-1.4 1.1 0.4 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <!-- BACK LEFT PROPELLER -->
-      
-      <!-- BACK RIGHT PROPELLER -->
-      
-      <link name="BR_body">
-        <pose>-1.4 -1.1 0 0 0 0</pose>
-        <inertial>
-          <mass>1.0</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.5 0.5 0.5</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <link name="BR_prop">
-        <pose>-1.4 -1.1 0.4 0 0 0</pose>
-        <inertial>
-          <mass>0.01</mass>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.1</size>
-            </box>
-          </geometry>
-        </visual>
-      </link>
-      
-      <!-- BACK RIGHT PROPELLER -->
-      
-      <!-- FRONT JOINTS -->
-      
-      <joint name="F_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>F_body</child>
-      </joint>
-      
-      <joint name="F_joint" type="revolute">
-        <parent>F_body</parent>
-        <child>F_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>0.0 1.0 0.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- FRONT JOINTS -->
-      
-      <!-- BACK JOINTS -->
-      
-      <joint name="B_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>B_body</child>
-      </joint>
-      
-      <joint name="B_joint" type="revolute">
-        <parent>B_body</parent>
-        <child>B_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>0.0 1.0 0.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- BACK JOINTS -->
-      
-      <!-- RIGHT JOINTS -->
-      
-      <joint name="R_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>R_body</child>
-      </joint>
-      
-      <joint name="R_joint" type="revolute">
-        <parent>R_body</parent>
-        <child>R_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>1.0 0.0 0.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- RIGHT JOINTS -->
-      
-      <!-- LEFT JOINTS -->
-      
-      <joint name="L_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>L_body</child>
-      </joint>
-      
-      <joint name="L_joint" type="revolute">
-        <parent>L_body</parent>
-        <child>L_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>1.0 0.0 0.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- FRONT JOINTS -->
-      
-      <!-- FRONT RIGHT JOINTS -->
-      
-      <joint name="FR_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>FR_body</child>
-      </joint>
-      
-      <joint name="FR_joint" type="revolute">
-        <parent>FR_body</parent>
-        <child>FR_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>0.0 0.0 1.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- FRONT RIGHT JOINTS -->
-      
-      <!-- FRONT LEFT JOINTS -->
-      
-      <joint name="FL_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>FL_body</child>
-      </joint>
-      
-      <joint name="FL_joint" type="revolute">
-        <parent>FL_body</parent>
-        <child>FL_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>0.0 0.0 1.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- FRONT LEFT JOINTS -->
-      
-      <!-- BACK RIGHT JOINTS -->
-      
-      <joint name="BR_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>BR_body</child>
-      </joint>
-      
-      <joint name="BR_joint" type="revolute">
-        <parent>BR_body</parent>
-        <child>BR_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>0.0 0.0 1.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- BACK RIGHT JOINTS -->
-      
-      <!-- BACK LEFT JOINTS -->
-      
-      <joint name="BL_fixed" type="fixed">
-        <parent>chassis</parent>
-        <child>BL_body</child>
-      </joint>
-      
-      <joint name="BL_joint" type="revolute">
-        <parent>BL_body</parent>
-        <child>BL_prop</child>
-        <axis>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-          <xyz>0.0 0.0 1.0</xyz>
-          <dynamics>
-            <damping>0.0001</damping>
-          </dynamics>
-        </axis>
-      </joint>
-      
-      <!-- BACK LEFT JOINTS -->
-      
-      <!-- JOINT CONTROLLERS -->
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>F_joint</joint_name>
-      </plugin>
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>B_joint</joint_name>
-      </plugin>
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>R_joint</joint_name>
-      </plugin>
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>L_joint</joint_name>
-      </plugin>
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>FR_joint</joint_name>
-      </plugin>
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>FL_joint</joint_name>
-      </plugin>
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>BR_joint</joint_name>
-      </plugin>
-      <plugin
-        filename="ignition-gazebo-joint-controller-system"
-        name="gz::sim::systems::JointController">
-        <joint_name>BL_joint</joint_name>
-      </plugin>
-      
-      <!-- JOINT CONTROLLERS -->
-      
-      <!-- THRUST -->
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>F_joint</joint_name>
-        <thrust_coefficient>5</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>B_joint</joint_name>
-        <thrust_coefficient>5</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>R_joint</joint_name>
-        <thrust_coefficient>5</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>L_joint</joint_name>
-        <thrust_coefficient>5</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>FR_joint</joint_name>
-        <thrust_coefficient>5</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>FL_joint</joint_name>
-        <thrust_coefficient>5</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>BR_joint</joint_name>
-        <thrust_coefficient>5</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <plugin
-        filename="ignition-gazebo-thruster-system"
-        name="ignition::gazebo::systems::Thruster">
-        <namespace>auv</namespace>
-        <joint_name>BL_joint</joint_name>
-        <thrust_coefficient>1</thrust_coefficient>
-        <fluid_density>1000</fluid_density>
-        <propeller_diameter>0.2</propeller_diameter>
-      </plugin>
-      
-      <!-- THRUST -->
-      
-      <!-- HYDRODYNAMICS // TODO: FIX THIS -->
-      
-      <!-- https://gazebosim.org/api/sim/9/theory_hydrodynamics.html
-     
-      <plugin
-        filename="ignition-gazebo-hydrodynamics-system"
-        name="ignition::gazebo::systems::Hydrodynamics">
-        <link_name>chassis</link_name>
-        <xDotU>-4.876161</xDotU>
-        <yDotV>-126.324739</yDotV>
-        <zDotW>-126.324739</zDotW>
-        <kDotP>0</kDotP>
-        <mDotQ>-33.46</mDotQ>
-        <nDotR>-33.46</nDotR>
-        <xUabsU>-6.2282</xUabsU>
-        <xU>0</xU>
-        <yVabsV>-601.27</yVabsV>
-        <yV>0</yV>
-        <zWabsW>-601.27</zWabsW>
-        <zW>0</zW>
-        <kPabsP>-0.1916</kPabsP>
-        <kP>0</kP>
-        <mQabsQ>-632.698957</mQabsQ>
-        <mQ>0</mQ>
-        <nRabsR>-632.698957</nRabsR>
-        <nR>0</nR>
-      </plugin>
-      
-      -->
-      
-      <!-- HYDRODYNAMICS -->
-      
-      <!-- SENSORS -->
-      
+
+      <!-- Gazebo sensor systems for IMU and altimeter -->
       <plugin
         filename="ignition-gazebo-imu-system"
         name="ignition::gazebo::systems::Imu">
       </plugin>
       <plugin
-      filename="ignition-gazebo-altimeter-system"
-      name="ignition::gazebo::systems::Altimeter">
-    </plugin>
-    
-    <!-- SENSORS -->
-      
+        filename="ignition-gazebo-altimeter-system"
+        name="ignition::gazebo::systems::Altimeter">
+      </plugin>
     </model>
-    
+
     <model name="Gate">
      <static>true</static>
      <pose>3 0 -2  0 0 1.57</pose>
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Gate.dae</uri> </mesh>
+     	    <mesh> <uri>file://gate.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -857,7 +136,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom Red.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_red.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -869,7 +148,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom Red.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_red.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -881,7 +160,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom Red.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_red.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -893,7 +172,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom White.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_white.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -905,7 +184,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom White.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_white.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -917,7 +196,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom White.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_white.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -929,7 +208,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom White.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_white.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -941,7 +220,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom White.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_white.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -953,7 +232,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Slalom White.dae</uri> </mesh>
+     	    <mesh> <uri>file://slalom_white.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -965,7 +244,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Path Marker.dae</uri> </mesh>
+     	    <mesh> <uri>file://path_marker.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -977,7 +256,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Path Marker.dae</uri> </mesh>
+     	    <mesh> <uri>file://path_marker.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -989,7 +268,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Dropper Bin.dae</uri> </mesh>
+     	    <mesh> <uri>file://dropper_bin.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -1001,7 +280,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Octagon.dae</uri> </mesh>
+     	    <mesh> <uri>file://octagon.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -1013,7 +292,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Table.dae</uri> </mesh>
+     	    <mesh> <uri>file://table.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -1025,7 +304,7 @@
      <link name="body">
      	<visual name="visual">
      	  <geometry>
-     	    <mesh> <uri>file://Torpedo Target.dae</uri> </mesh>
+     	    <mesh> <uri>file://torpedo_target.dae</uri> </mesh>
      	  </geometry>
      	</visual>
      </link>
@@ -1033,4 +312,3 @@
  
   </world>
 </sdf>
-
