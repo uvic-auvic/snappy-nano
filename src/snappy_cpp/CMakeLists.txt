@@ -18,6 +18,9 @@ find_package(std_msgs REQUIRED)
 set(BOOST_ROOT "/usr")
 find_package(Boost REQUIRED)
 
+add_library(serial_lib src/include/src/serial.cpp)
+ament_target_dependencies(serial_lib rclcpp std_msgs)
+
 add_executable(snappy_cpp src/test.cpp)
 ament_target_dependencies(snappy_cpp rclcpp std_msgs)
 target_link_libraries(snappy_cpp ${Boost_LIBRARIES})
@@ -34,10 +37,9 @@ if(BUILD_TESTING)
 
   # Add gtest executables
   find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(unit_tests tests/test_motorboard.cpp)
+  ament_add_gtest(unit_tests tests/test_serial.cpp)
   ament_target_dependencies(unit_tests rclcpp)
-  #target_link_libraries(unit_tests <library-name>)
-
+  target_link_libraries(unit_tests serial_lib)
 endif()
 
 
