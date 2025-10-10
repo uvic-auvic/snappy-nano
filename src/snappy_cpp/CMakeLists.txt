@@ -10,15 +10,20 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+include_directories(${Boost_INCLUDE_DIRS})
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+set(BOOST_ROOT "/usr")
+find_package(Boost REQUIRED)
 
-add_executable(helloWorld src/test.cpp)
-ament_target_dependencies(helloWorld rclcpp std_msgs)
+add_executable(snappy_cpp src/test.cpp)
+ament_target_dependencies(snappy_cpp rclcpp std_msgs)
+target_link_libraries(snappy_cpp ${Boost_LIBRARIES})
 
 install(TARGETS
-  helloWorld
+  snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 
 option(BUILD_TESTING "Build tests" OFF)
