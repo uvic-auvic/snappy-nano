@@ -2,6 +2,10 @@
 /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/snappy_cpp_uninstall.dir
 /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/helloWorld.dir
 /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/pressureSensor.dir
+/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/computer_vision.dir
+/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/controller.dir
+/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/state_estimator.dir
+/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/planner.dir
 /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/test.dir
 /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/edit_cache.dir
 /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/rebuild_cache.dir

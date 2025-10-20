@@ -223,6 +223,130 @@ pressureSensor/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/build
 .PHONY : pressureSensor/fast
 
+#=============================================================================
+# Target rules for targets named computer_vision
+
+# Build rule for target.
+computer_vision: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 computer_vision
+.PHONY : computer_vision
+
+# fast build rule for target.
+computer_vision/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/computer_vision.dir/build.make CMakeFiles/computer_vision.dir/build
+.PHONY : computer_vision/fast
+
+#=============================================================================
+# Target rules for targets named controller
+
+# Build rule for target.
+controller: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 controller
+.PHONY : controller
+
+# fast build rule for target.
+controller/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/build
+.PHONY : controller/fast
+
+#=============================================================================
+# Target rules for targets named state_estimator
+
+# Build rule for target.
+state_estimator: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 state_estimator
+.PHONY : state_estimator
+
+# fast build rule for target.
+state_estimator/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/build
+.PHONY : state_estimator/fast
+
+#=============================================================================
+# Target rules for targets named planner
+
+# Build rule for target.
+planner: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 planner
+.PHONY : planner
+
+# fast build rule for target.
+planner/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/build
+.PHONY : planner/fast
+
+src/computer_vision.o: src/computer_vision.cpp.o
+.PHONY : src/computer_vision.o
+
+# target to build an object file
+src/computer_vision.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/computer_vision.dir/build.make CMakeFiles/computer_vision.dir/src/computer_vision.cpp.o
+.PHONY : src/computer_vision.cpp.o
+
+src/computer_vision.i: src/computer_vision.cpp.i
+.PHONY : src/computer_vision.i
+
+# target to preprocess a source file
+src/computer_vision.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/computer_vision.dir/build.make CMakeFiles/computer_vision.dir/src/computer_vision.cpp.i
+.PHONY : src/computer_vision.cpp.i
+
+src/computer_vision.s: src/computer_vision.cpp.s
+.PHONY : src/computer_vision.s
+
+# target to generate assembly for a file
+src/computer_vision.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/computer_vision.dir/build.make CMakeFiles/computer_vision.dir/src/computer_vision.cpp.s
+.PHONY : src/computer_vision.cpp.s
+
+src/controller.o: src/controller.cpp.o
+.PHONY : src/controller.o
+
+# target to build an object file
+src/controller.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/src/controller.cpp.o
+.PHONY : src/controller.cpp.o
+
+src/controller.i: src/controller.cpp.i
+.PHONY : src/controller.i
+
+# target to preprocess a source file
+src/controller.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/src/controller.cpp.i
+.PHONY : src/controller.cpp.i
+
+src/controller.s: src/controller.cpp.s
+.PHONY : src/controller.s
+
+# target to generate assembly for a file
+src/controller.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/src/controller.cpp.s
+.PHONY : src/controller.cpp.s
+
+src/planner.o: src/planner.cpp.o
+.PHONY : src/planner.o
+
+# target to build an object file
+src/planner.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/src/planner.cpp.o
+.PHONY : src/planner.cpp.o
+
+src/planner.i: src/planner.cpp.i
+.PHONY : src/planner.i
+
+# target to preprocess a source file
+src/planner.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/src/planner.cpp.i
+.PHONY : src/planner.cpp.i
+
+src/planner.s: src/planner.cpp.s
+.PHONY : src/planner.s
+
+# target to generate assembly for a file
+src/planner.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/src/planner.cpp.s
+.PHONY : src/planner.cpp.s
+
 src/pressure_sensor.o: src/pressure_sensor.cpp.o
 .PHONY : src/pressure_sensor.o
 
@@ -246,6 +370,30 @@ src/pressure_sensor.s: src/pressure_sensor.cpp.s
 src/pressure_sensor.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/src/pressure_sensor.cpp.s
 .PHONY : src/pressure_sensor.cpp.s
+
+src/state_estimator.o: src/state_estimator.cpp.o
+.PHONY : src/state_estimator.o
+
+# target to build an object file
+src/state_estimator.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/src/state_estimator.cpp.o
+.PHONY : src/state_estimator.cpp.o
+
+src/state_estimator.i: src/state_estimator.cpp.i
+.PHONY : src/state_estimator.i
+
+# target to preprocess a source file
+src/state_estimator.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/src/state_estimator.cpp.i
+.PHONY : src/state_estimator.cpp.i
+
+src/state_estimator.s: src/state_estimator.cpp.s
+.PHONY : src/state_estimator.s
+
+# target to generate assembly for a file
+src/state_estimator.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/src/state_estimator.cpp.s
+.PHONY : src/state_estimator.cpp.s
 
 src/test.o: src/test.cpp.o
 .PHONY : src/test.o
@@ -286,11 +434,27 @@ help:
 	@echo "... test"
 	@echo "... snappy_cpp_uninstall"
 	@echo "... uninstall"
+	@echo "... computer_vision"
+	@echo "... controller"
 	@echo "... helloWorld"
+	@echo "... planner"
 	@echo "... pressureSensor"
+	@echo "... state_estimator"
+	@echo "... src/computer_vision.o"
+	@echo "... src/computer_vision.i"
+	@echo "... src/computer_vision.s"
+	@echo "... src/controller.o"
+	@echo "... src/controller.i"
+	@echo "... src/controller.s"
+	@echo "... src/planner.o"
+	@echo "... src/planner.i"
+	@echo "... src/planner.s"
 	@echo "... src/pressure_sensor.o"
 	@echo "... src/pressure_sensor.i"
 	@echo "... src/pressure_sensor.s"
+	@echo "... src/state_estimator.o"
+	@echo "... src/state_estimator.i"
+	@echo "... src/state_estimator.s"
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"

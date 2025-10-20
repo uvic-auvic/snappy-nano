@@ -65,6 +65,10 @@ CMAKE_BINARY_DIR = /home/kraken/snappy-nano/src/build/snappy_cpp
 # The main recursive "all" target.
 all: CMakeFiles/helloWorld.dir/all
 all: CMakeFiles/pressureSensor.dir/all
+all: CMakeFiles/computer_vision.dir/all
+all: CMakeFiles/controller.dir/all
+all: CMakeFiles/state_estimator.dir/all
+all: CMakeFiles/planner.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -76,6 +80,10 @@ clean: CMakeFiles/uninstall.dir/clean
 clean: CMakeFiles/snappy_cpp_uninstall.dir/clean
 clean: CMakeFiles/helloWorld.dir/clean
 clean: CMakeFiles/pressureSensor.dir/clean
+clean: CMakeFiles/computer_vision.dir/clean
+clean: CMakeFiles/controller.dir/clean
+clean: CMakeFiles/state_estimator.dir/clean
+clean: CMakeFiles/planner.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -137,7 +145,7 @@ CMakeFiles/snappy_cpp_uninstall.dir/clean:
 CMakeFiles/helloWorld.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=1,2 "Built target helloWorld"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=5,6 "Built target helloWorld"
 .PHONY : CMakeFiles/helloWorld.dir/all
 
 # Build rule for subdir invocation for target.
@@ -163,7 +171,7 @@ CMakeFiles/helloWorld.dir/clean:
 CMakeFiles/pressureSensor.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=3,4 "Built target pressureSensor"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=9,10 "Built target pressureSensor"
 .PHONY : CMakeFiles/pressureSensor.dir/all
 
 # Build rule for subdir invocation for target.
@@ -181,6 +189,110 @@ pressureSensor: CMakeFiles/pressureSensor.dir/rule
 CMakeFiles/pressureSensor.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/clean
 .PHONY : CMakeFiles/pressureSensor.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/computer_vision.dir
+
+# All Build rule for target.
+CMakeFiles/computer_vision.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/computer_vision.dir/build.make CMakeFiles/computer_vision.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/computer_vision.dir/build.make CMakeFiles/computer_vision.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=1,2 "Built target computer_vision"
+.PHONY : CMakeFiles/computer_vision.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/computer_vision.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/computer_vision.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : CMakeFiles/computer_vision.dir/rule
+
+# Convenience name for target.
+computer_vision: CMakeFiles/computer_vision.dir/rule
+.PHONY : computer_vision
+
+# clean rule for target.
+CMakeFiles/computer_vision.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/computer_vision.dir/build.make CMakeFiles/computer_vision.dir/clean
+.PHONY : CMakeFiles/computer_vision.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/controller.dir
+
+# All Build rule for target.
+CMakeFiles/controller.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=3,4 "Built target controller"
+.PHONY : CMakeFiles/controller.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/controller.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/controller.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : CMakeFiles/controller.dir/rule
+
+# Convenience name for target.
+controller: CMakeFiles/controller.dir/rule
+.PHONY : controller
+
+# clean rule for target.
+CMakeFiles/controller.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/clean
+.PHONY : CMakeFiles/controller.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/state_estimator.dir
+
+# All Build rule for target.
+CMakeFiles/state_estimator.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=11,12 "Built target state_estimator"
+.PHONY : CMakeFiles/state_estimator.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/state_estimator.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/state_estimator.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : CMakeFiles/state_estimator.dir/rule
+
+# Convenience name for target.
+state_estimator: CMakeFiles/state_estimator.dir/rule
+.PHONY : state_estimator
+
+# clean rule for target.
+CMakeFiles/state_estimator.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/clean
+.PHONY : CMakeFiles/state_estimator.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/planner.dir
+
+# All Build rule for target.
+CMakeFiles/planner.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=7,8 "Built target planner"
+.PHONY : CMakeFiles/planner.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/planner.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/planner.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : CMakeFiles/planner.dir/rule
+
+# Convenience name for target.
+planner: CMakeFiles/planner.dir/rule
+.PHONY : planner
+
+# clean rule for target.
+CMakeFiles/planner.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/clean
+.PHONY : CMakeFiles/planner.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.
