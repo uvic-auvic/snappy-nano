@@ -63,28 +63,50 @@ CMAKE_BINARY_DIR = /home/kraken/snappy-nano/src/build/snappy_cpp
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/helloWorld.dir/all
+all: CMakeFiles/serial_lib.dir/all
+all: CMakeFiles/snappy_cpp.dir/all
 all: CMakeFiles/pressureSensor.dir/all
 all: CMakeFiles/computer_vision.dir/all
 all: CMakeFiles/controller.dir/all
 all: CMakeFiles/state_estimator.dir/all
 all: CMakeFiles/planner.dir/all
+all: CMakeFiles/unit_tests.dir/all
+all: gtest/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
-preinstall:
+preinstall: gtest/preinstall
 .PHONY : preinstall
 
 # The main recursive "clean" target.
 clean: CMakeFiles/uninstall.dir/clean
 clean: CMakeFiles/snappy_cpp_uninstall.dir/clean
-clean: CMakeFiles/helloWorld.dir/clean
+clean: CMakeFiles/serial_lib.dir/clean
+clean: CMakeFiles/snappy_cpp.dir/clean
 clean: CMakeFiles/pressureSensor.dir/clean
 clean: CMakeFiles/computer_vision.dir/clean
 clean: CMakeFiles/controller.dir/clean
 clean: CMakeFiles/state_estimator.dir/clean
 clean: CMakeFiles/planner.dir/clean
+clean: CMakeFiles/unit_tests.dir/clean
+clean: gtest/clean
 .PHONY : clean
+
+#=============================================================================
+# Directory level rules for directory gtest
+
+# Recursive "all" directory target.
+gtest/all:
+.PHONY : gtest/all
+
+# Recursive "preinstall" directory target.
+gtest/preinstall:
+.PHONY : gtest/preinstall
+
+# Recursive "clean" directory target.
+gtest/clean: gtest/CMakeFiles/gtest.dir/clean
+gtest/clean: gtest/CMakeFiles/gtest_main.dir/clean
+.PHONY : gtest/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/uninstall.dir
@@ -139,30 +161,56 @@ CMakeFiles/snappy_cpp_uninstall.dir/clean:
 .PHONY : CMakeFiles/snappy_cpp_uninstall.dir/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/helloWorld.dir
+# Target rules for target CMakeFiles/serial_lib.dir
 
 # All Build rule for target.
-CMakeFiles/helloWorld.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=5,6 "Built target helloWorld"
-.PHONY : CMakeFiles/helloWorld.dir/all
+CMakeFiles/serial_lib.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/serial_lib.dir/build.make CMakeFiles/serial_lib.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/serial_lib.dir/build.make CMakeFiles/serial_lib.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=13,14 "Built target serial_lib"
+.PHONY : CMakeFiles/serial_lib.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/helloWorld.dir/rule: cmake_check_build_system
+CMakeFiles/serial_lib.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/helloWorld.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/serial_lib.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
-.PHONY : CMakeFiles/helloWorld.dir/rule
+.PHONY : CMakeFiles/serial_lib.dir/rule
 
 # Convenience name for target.
-helloWorld: CMakeFiles/helloWorld.dir/rule
-.PHONY : helloWorld
+serial_lib: CMakeFiles/serial_lib.dir/rule
+.PHONY : serial_lib
 
 # clean rule for target.
-CMakeFiles/helloWorld.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/clean
-.PHONY : CMakeFiles/helloWorld.dir/clean
+CMakeFiles/serial_lib.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/serial_lib.dir/build.make CMakeFiles/serial_lib.dir/clean
+.PHONY : CMakeFiles/serial_lib.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/snappy_cpp.dir
+
+# All Build rule for target.
+CMakeFiles/snappy_cpp.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp.dir/build.make CMakeFiles/snappy_cpp.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp.dir/build.make CMakeFiles/snappy_cpp.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=15,16 "Built target snappy_cpp"
+.PHONY : CMakeFiles/snappy_cpp.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/snappy_cpp.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/snappy_cpp.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : CMakeFiles/snappy_cpp.dir/rule
+
+# Convenience name for target.
+snappy_cpp: CMakeFiles/snappy_cpp.dir/rule
+.PHONY : snappy_cpp
+
+# clean rule for target.
+CMakeFiles/snappy_cpp.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp.dir/build.make CMakeFiles/snappy_cpp.dir/clean
+.PHONY : CMakeFiles/snappy_cpp.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/pressureSensor.dir
@@ -171,7 +219,7 @@ CMakeFiles/helloWorld.dir/clean:
 CMakeFiles/pressureSensor.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pressureSensor.dir/build.make CMakeFiles/pressureSensor.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=9,10 "Built target pressureSensor"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=11,12 "Built target pressureSensor"
 .PHONY : CMakeFiles/pressureSensor.dir/all
 
 # Build rule for subdir invocation for target.
@@ -249,7 +297,7 @@ CMakeFiles/controller.dir/clean:
 CMakeFiles/state_estimator.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/state_estimator.dir/build.make CMakeFiles/state_estimator.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=11,12 "Built target state_estimator"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=17,18 "Built target state_estimator"
 .PHONY : CMakeFiles/state_estimator.dir/all
 
 # Build rule for subdir invocation for target.
@@ -275,7 +323,7 @@ CMakeFiles/state_estimator.dir/clean:
 CMakeFiles/planner.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=7,8 "Built target planner"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=9,10 "Built target planner"
 .PHONY : CMakeFiles/planner.dir/all
 
 # Build rule for subdir invocation for target.
@@ -293,6 +341,86 @@ planner: CMakeFiles/planner.dir/rule
 CMakeFiles/planner.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/clean
 .PHONY : CMakeFiles/planner.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/unit_tests.dir
+
+# All Build rule for target.
+CMakeFiles/unit_tests.dir/all: CMakeFiles/serial_lib.dir/all
+CMakeFiles/unit_tests.dir/all: gtest/CMakeFiles/gtest.dir/all
+CMakeFiles/unit_tests.dir/all: gtest/CMakeFiles/gtest_main.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=19,20 "Built target unit_tests"
+.PHONY : CMakeFiles/unit_tests.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/unit_tests.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/unit_tests.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : CMakeFiles/unit_tests.dir/rule
+
+# Convenience name for target.
+unit_tests: CMakeFiles/unit_tests.dir/rule
+.PHONY : unit_tests
+
+# clean rule for target.
+CMakeFiles/unit_tests.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/clean
+.PHONY : CMakeFiles/unit_tests.dir/clean
+
+#=============================================================================
+# Target rules for target gtest/CMakeFiles/gtest.dir
+
+# All Build rule for target.
+gtest/CMakeFiles/gtest.dir/all:
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest.dir/build.make gtest/CMakeFiles/gtest.dir/depend
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest.dir/build.make gtest/CMakeFiles/gtest.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=5,6 "Built target gtest"
+.PHONY : gtest/CMakeFiles/gtest.dir/all
+
+# Build rule for subdir invocation for target.
+gtest/CMakeFiles/gtest.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest/CMakeFiles/gtest.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : gtest/CMakeFiles/gtest.dir/rule
+
+# Convenience name for target.
+gtest: gtest/CMakeFiles/gtest.dir/rule
+.PHONY : gtest
+
+# clean rule for target.
+gtest/CMakeFiles/gtest.dir/clean:
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest.dir/build.make gtest/CMakeFiles/gtest.dir/clean
+.PHONY : gtest/CMakeFiles/gtest.dir/clean
+
+#=============================================================================
+# Target rules for target gtest/CMakeFiles/gtest_main.dir
+
+# All Build rule for target.
+gtest/CMakeFiles/gtest_main.dir/all:
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest_main.dir/build.make gtest/CMakeFiles/gtest_main.dir/depend
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest_main.dir/build.make gtest/CMakeFiles/gtest_main.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles --progress-num=7,8 "Built target gtest_main"
+.PHONY : gtest/CMakeFiles/gtest_main.dir/all
+
+# Build rule for subdir invocation for target.
+gtest/CMakeFiles/gtest_main.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest/CMakeFiles/gtest_main.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+.PHONY : gtest/CMakeFiles/gtest_main.dir/rule
+
+# Convenience name for target.
+gtest_main: gtest/CMakeFiles/gtest_main.dir/rule
+.PHONY : gtest_main
+
+# clean rule for target.
+gtest/CMakeFiles/gtest_main.dir/clean:
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest_main.dir/build.make gtest/CMakeFiles/gtest_main.dir/clean
+.PHONY : gtest/CMakeFiles/gtest_main.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

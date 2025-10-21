@@ -198,17 +198,30 @@ snappy_cpp_uninstall/fast:
 .PHONY : snappy_cpp_uninstall/fast
 
 #=============================================================================
-# Target rules for targets named helloWorld
+# Target rules for targets named serial_lib
 
 # Build rule for target.
-helloWorld: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 helloWorld
-.PHONY : helloWorld
+serial_lib: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 serial_lib
+.PHONY : serial_lib
 
 # fast build rule for target.
-helloWorld/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/build
-.PHONY : helloWorld/fast
+serial_lib/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/serial_lib.dir/build.make CMakeFiles/serial_lib.dir/build
+.PHONY : serial_lib/fast
+
+#=============================================================================
+# Target rules for targets named snappy_cpp
+
+# Build rule for target.
+snappy_cpp: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 snappy_cpp
+.PHONY : snappy_cpp
+
+# fast build rule for target.
+snappy_cpp/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp.dir/build.make CMakeFiles/snappy_cpp.dir/build
+.PHONY : snappy_cpp/fast
 
 #=============================================================================
 # Target rules for targets named pressureSensor
@@ -275,6 +288,45 @@ planner/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/planner.dir/build.make CMakeFiles/planner.dir/build
 .PHONY : planner/fast
 
+#=============================================================================
+# Target rules for targets named unit_tests
+
+# Build rule for target.
+unit_tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 unit_tests
+.PHONY : unit_tests
+
+# fast build rule for target.
+unit_tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/build
+.PHONY : unit_tests/fast
+
+#=============================================================================
+# Target rules for targets named gtest
+
+# Build rule for target.
+gtest: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest
+.PHONY : gtest
+
+# fast build rule for target.
+gtest/fast:
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest.dir/build.make gtest/CMakeFiles/gtest.dir/build
+.PHONY : gtest/fast
+
+#=============================================================================
+# Target rules for targets named gtest_main
+
+# Build rule for target.
+gtest_main: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gtest_main
+.PHONY : gtest_main
+
+# fast build rule for target.
+gtest_main/fast:
+	$(MAKE) $(MAKESILENT) -f gtest/CMakeFiles/gtest_main.dir/build.make gtest/CMakeFiles/gtest_main.dir/build
+.PHONY : gtest_main/fast
+
 src/computer_vision.o: src/computer_vision.cpp.o
 .PHONY : src/computer_vision.o
 
@@ -322,6 +374,30 @@ src/controller.s: src/controller.cpp.s
 src/controller.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/controller.dir/build.make CMakeFiles/controller.dir/src/controller.cpp.s
 .PHONY : src/controller.cpp.s
+
+src/include/src/serial.o: src/include/src/serial.cpp.o
+.PHONY : src/include/src/serial.o
+
+# target to build an object file
+src/include/src/serial.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/serial_lib.dir/build.make CMakeFiles/serial_lib.dir/src/include/src/serial.cpp.o
+.PHONY : src/include/src/serial.cpp.o
+
+src/include/src/serial.i: src/include/src/serial.cpp.i
+.PHONY : src/include/src/serial.i
+
+# target to preprocess a source file
+src/include/src/serial.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/serial_lib.dir/build.make CMakeFiles/serial_lib.dir/src/include/src/serial.cpp.i
+.PHONY : src/include/src/serial.cpp.i
+
+src/include/src/serial.s: src/include/src/serial.cpp.s
+.PHONY : src/include/src/serial.s
+
+# target to generate assembly for a file
+src/include/src/serial.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/serial_lib.dir/build.make CMakeFiles/serial_lib.dir/src/include/src/serial.cpp.s
+.PHONY : src/include/src/serial.cpp.s
 
 src/planner.o: src/planner.cpp.o
 .PHONY : src/planner.o
@@ -400,7 +476,7 @@ src/test.o: src/test.cpp.o
 
 # target to build an object file
 src/test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/src/test.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp.dir/build.make CMakeFiles/snappy_cpp.dir/src/test.cpp.o
 .PHONY : src/test.cpp.o
 
 src/test.i: src/test.cpp.i
@@ -408,7 +484,7 @@ src/test.i: src/test.cpp.i
 
 # target to preprocess a source file
 src/test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/src/test.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp.dir/build.make CMakeFiles/snappy_cpp.dir/src/test.cpp.i
 .PHONY : src/test.cpp.i
 
 src/test.s: src/test.cpp.s
@@ -416,8 +492,32 @@ src/test.s: src/test.cpp.s
 
 # target to generate assembly for a file
 src/test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/helloWorld.dir/build.make CMakeFiles/helloWorld.dir/src/test.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/snappy_cpp.dir/build.make CMakeFiles/snappy_cpp.dir/src/test.cpp.s
 .PHONY : src/test.cpp.s
+
+tests/test_serial.o: tests/test_serial.cpp.o
+.PHONY : tests/test_serial.o
+
+# target to build an object file
+tests/test_serial.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/test_serial.cpp.o
+.PHONY : tests/test_serial.cpp.o
+
+tests/test_serial.i: tests/test_serial.cpp.i
+.PHONY : tests/test_serial.i
+
+# target to preprocess a source file
+tests/test_serial.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/test_serial.cpp.i
+.PHONY : tests/test_serial.cpp.i
+
+tests/test_serial.s: tests/test_serial.cpp.s
+.PHONY : tests/test_serial.s
+
+# target to generate assembly for a file
+tests/test_serial.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/unit_tests.dir/build.make CMakeFiles/unit_tests.dir/tests/test_serial.cpp.s
+.PHONY : tests/test_serial.cpp.s
 
 # Help Target
 help:
@@ -436,16 +536,23 @@ help:
 	@echo "... uninstall"
 	@echo "... computer_vision"
 	@echo "... controller"
-	@echo "... helloWorld"
+	@echo "... gtest"
+	@echo "... gtest_main"
 	@echo "... planner"
 	@echo "... pressureSensor"
+	@echo "... serial_lib"
+	@echo "... snappy_cpp"
 	@echo "... state_estimator"
+	@echo "... unit_tests"
 	@echo "... src/computer_vision.o"
 	@echo "... src/computer_vision.i"
 	@echo "... src/computer_vision.s"
 	@echo "... src/controller.o"
 	@echo "... src/controller.i"
 	@echo "... src/controller.s"
+	@echo "... src/include/src/serial.o"
+	@echo "... src/include/src/serial.i"
+	@echo "... src/include/src/serial.s"
 	@echo "... src/planner.o"
 	@echo "... src/planner.i"
 	@echo "... src/planner.s"
@@ -458,6 +565,9 @@ help:
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"
+	@echo "... tests/test_serial.o"
+	@echo "... tests/test_serial.i"
+	@echo "... tests/test_serial.s"
 .PHONY : help
 
 
