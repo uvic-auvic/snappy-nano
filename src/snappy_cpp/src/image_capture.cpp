@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 #include <ctime>
+#include <filesystem>
 
 using namespace std;
 using namespace cv;
@@ -33,29 +34,32 @@ public:
     }
 
 private:
-    // Build timestamped filename (../<tag>_image_YYYYMMDD_HHMMSS_mmm.png)
-    static string name_image(const string &tag, const string &ext = "png"){
-        using namespace std::chrono;
-        auto now = system_clock::now();
-        time_t tt = system_clock::to_time_t(now);
+    // Build timestamped filename: ../<type>/YYYYMMDD_HHMMSS_mmm.png
+    static string name_image(const string &type, const string &ext = "png"){
+    using namespace std::chrono;
+    auto now = system_clock::now();
+    time_t tt = system_clock::to_time_t(now);
 
-        // Milliseconds
-        auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+    // Milliseconds for extra uniqueness
+    auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
 
-        // Thread-safe localtime
-        tm tm{};
+    // Thread-safe localtime
+    tm tm{};
 #ifdef _WIN32
-        localtime_s(&tm, &tt);
+    localtime_s(&tm, &tt);
 #else
-        localtime_r(&tt, &tm);
+    localtime_r(&tt, &tm);
 #endif
 
-        ostringstream oss;
-        oss << "../" << tag << "_image_"
-                << put_time(&tm, "%Y%m%d_%H%M%S")
-                << '_' << setw(3) << setfill('0') << ms.count()
-                << '.' << ext;
-        return oss.str();
+    // Ensure output folder exists
+    std::filesystem::create_directories("../" + type);
+
+    ostringstream oss;
+    oss << "../" << type << "/"
+        << put_time(&tm, "%Y%m%d_%H%M%S")
+        << '_' << setw(3) << setfill('0') << ms.count()
+        << '.' << ext;
+    return oss.str();
     }
 
     // Compute Sobel derivative-based edges from 8-bit grayscale image
@@ -151,9 +155,17 @@ private:
             applyColorMap(depth_eq, depth_colorized, COLORMAP_JET);
             imshow("RealSense Depth Colorized Stream", depth_colorized);
 
+            // Save image with timestamped filename
+            string filename = name_image("depth");
+            imwrite(filename, depth_colorized);
+
             // Apply Sobel edge detection on the grayscale depth image
             Mat edges = compute_sobel_edges(display, /*ksize=*/3, /*scale=*/1.0, /*delta=*/0.0, /*apply_blur=*/true);
             imshow("Sobel Edge Detected Stream", edges);
+
+            // Save image with timestamped filename
+            string filename = name_image("edges");
+            imwrite(filename, edges);
 
             // Publish Sobel edges as mono8 image
             cv_bridge::CvImage out_msg(msg->header, sensor_msgs::image_encodings::MONO8, edges);
