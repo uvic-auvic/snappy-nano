@@ -24,9 +24,9 @@ public:
         namedWindow("Sobel Edge Detected Stream", WINDOW_AUTOSIZE);
 
         // Inititalize subscribers
-        colour_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
+        color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
             "/camera/color/image_raw", rclcpp::SensorDataQoS(),
-            bind(&ImageCapture::colour_callback, this, placeholders::_1));
+            bind(&ImageCapture::color_callback, this, placeholders::_1));
 
         depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
             "/camera/depth/image_rect_raw", rclcpp::SensorDataQoS(),
@@ -52,7 +52,7 @@ private:
 #endif
 
     // Ensure output folder exists
-    std::filesystem::create_directories("../" + type);
+    filesystem::create_directories("../" + type);
 
     ostringstream oss;
     oss << "../" << type << "/"
@@ -92,7 +92,7 @@ private:
         return edges;
     }
 
-    void colour_callback(const sensor_msgs::msg::Image::SharedPtr msg){
+    void color_callback(const sensor_msgs::msg::Image::SharedPtr msg){
         // Convert image and display
         try {
             cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(msg, "bgr8");
@@ -101,7 +101,7 @@ private:
             
             // Save image with timestamped filename
             string filename = name_image("color");
-            imwrite(filename, cv_ptr->image);
+            //imwrite(filename, cv_ptr->image);
         }
         catch (const cv_bridge::Exception &e) {
             RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
@@ -157,7 +157,7 @@ private:
 
             // Save image with timestamped filename
             string filename = name_image("depth");
-            imwrite(filename, depth_colorized);
+            //imwrite(filename, depth_colorized);
 
             // Apply Sobel edge detection on the grayscale depth image
             Mat edges = compute_sobel_edges(display, /*ksize=*/3, /*scale=*/1.0, /*delta=*/0.0, /*apply_blur=*/true);
@@ -165,7 +165,7 @@ private:
 
             // Save image with timestamped filename
             string filename = name_image("edges");
-            imwrite(filename, edges);
+            //imwrite(filename, edges);
 
             // Publish Sobel edges as mono8 image
             cv_bridge::CvImage out_msg(msg->header, sensor_msgs::image_encodings::MONO8, edges);
@@ -180,7 +180,7 @@ private:
     }
 
     // Subscriptions
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr colour_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr color_sub_;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_sub_;
 };
 
