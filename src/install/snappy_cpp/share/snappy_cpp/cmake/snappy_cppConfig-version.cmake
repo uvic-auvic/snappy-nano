@@ -1,1 +1,0 @@
-/home/kraken/snappy-nano/src/build/snappy_cpp/ament_cmake_core/snappy_cppConfig-version.cmake

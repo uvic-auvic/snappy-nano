@@ -1,3 +1,0 @@
-Invoking command in '/home/kraken/snappyNano/src/build/rviz_assimp_vendor': /usr/bin/cmake --build /home/kraken/snappyNano/src/build/rviz_assimp_vendor -- -j14 -l14
-Invoked command in '/home/kraken/snappyNano/src/build/rviz_assimp_vendor' returned '0': /usr/bin/cmake --build /home/kraken/snappyNano/src/build/rviz_assimp_vendor -- -j14 -l14
-Invoking command in '/home/kraken/snappyNano/src/build/rviz_assimp_vendor': /usr/bin/cmake --install /home/kraken/snappyNano/src/build/rviz_assimp_vendor

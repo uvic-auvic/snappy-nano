@@ -53,23 +53,19 @@ ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 
 # Install all executables
 install(TARGETS
-computerVisionSkeleton
-  helloWorld
   pressureSensor
   computer_vision
   image_capture
   controller
   state_estimator
   planner
+  snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/)
 
-ament_package()
-  snappy_cpp
-  DESTINATION lib/${PROJECT_NAME})
 
 option(BUILD_TESTING "Build tests" OFF)
 
@@ -83,6 +79,5 @@ if(BUILD_TESTING)
   ament_target_dependencies(unit_tests rclcpp)
   target_link_libraries(unit_tests serial_lib)
 endif()
-
 
 ament_package()
