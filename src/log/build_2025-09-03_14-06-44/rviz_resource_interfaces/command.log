@@ -1,2 +1,0 @@
-Invoking command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_resource_interfaces -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install
-Invoked command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces' returned '1': /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_resource_interfaces -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install

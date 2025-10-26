@@ -1,2 +1,0 @@
-Invoking command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces': /usr/bin/cmake --build /home/kraken/snappyNano/src/build/rviz_resource_interfaces -- -j14 -l14
-Invoked command in '/home/kraken/snappyNano/src/build/rviz_resource_interfaces' returned '2': /usr/bin/cmake --build /home/kraken/snappyNano/src/build/rviz_resource_interfaces -- -j14 -l14

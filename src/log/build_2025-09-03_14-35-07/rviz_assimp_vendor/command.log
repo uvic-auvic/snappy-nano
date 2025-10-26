@@ -1,2 +1,0 @@
-Invoking command in '/home/kraken/snappyNano/src/build/rviz_assimp_vendor': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_assimp_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install/rviz_assimp_vendor
-Invoked command in '/home/kraken/snappyNano/src/build/rviz_assimp_vendor' returned '1': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/kraken/snappyNano/src/rviz/rviz_assimp_vendor -DCMAKE_INSTALL_PREFIX=/home/kraken/snappyNano/src/install/rviz_assimp_vendor
