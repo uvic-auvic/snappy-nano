@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/kraken/snappy-nano/src/snappy_cpp
+CMAKE_SOURCE_DIR = /home/steveaj/AUVIC/snappy-nano/src/snappy_cpp
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/kraken/snappy-nano/src/build/snappy_cpp
+CMAKE_BINARY_DIR = /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp
 
 # Utility rule file for snappy_cpp_uninstall.
 
@@ -67,7 +67,7 @@ include CMakeFiles/snappy_cpp_uninstall.dir/compiler_depend.make
 include CMakeFiles/snappy_cpp_uninstall.dir/progress.make
 
 CMakeFiles/snappy_cpp_uninstall:
-	/usr/bin/cmake -P /home/kraken/snappy-nano/src/build/snappy_cpp/ament_cmake_uninstall_target/ament_cmake_uninstall_target.cmake
+	/usr/bin/cmake -P /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp/ament_cmake_uninstall_target/ament_cmake_uninstall_target.cmake
 
 snappy_cpp_uninstall: CMakeFiles/snappy_cpp_uninstall
 snappy_cpp_uninstall: CMakeFiles/snappy_cpp_uninstall.dir/build.make
@@ -82,6 +82,6 @@ CMakeFiles/snappy_cpp_uninstall.dir/clean:
 .PHONY : CMakeFiles/snappy_cpp_uninstall.dir/clean
 
 CMakeFiles/snappy_cpp_uninstall.dir/depend:
-	cd /home/kraken/snappy-nano/src/build/snappy_cpp && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/kraken/snappy-nano/src/snappy_cpp /home/kraken/snappy-nano/src/snappy_cpp /home/kraken/snappy-nano/src/build/snappy_cpp /home/kraken/snappy-nano/src/build/snappy_cpp /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/snappy_cpp_uninstall.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/steveaj/AUVIC/snappy-nano/src/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp/CMakeFiles/snappy_cpp_uninstall.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/snappy_cpp_uninstall.dir/depend
 

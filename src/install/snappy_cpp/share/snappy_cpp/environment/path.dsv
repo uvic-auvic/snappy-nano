@@ -1,1 +1,1 @@
-prepend-non-duplicate-if-exists;PATH;bin
+/home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp/ament_cmake_environment_hooks/path.dsv

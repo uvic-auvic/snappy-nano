@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/kraken/snappy-nano/src/snappy_cpp
+CMAKE_SOURCE_DIR = /home/steveaj/AUVIC/snappy-nano/src/snappy_cpp
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/kraken/snappy-nano/src/build/snappy_cpp
+CMAKE_BINARY_DIR = /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -142,9 +142,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles /home/kraken/snappy-nano/src/build/snappy_cpp//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp/CMakeFiles /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp/CMakeFiles 0
 .PHONY : all
 
 # The main clean target

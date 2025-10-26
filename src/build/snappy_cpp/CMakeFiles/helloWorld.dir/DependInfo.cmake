@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/kraken/snappy-nano/src/snappy_cpp/src/test.cpp" "CMakeFiles/helloWorld.dir/src/test.cpp.o" "gcc" "CMakeFiles/helloWorld.dir/src/test.cpp.o.d"
+  "/home/steveaj/AUVIC/snappy-nano/src/snappy_cpp/src/test.cpp" "CMakeFiles/helloWorld.dir/src/test.cpp.o" "gcc" "CMakeFiles/helloWorld.dir/src/test.cpp.o.d"
   )
 
 # Targets to which this target links.

@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/kraken/snappy-nano/src/snappy_cpp
+CMAKE_SOURCE_DIR = /home/steveaj/AUVIC/snappy-nano/src/snappy_cpp
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/kraken/snappy-nano/src/build/snappy_cpp
+CMAKE_BINARY_DIR = /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp
 
 # Utility rule file for uninstall.
 
@@ -78,6 +78,6 @@ CMakeFiles/uninstall.dir/clean:
 .PHONY : CMakeFiles/uninstall.dir/clean
 
 CMakeFiles/uninstall.dir/depend:
-	cd /home/kraken/snappy-nano/src/build/snappy_cpp && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/kraken/snappy-nano/src/snappy_cpp /home/kraken/snappy-nano/src/snappy_cpp /home/kraken/snappy-nano/src/build/snappy_cpp /home/kraken/snappy-nano/src/build/snappy_cpp /home/kraken/snappy-nano/src/build/snappy_cpp/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/steveaj/AUVIC/snappy-nano/src/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp /home/steveaj/AUVIC/snappy-nano/src/build/snappy_cpp/CMakeFiles/uninstall.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/uninstall.dir/depend
 
