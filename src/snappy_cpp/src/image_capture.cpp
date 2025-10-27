@@ -160,17 +160,16 @@ private:
             //imwrite(filename, depth_colorized);
 
             // Apply Sobel edge detection on the grayscale depth image
-            Mat edges = compute_sobel_edges(display, /*ksize=*/3, /*scale=*/1.0, /*delta=*/0.0, /*apply_blur=*/true);
+            Mat edges = compute_sobel_edges(display, /*ksize=*/3, /*scale=*/1.0, /*delta=*/0.0);
             imshow("Sobel Edge Detected Stream", edges);
 
             // Save image with timestamped filename
-            string filename = name_image("edges");
-            //imwrite(filename, edges);
+            string filename_edge = name_image("edges");
+            //imwrite(filename_edge, edges);
 
             // Publish Sobel edges as mono8 image
             cv_bridge::CvImage out_msg(msg->header, sensor_msgs::image_encodings::MONO8, edges);
             sensor_msgs::msg::Image::SharedPtr ros_img = out_msg.toImageMsg();
-            edge_detected_pub_->publish(*ros_img);
 
             waitKey(1);
         } 
