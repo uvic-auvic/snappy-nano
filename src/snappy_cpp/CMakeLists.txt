@@ -38,6 +38,10 @@ add_executable(computer_vision src/computer_vision.cpp)
 ament_target_dependencies(computer_vision rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge)
 target_link_libraries(computer_vision ${OpenCV_LIBS})
 
+add_executable(image_capture src/image_capture.cpp)
+ament_target_dependencies(image_capture rclcpp sensor_msgs cv_bridge)
+target_link_libraries(image_capture ${OpenCV_LIBS})
+
 add_executable(controller src/controller.cpp)
 ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
 
@@ -51,6 +55,7 @@ ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 install(TARGETS
   pressureSensor
   computer_vision
+  image_capture
   controller
   state_estimator
   planner
