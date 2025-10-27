@@ -12,6 +12,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution
+from ament_index_python.packages import get_package_share_directory
+from pathlib import Path
 
 
 def generate_launch_description():
@@ -35,6 +37,16 @@ def generate_launch_description():
             'align_depth.enable': 'true',
         }.items()
     )
+
+    parameters_file_path = Path(get_package_share_directory('xsens_mti_ros2_driver'), 'param', 'xsens_mti_node.yaml')
+    xsens_mti_node = Node(
+            package='xsens_mti_ros2_driver',
+            executable='xsens_mti_node',
+            name='xsens_mti_node',
+            output='screen',
+            parameters=[parameters_file_path],
+            arguments=[]
+            )
     
     # Delay starting the C++ nodes to let camera initialize (3 seconds)
     computer_vision_node = TimerAction(
@@ -104,4 +116,5 @@ def generate_launch_description():
         state_estimator_node,
         planner_node,
         pressure_sensor_node,
+        xsens_mti_node,
     ])
