@@ -24,10 +24,18 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES "std_msgs" "geometry_msgs"
 )
 
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+)
+
 add_executable(helloWorld src/test.cpp)
 ament_target_dependencies(helloWorld rclcpp std_msgs)
 
-add_executable(controller src/controller.cpp)
+add_executable(controller 
+  src/controller.cpp
+  src/include/src/pid.cpp
+  src/include/src/motorboard.cpp
+)
 ament_target_dependencies(controller
   rclcpp
   std_msgs

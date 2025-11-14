@@ -10,12 +10,22 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <queue>
 
+#include "include/Inc/pid.h"
+#include "include/Inc/motorboard.h"
+
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
 class Controller : public rclcpp::Node {
     public: 
-        Controller() : Node("controller") {
+        Controller() : Node("controller"),
+            pid_x_(0.5f, 0.0f, 0.1f),
+            pid_y_(0.5f, 0.0f, 0.1f),
+            pid_z_(0.5f, 0.0f, 0.1f),
+            pid_roll_(0.5f, 0.0f, 0.1f),
+            pid_pitch_(0.5f, 0.0f, 0.1f),
+            pid_yaw_(0.5f, 0.0f, 0.1f)
+         {
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
 
@@ -70,7 +80,7 @@ class Controller : public rclcpp::Node {
             }
         }
 
-        // Receive tasks from planner node
+        // Receive tasks from planner node, update PID target
         void task_callback(const snappy_cpp::msg::Task & msg) {
             RCLCPP_INFO(this->get_logger(), "Received task (%s, %s, %f)",
                 msg.type.c_str(), msg.direction.c_str(), msg.magnitude);
@@ -80,27 +90,37 @@ class Controller : public rclcpp::Node {
                 std::swap(tasks_, empty);
                 current_task_ = msg;
                 parseTask(*current_task_);
-                in_progress_ = true;
                 return;
             }
-            
+
             tasks_.push(msg); // put task in queue
             
             if (!in_progress_ && !tasks_.empty()) { // if done executing, move onto next task
                 current_task_ = tasks_.front();
                 tasks_.pop();
                 parseTask(*current_task_);
-                in_progress_ = true;
             }
         }
 
-        // Receive states from state estimator nodes
+        // Receive states from state estimator nodes, update PID values
         void state_callback(const snappy_cpp::msg::Pose & msg) {
             RCLCPP_INFO(this->get_logger(), "Received current position: (%.2f, %.2f, %.2f)",
             msg.position.x, msg.position.y, msg.position.z);
             
             position_current_ = msg.position;
             orientation_current_ = msg.orientation;
+
+            // Update PID values
+            tf2::Quaternion q_current;
+            tf2::fromMsg(orientation_current_, q_current);
+            double roll, pitch, yaw;
+            tf2::Matrix3x3(q_current).getRPY(roll, pitch, yaw);
+            float thrust_x = pid_x_.update(position_current_.x);
+            float thrust_y = pid_y_.update(position_current_.y);
+            float thrust_z = pid_z_.update(position_current_.z);
+            float thrust_roll = pid_roll_.update(roll);
+            float thrust_pitch = pid_pitch_.update(pitch);
+            float thrust_yaw = pid_yaw_.update(yaw);
         }
 
         // Compute difference between current and target
@@ -113,6 +133,7 @@ class Controller : public rclcpp::Node {
             tf2::Quaternion q_target;
             tf2::fromMsg(orientation_current_, q_current);
             tf2::fromMsg(*orientation_target_, q_target);
+
             return {
                 // position_error
                 (std::sqrt(std::pow(position_current_.x - position_target_->x, 2)
@@ -120,10 +141,9 @@ class Controller : public rclcpp::Node {
                 + std::pow(position_current_.z - position_target_->z, 2))
                 ),
                 // orientation_error
-            q_current.angleShortestPath(q_target)
+                q_current.angleShortestPath(q_target)
             };
         }
-
 
         void parseTask(const snappy_cpp::msg::Task & msg) {
             // If there is no current target:
@@ -141,10 +161,13 @@ class Controller : public rclcpp::Node {
                     // else: target = magnitude + current_position
                     if (msg.direction == "x") {
                         position_target_->x = msg.absolute ? msg.magnitude : msg.magnitude + position_current_.x;
+                        pid_x_.set_target(position_target_->x);
                     } else if (msg.direction == "y") {
                         position_target_->y = msg.absolute ? msg.magnitude : msg.magnitude + position_current_.y;
+                        pid_y_.set_target(position_target_->y);
                     } else {
                         position_target_->z = msg.absolute ? msg.magnitude : msg.magnitude + position_current_.z;
+                        pid_z_.set_target(position_target_->z);
                     }
 
                 // Orientation commands
@@ -163,6 +186,12 @@ class Controller : public rclcpp::Node {
                         RCLCPP_ERROR(this->get_logger(), "Invalid orientation '%s'", msg.direction.c_str());
                     }
                     orientation_target_ = tf2::toMsg(msg.absolute ? q_temp : q_current * q_temp);
+
+                    double roll, pitch, yaw;
+                    tf2::Matrix3x3(q_temp).getRPY(roll, pitch, yaw);
+                    pid_roll_.set_target(roll);
+                    pid_pitch_.set_target(pitch);
+                    pid_yaw_.set_target(yaw);
                 }
             } else {
                 // type = dropper/grabber/torpedo ??
@@ -171,6 +200,7 @@ class Controller : public rclcpp::Node {
                     RCLCPP_ERROR(this->get_logger(), "Invalid direction '%s'", msg.direction.c_str());
                 }
             }
+            in_progress_ = true;
         }
         
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
@@ -179,6 +209,13 @@ class Controller : public rclcpp::Node {
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
         rclcpp::TimerBase::SharedPtr status_timer_;
         rclcpp::TimerBase::SharedPtr trajectory_timer_;
+
+        PID pid_x_;
+        PID pid_y_;
+        PID pid_z_;
+        PID pid_roll_;
+        PID pid_pitch_;
+        PID pid_yaw_;
         
         std::queue<snappy_cpp::msg::Task> tasks_;
         std::optional<snappy_cpp::msg::Task> current_task_;
@@ -189,6 +226,7 @@ class Controller : public rclcpp::Node {
         geometry_msgs::msg::Quaternion orientation_current_;
         std::optional<geometry_msgs::msg::Quaternion> orientation_target_;
         const double error_threshold = 0.005;
+        
 };
 
   
