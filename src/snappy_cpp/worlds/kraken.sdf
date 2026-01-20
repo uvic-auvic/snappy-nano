@@ -15,7 +15,12 @@
     <plugin
       filename="ignition-gazebo-buoyancy-system"
       name="ignition::gazebo::systems::Buoyancy">
-      <uniform_fluid_density>997</uniform_fluid_density>
+      <default_density>997</default_density>
+      <density_change>
+        <above_depth>0</above_depth>
+        <density>1</density>
+      </density_change>
+      <!--<uniform_fluid_density>997</uniform_fluid_density>-->
     </plugin>
     <gravity>0 0 -9.81</gravity>
     
@@ -73,10 +78,10 @@
       <pose>0 0 -2 0 0 0</pose>
 
       <link name="chassis">
-        <pose> -0.237 0 -0.2 0 0 0 </pose>
+        <pose>0 0 0 0 0 0</pose>
         <inertial>
-          <mass>25</mass> <!-- kg -->
-          <pose>0 0 -0.01 0 0 0</pose> <!-- center of gravity in Gazebo forward-left-up frame -->
+          <mass>23.4</mass> <!-- kg -->
+          <pose>0 0 0 0 0 0</pose> <!-- center of gravity in Gazebo forward-left-up frame -->
           <inertia>
             <ixx>1.1</ixx><iyy>1.7</iyy><izz>1.4</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
@@ -101,6 +106,12 @@
             </cylinder>
           </geometry>
         </collision>
+
+        <buoyancy>
+          <center_of_volume>0 0 0</center_of_volume>
+          <volume>0.0246</volume>
+          <compensation>1.0</compensation>
+        </buoyancy>
 
         <visual name="visual">
           <pose>0 0 0 1.57 0 1.57</pose>
