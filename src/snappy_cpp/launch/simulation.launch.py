@@ -28,8 +28,15 @@ def generate_launch_description():
     )
 
     bridge_topics = [
-        '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-        '/model/snappy/pose@geometry_msgs/msg/PoseStamped[gz.msgs.Pose',
+        '/clock@rosgraph_msgs/msg/Clock@ignition.msgs.Clock',
+        '/model/auv/pose@geometry_msgs/msg/PoseStamped@ignition.msgs.Pose',
+        '/thrusters/forward_port/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/thrusters/forward_starboard/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/thrusters/lateral_port/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/thrusters/lateral_starboard/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/thrusters/vertical_fore/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/thrusters/vertical_aft/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/auv/forward_camera/image_raw@sensor_msgs/msg/Image@ignition.msgs.Image',
     ]
 
     gz_sim_cmd = [

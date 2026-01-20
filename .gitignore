@@ -25,9 +25,16 @@ __pycache__/
 .DS_STORE
 .DS_Store
 
+# === Large mesh / hydrodynamics artifacts ===
 src/snappy_cpp/worlds/2025-2026_Full_ASSEMBLY.dae
+src/snappy_cpp/worlds/2025-2026_Full_ASSEMBLY*.stl
+src/snappy_cpp/worlds/2025-2026_Full_ASSEMBLY*.vtp
+src/snappy_cpp/worlds/added_mass_inf.*
+src/snappy_cpp/worlds/boundary_edges.*
+src/snappy_cpp/worlds/hydro_plugin_snippet.sdf
+src/snappy_cpp/worlds/quad_test.stl
+src/snappy_cpp/worlds/raw_parts/
 
 # === IDE/Editor Specific ===
 
 # VS C
-

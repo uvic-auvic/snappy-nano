@@ -57,7 +57,6 @@ install(TARGETS
   snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 
-<<<<<<< HEAD
 # Install launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
