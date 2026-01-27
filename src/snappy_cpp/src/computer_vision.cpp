@@ -76,6 +76,34 @@ private:
             RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
         }
     }
+
+    void colorBreakDown() {
+	cvv:Vec3b bgrPixel(40,158,16);
+	//create Mat object from vector
+	Mat3b bgr (bgrPixel);
+
+	Mat3b hsv, ycb, lab;
+	//ycb is 
+	cvtColor(bgr, ycb, COLOR_BGR2YCrCb);
+	//hsv is 
+	cvtColor(bgr, hsv, COLOR_BGR2YCrCb);
+	//lab is 
+	cvtColor(bgr, lab, COLOR_BGR2YCrCb);
+
+	Vec3b ycbPixel(ycb.at<Vec3b>(0,0)); 
+	Vec3b hsvPixel(hsv.at<Vec3b>(0,0)); 
+	Vec3b labPixel(lab.at<Vec3b>(0,0)); 
+
+	int thresh = 55;
+
+	cv::Scalar minBGR = cv::Scalar(bgrPixel.val[0] - thresh, bgrPixel.val[1] - thresh, bgrPixel[2] - thresh);
+	cv::Scalar maxBGR = cv::Scalar(bgrPixel.val[0] + thresh, bgrPixel.val[1] + thresh, bgrPixel[2] + thresh);
+
+
+	cv::Scalar 
+    } 
+
+
     
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
