@@ -51,6 +51,9 @@ ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_m
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 
+add_executable(counter_publisher src/counter_publisher.cpp)
+ament_target_dependencies(counter_publisher rclcpp std_msgs)
+
 # Install all executables
 install(TARGETS
   pressureSensor
@@ -59,6 +62,7 @@ install(TARGETS
   controller
   state_estimator
   planner
+  counter_publisher
   snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 

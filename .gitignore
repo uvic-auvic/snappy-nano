@@ -9,6 +9,9 @@ cmake_install.cmake
 Makefile
 ament_cmake_environment_hooks/
 .colcon/
+color/
+depth/
+edges/
 
 # === ROS 2 Launch/Params/Generated ===
 *.launch.py~
