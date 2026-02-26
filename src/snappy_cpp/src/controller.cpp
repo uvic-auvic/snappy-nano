@@ -1,6 +1,6 @@
 // this file will have all the controller logic for the submarine
 // Motor command publisher — publishes Float32MultiArray on /motor_cmd
-// data[0] = MotorSelect (0–255, cast to uint8 on the STM32 side)
+// data[0] = MotorSelect (0–255, cast to uint8 on the STM32 side) 11111111 (255) = all 8 motors
 // data[1] = Speed       (–100.0 to 100.0)
 
 #include <rclcpp/rclcpp.hpp>
