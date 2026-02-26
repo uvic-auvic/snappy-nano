@@ -17,19 +17,21 @@ class ImageCapture : public rclcpp::Node
 public:
     ImageCapture() : Node("image_capture"){
 
+        cout << "Test1" << endl;
+
         // Inititalize OpenCV windows
-        namedWindow("RealSense Color Stream", WINDOW_AUTOSIZE);
-        namedWindow("RealSense Depth Stream", WINDOW_AUTOSIZE);
-        namedWindow("RealSense Depth Colorized Stream", WINDOW_AUTOSIZE);
-        namedWindow("Sobel Edge Detected Stream", WINDOW_AUTOSIZE);
+        //namedWindow("RealSense Color Stream", WINDOW_AUTOSIZE);
+        //namedWindow("RealSense Depth Stream", WINDOW_AUTOSIZE);
+        //namedWindow("RealSense Depth Colorized Stream", WINDOW_AUTOSIZE);
+        //namedWindow("Sobel Edge Detected Stream", WINDOW_AUTOSIZE);
 
         // Inititalize subscribers
         color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/color/image_raw", rclcpp::SensorDataQoS(),
+            "/camera/camera/color/image_raw", rclcpp::SensorDataQoS(),
             bind(&ImageCapture::color_callback, this, placeholders::_1));
 
         depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/depth/image_rect_raw", rclcpp::SensorDataQoS(),
+            "/camera/camera/depth/image_rect_raw", rclcpp::SensorDataQoS(),
             bind(&ImageCapture::depth_callback, this, placeholders::_1));
     }
 
@@ -74,17 +76,25 @@ private:
         Mat grad_x, grad_y;
         Mat abs_grad_x, abs_grad_y;
 
+        cout << "Test4" << std::endl;
+
         GaussianBlur(gray, gray, Size(3, 3), 0, 0, BORDER_DEFAULT);
 
+        cout << "Test5" << std::endl;
+
         // Convert to gray
-        cvtColor(gray, src_gray, COLOR_BGR2GRAY);
+        //cvtColor(gray, src_gray, COLOR_BGR2GRAY);
+
+        cout << "Test6" << std::endl;
 
         // Gradient X
-        Sobel(src_gray, grad_x, depth, 1, 0, ksize, scale, delta, BORDER_DEFAULT);
+        Sobel(gray, grad_x, depth, 1, 0, ksize, scale, delta, BORDER_DEFAULT);
         convertScaleAbs(grad_x, abs_grad_x);
 
+	cout << "Test7" << std::endl;
+
         // Gradient Y
-        Sobel(src_gray, grad_y, depth, 0, 1, ksize, scale, delta, BORDER_DEFAULT);
+        Sobel(gray, grad_y, depth, 0, 1, ksize, scale, delta, BORDER_DEFAULT);
         convertScaleAbs(grad_y, abs_grad_y);
 
         // Total Gradient (approximate)
@@ -96,12 +106,12 @@ private:
         // Convert image and display
         try {
             cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(msg, "bgr8");
-            imshow("RealSense Color Stream", cv_ptr->image);
+            //imshow("RealSense Color Stream", cv_ptr->image);
             waitKey(1);
             
             // Save image with timestamped filename
             string filename = name_image("color");
-            //imwrite(filename, cv_ptr->image);
+            imwrite(filename, cv_ptr->image);
         }
         catch (const cv_bridge::Exception &e) {
             RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
@@ -153,19 +163,22 @@ private:
             equalizeHist(display, depth_eq);
             Mat depth_colorized;
             applyColorMap(depth_eq, depth_colorized, COLORMAP_JET);
-            imshow("RealSense Depth Colorized Stream", depth_colorized);
+            //imshow("RealSense Depth Colorized Stream", depth_colorized);
+
+		cout << "Test3" << std::endl;
 
             // Save image with timestamped filename
             string filename = name_image("depth");
-            //imwrite(filename, depth_colorized);
+            imwrite(filename, depth_colorized);
 
             // Apply Sobel edge detection on the grayscale depth image
             Mat edges = compute_sobel_edges(display, /*ksize=*/3, /*scale=*/1.0, /*delta=*/0.0);
-            imshow("Sobel Edge Detected Stream", edges);
+	    //imshow("Sobel Edge Detected Stream", edges);
 
             // Save image with timestamped filename
             string filename_edge = name_image("edges");
-            //imwrite(filename_edge, edges);
+            imwrite(filename_edge, edges);
+	    cout << "Test2" << std::endl;
 
             // Publish Sobel edges as mono8 image
             cv_bridge::CvImage out_msg(msg->header, sensor_msgs::image_encodings::MONO8, edges);
@@ -174,7 +187,7 @@ private:
             waitKey(1);
         } 
         catch (const cv_bridge::Exception &e) {
-            RCLCPP_ERROR(this->get_logger(), "cv_bridge exception (depth): %s", e.what());
+        //    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception (depth): %s", e.what());
         }
     }
 
