@@ -17,7 +17,7 @@ from pathlib import Path
 
 
 def generate_launch_description():
-    
+
     # Include the official RealSense launch file
     realsense_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -47,7 +47,7 @@ def generate_launch_description():
             parameters=[parameters_file_path],
             arguments=[]
             )
-    
+
     # Delay starting the C++ nodes to let camera initialize (3 seconds)
     computer_vision_node = TimerAction(
         period=3.0,
@@ -60,7 +60,7 @@ def generate_launch_description():
             )
         ]
     )
-    
+
     controller_node = TimerAction(
         period=3.0,
         actions=[
@@ -72,7 +72,7 @@ def generate_launch_description():
             )
         ]
     )
-    
+
     state_estimator_node = TimerAction(
         period=3.0,
         actions=[
@@ -84,7 +84,7 @@ def generate_launch_description():
             )
         ]
     )
-    
+
     planner_node = TimerAction(
         period=3.0,
         actions=[
@@ -96,7 +96,7 @@ def generate_launch_description():
             )
         ]
     )
-    
+
     pressure_sensor_node = TimerAction(
         period=3.0,
         actions=[
@@ -109,12 +109,24 @@ def generate_launch_description():
         ]
     )
 
+    image_capture_node = TimerAction(
+        period=3.0,
+        actions=[
+            Node(
+                package='snappy_cpp',
+                executable='image_capture',
+                name='image_capture',
+                output='screen',
+            )
+        ]
+    )
+
     return LaunchDescription([
         realsense_launch,
-        computer_vision_node,
-        controller_node,
-        state_estimator_node,
-        planner_node,
-        pressure_sensor_node,
-        xsens_mti_node,
+        #computer_vision_node,
+        #controller_node,
+        #state_estimator_node,
+        #planner_node,
+        #pressure_sensor_node,
+        image_capture_node,
     ])
