@@ -10,6 +10,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+option(WITH_CUDA "Build with CUDA and TensorRT support" ON)
+option(BUILD_TESTING "Build tests" OFF)
+
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(ament_cmake REQUIRED)
@@ -19,10 +22,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(CUDA REQUIRED)
-link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
-
-find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
 
 # Build all executables
 set(BOOST_ROOT "/usr")
@@ -34,11 +33,6 @@ ament_target_dependencies(serial_lib rclcpp std_msgs)
 add_executable(snappy_cpp src/test.cpp)
 ament_target_dependencies(snappy_cpp rclcpp std_msgs)
 target_link_libraries(snappy_cpp ${Boost_LIBRARIES})
-
-add_executable(cuda src/cuda.cpp)
-target_include_directories(cuda PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
-ament_target_dependencies(cuda rclcpp std_msgs)
-target_link_libraries(cuda ${NVINFER} ${CUDA_LIBRARIES} ${OpenCV_LIBS} /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so)
 
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
@@ -63,6 +57,23 @@ ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
 
+if(WITH_CUDA)
+  find_package(CUDA REQUIRED)
+  link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
+
+  find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
+
+  add_executable(cuda src/cuda.cpp)
+  target_include_directories(cuda PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+  ament_target_dependencies(cuda rclcpp std_msgs)
+  target_link_libraries(cuda
+    ${NVINFER}
+    ${CUDA_LIBRARIES}
+    ${OpenCV_LIBS}
+    /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
+  )
+endif()
+
 # Install all executables
 install(TARGETS
   pressureSensor
@@ -73,21 +84,21 @@ install(TARGETS
   planner
   counter_publisher
   snappy_cpp
-  cuda
   DESTINATION lib/${PROJECT_NAME})
+
+if(WITH_CUDA)
+  install(TARGETS cuda
+    DESTINATION lib/${PROJECT_NAME})
+endif()
 
 # Install launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/)
 
-
-option(BUILD_TESTING "Build tests" OFF)
-
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
-  # Add gtest executables
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(unit_tests tests/test_serial.cpp)
   ament_target_dependencies(unit_tests rclcpp)
