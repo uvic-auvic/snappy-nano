@@ -19,6 +19,10 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(CUDA REQUIRED)
+link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
+
+find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
 
 # Build all executables
 set(BOOST_ROOT "/usr")
@@ -30,6 +34,11 @@ ament_target_dependencies(serial_lib rclcpp std_msgs)
 add_executable(snappy_cpp src/test.cpp)
 ament_target_dependencies(snappy_cpp rclcpp std_msgs)
 target_link_libraries(snappy_cpp ${Boost_LIBRARIES})
+
+add_executable(cuda src/cuda.cpp)
+target_include_directories(cuda PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+ament_target_dependencies(cuda rclcpp std_msgs)
+target_link_libraries(cuda ${NVINFER} ${CUDA_LIBRARIES} ${OpenCV_LIBS} /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so)
 
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
@@ -64,6 +73,7 @@ install(TARGETS
   planner
   counter_publisher
   snappy_cpp
+  cuda
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files
