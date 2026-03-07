@@ -98,7 +98,7 @@ private:
 
 	cv::Scalar minBGR = cv::Scalar(bgrPixel.val[0] - thresh, bgrPixel.val[1] - thresh, bgrPixel[2] - thresh);
 	cv::Scalar maxBGR = cv::Scalar(bgrPixel.val[0] + thresh, bgrPixel.val[1] + thresh, bgrPixel[2] + thresh);
-
+	std::cout << "minBGR: " << minBGR << ", maxBGR: " << maxBGR << std::endl;
     }
 
 

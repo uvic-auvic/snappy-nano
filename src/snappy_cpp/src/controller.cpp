@@ -42,7 +42,7 @@ private:
 
         auto msg = std_msgs::msg::Float32MultiArray();
 	if (flag_ < 40) {
-		msg.data = {1.0, 20.0 + float(flag_)};
+		msg.data = {1.0, 20.0 + static_cast<float>(flag_)};
 		flag_++;
 	} else {
 		msg.data = {255.0, 0.0};
