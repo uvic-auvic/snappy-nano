@@ -17,12 +17,14 @@ public:
     KalmanFilter();
 
     // - x0: Initial state [pos(3), vel(3), quat(4), gyro_bias(3), accel_bias(3)] = 16x1
-    // - P0: Initial covariance matrix 16x16
-    // - Q: Process noise covariance 16x16
+    // - P0: Initial covariance matrix 16x16 
+    // - Q: Process noise covariance 16x16 Smaller the Q = more trust in imu
     // - R_imu2: IMU2 measurement noise covariance (quaternion)
     // - R_depth: Depth sensor measurement noise covariance
-   KalmanFilter(VectorXd x0Input, MatrixXd P0Input, MatrixXd QInput,
-                           MatrixXd R_imu2Input, MatrixXd R_depthInput);
+    // - q_imu1_to_body: rotation from IMU1 (camera) frame to the filter body frame (IMU2/AHRS frame).
+    KalmanFilter(VectorXd x0Input, MatrixXd P0Input, MatrixXd QInput,
+                 MatrixXd R_imu2Input, MatrixXd R_depthInput,
+                 Quaterniond q_imu1_to_body = Quaterniond::Identity());
 
 
     void predict(Eigen::VectorXd& U, double dt);
@@ -33,7 +35,8 @@ public:
     // Update step: correct state estimate using depth sensor
     void updateDepth(double depth_measured);
 
-    // Update step: correct velocity estimate (e.g., zero-velocity update)
+    // Update step: correct velocity estimate (e.g., zero-velocity update if we know we're stationary, or if we have something to measure velo)
+    // Not currently used
     void updateVelocity(const Vector3d& v_measured, const Matrix3d& R_vel);
 
     // For testing using csv files
@@ -54,34 +57,45 @@ public:
     void reset(const VectorXd& x0, const MatrixXd& P0);
 
 private:
-    // State vector: [pos(3), vel(3), quat(4), gyro_bias(3), accel_bias(3)] = 16x1
-    // Indices: [0-2: position, 3-5: velocity, 6-9: quaternion(w,x,y,z), 10-12: gyro_bias, 13-15: accel_bias]
+    // State vector
     VectorXd x;
 
-    // Covariance matrix 16x16
+    // Error-state covariance matrix
     MatrixXd P;
 
-    // Process noise covariance 16x16
+    // Process noise covariance 
     MatrixXd Q;
 
     // Measurement noise covariances
-    MatrixXd R_imu2;  // For IMU 2 (accel + gyro + orientation)
-    MatrixXd R_depth; // For depth sensor
+    MatrixXd R_imu2;  
+    MatrixXd R_depth;
+    //MatrixXd R_vel;
+
+    // Rotation from IMU1 (camera) body frame to the filter body frame (AHRS/IMU2 frame).
+    // Defaults to identity; set by initializeFromStaticData().
+    Quaterniond q_imu1_to_body_ = Quaterniond::Identity();
 
     // Gravity vector 
     const Vector3d gravity = Vector3d(0, 0, 9.81);
 
-    // Helper function: compute state transition Jacobian F
-    MatrixXd computeF(double dt) const;
+    // Computes error-state transition Jacobian F 
+    MatrixXd computeF(double dt, const VectorXd& U) const;
 
-    // Helper function: normalize quaternion in state vector
+    // Computes process noise mapping G (15x12)
+    MatrixXd computeG() const;
+
+    // Normalize quaternion in state vector
     void normalizeQuaternion();
 
-    // Helper function: compute innovation (measurement residual)
-    VectorXd computeInnovation(const VectorXd& z_measured, const VectorXd& z_predicted);
+    // Helper function: skew-symmetric matrix from 3-vector
+    Matrix3d skew(const Vector3d& v) const;
 
-    // Generic measurement update: x, P <- update(z, H, R)
-    void update(const VectorXd& z, const MatrixXd& H, const MatrixXd& R);
+    // Inject error-state correction into nominal state
+    void injectErrorState(const VectorXd& dx);
+
+    // Generic ESKF measurement update with residual and error-state Jacobian H
+    void updateErrorState(const VectorXd& residual, const MatrixXd& H, const MatrixXd& R);
+
 };
 
 #endif // KALMANFILTER_H
