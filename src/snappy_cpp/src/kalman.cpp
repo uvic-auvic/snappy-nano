@@ -1,4 +1,12 @@
 // Kalman Filter Implementation
+// Using an Error-state Extended Kalman Filter
+// https://notanymike.github.io/Error-State-Extended-Kalman-Filter/
+/*
+Note that this does not work due to dead-reckoning drift from the IMU. 
+position and velcoity estimate drifts  
+A DVL should fix this (there are functions "update_velocity" for when we get a DVL)
+ */
+// Good paper for quaternion EKF: https://www.iri.upc.edu/people/jsola/JoanSola/objectes/notes/kinematics.pdf
 
 #include "kalman.h"
 #include <iostream>
@@ -10,44 +18,47 @@ using namespace Eigen;
 
 KalmanFilter::KalmanFilter()
 {
-    // Default constructor - initialize with default values
-    // TODO: Set reasonable defaults for AUV application
+    // Default constructor with zero state and identity covariances
+    x = VectorXd::Zero(16);
+    P = MatrixXd::Identity(15, 15);
+    Q = MatrixXd::Identity(12, 12);
+    R_imu2 = MatrixXd::Identity(3, 3);
+    R_depth = MatrixXd::Identity(1, 1);
 }
-//x0: initial state
-//P0: initial covariance
-//Q: process noise covariance
-//R_imu1: imu1 measurement noise covariance
-//R_imu2: imu2 measurement noise covariance
-//R_depth: depth sensor measurement noise covariance
-// x: state vector
-// P_: covariance matrix
-// Q_: process noise covariance
-// R_imu2_: measurement noise covariance for imu2
-// R_depth_: measurement noise covariance for depth sensor
 
 KalmanFilter::KalmanFilter(VectorXd x0Input, MatrixXd P0Input, MatrixXd QInput,
-                           MatrixXd R_imu2Input, MatrixXd R_depthInput)
+                           MatrixXd R_imu2Input, MatrixXd R_depthInput,
+                           Quaterniond q_imu1_to_body)
 {
-    // Initialize state and covariance with provided values
-    // Normalize the quaternion part of initial state
     x = x0Input;
     P = P0Input;
     Q = QInput;
-    R_imu2 = R_imu2Input;
+    R_imu2 = (R_imu2Input.rows() == 4) ? R_imu2Input.block<3,3>(1,1) : R_imu2Input;
     R_depth = R_depthInput;
-
+    q_imu1_to_body_ = q_imu1_to_body.normalized();
 
     normalizeQuaternion();
     std::cout << "Kalman Filter initialized with " << x.size() << " states" << std::endl;
 }
 
 
-// EKF predict/update equations based on:
-// https://en.wikipedia.org/wiki/Extended_Kalman_filter#Discrete-time_predict_and_update_equations
-// Todo: add bias states for accel and gyro, and include in prediction/update steps
+
+// Math from Sola 5,6
+// Sola Eq. (248–252)
 void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
 {
-    // State: [pos(3), vel(3), quat(4), gyro_bias(3), accel_bias(3)]
+    //U : raw IMU measurements in the camera frame: [accel(3), gyro(3)]
+
+
+    // Rotate raw IMU1 (camera frame) measurements into the filter body frame.
+    Vector3d accel_raw = U.segment<3>(0);
+    Vector3d gyro_raw  = U.segment<3>(3);
+    Vector3d accel_in = q_imu1_to_body_ * accel_raw;
+    Vector3d gyro_in  = q_imu1_to_body_ * gyro_raw;
+    VectorXd U_body(6);
+    U_body << accel_in, gyro_in;
+
+    // State x: [pos(3), vel(3), quat(4), gyro_bias(3), accel_bias(3)]
     Vector3d position = x.segment<3>(0);
     Vector3d velocity = x.segment<3>(3);
     Quaterniond q(x(6), x(7), x(8), x(9));
@@ -57,20 +68,20 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
     Vector3d accel_bias = x.segment<3>(13);
 
     // Control input
-    Vector3d accel_body = U.segment<3>(0) - accel_bias;
-    Vector3d gyro = U.segment<3>(3) - gyro_bias;
+    Vector3d accel_body = U_body.segment<3>(0) - accel_bias;
+    Vector3d gyro = U_body.segment<3>(3) - gyro_bias;
 
     // Convert acceleration to world frame and remove gravity
-    // IMU accelerometer measures specific force (includes gravity).
-    // Assumes q is body->world.
-    Vector3d accel_world = q * accel_body - gravity;
+    Vector3d accel_world = q * accel_body;
+    accel_world -= gravity;
 
     // Integrate position & velocity
     position += velocity * dt + 0.5 * accel_world * dt * dt;
+
     velocity += accel_world * dt;
 
     // Integrates gyroscope angular velocity into the quaternion using a first-order approximation (small angle assumption)
-    // For body->world quaternion with body-frame gyro: q_dot = 0.5 * q ⊗ omega
+    //  q_dot = 0.5 * q ⊗ omega
     Quaterniond dq(
         1.0,
         0.5 * gyro.x() * dt,
@@ -87,80 +98,97 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
     x.segment<4>(6) << q.w(), q.x(), q.y(), q.z();
 
     
-    //  Jacobian
-    MatrixXd F = computeF(dt);
-    P = F * P * F.transpose() + Q;
+    // Error-state Jacobian
+    MatrixXd F = computeF(dt, U);
+
+
+    MatrixXd Phi = MatrixXd::Identity(15, 15) + F * dt;
+   // MatrixXd Phi = (F * dt).exp(); // using matrix exponential
+
+
+    // Solà 7.3 prediction step — covariance propagation:
+    //Qd : new uncertainty
+    //   P = Phi * P * Phi^T + G * Q * G^T * dt
+    MatrixXd G = computeG();
+    MatrixXd Qd = G * Q * G.transpose() * dt;
+
+    P = Phi * P * Phi.transpose() + Qd;
+    P = 0.5 * (P + P.transpose());  // fixes floating point rounding error
 }
 
 
 void KalmanFilter::updateIMU2(const Quaterniond& quat_measured)
 {
-    // Measurement: quaternion only (4x1)
     Quaterniond q_meas = quat_measured.normalized();
-
-    // Measurement model H (4x16): quaternion at indices 6-9
-    MatrixXd H = MatrixXd::Zero(4, 16);
-    H.block<4,4>(0, 6) = Matrix4d::Identity();
-
-    // Predicted measurement from current state
     Quaterniond q_state(x(6), x(7), x(8), x(9));
     q_state.normalize();
 
-    // Ensure shortest path (q and -q represent same rotation)
-    if (q_state.dot(q_meas) < 0.0) {
-        q_meas.coeffs() *= -1.0;
+    // Sola 7.4.2
+    Quaterniond q_err = q_meas * q_state.conjugate();
+    if (q_err.w() < 0.0) {
+        q_err.coeffs() *= -1.0;
     }
 
-    VectorXd z_pred(4);
-    z_pred << q_state.w(), q_state.x(), q_state.y(), q_state.z();
+    Vector3d residual = 2.0 * q_err.vec();
 
-    VectorXd z_meas(4);
-    z_meas << q_meas.w(), q_meas.x(), q_meas.y(), q_meas.z();
+    // Only affects orientation error states (indices 6-8)
+    MatrixXd H = MatrixXd::Zero(3, 15);
+    H.block<3,3>(0, 6) = Matrix3d::Identity();
 
-    update(z_meas, H, R_imu2);
-    normalizeQuaternion();
+    updateErrorState(residual, H, R_imu2);
 }
 
 
 void KalmanFilter::updateDepth(double depth_measured)
 {
-    //JUST TESTING IMUS right now, implement depth later
-    
-    std::cout << "UpdateDepth called with depth=" << depth_measured << std::endl;
+    // Simple measurement: depth directly observes z-position state x(2)
+    VectorXd residual(1);
+    residual << (depth_measured - x(2));
+
+    MatrixXd H = MatrixXd::Zero(1, 15);
+    H(0, 2) = 1.0;
+
+    updateErrorState(residual, H, R_depth);
 }
 
+// For when we get a DVL
 void KalmanFilter::updateVelocity(const Vector3d& v_measured, const Matrix3d& R_vel)
 {
     // Measurement: velocity only (3x1)
-    VectorXd z(3);
-    z << v_measured.x(), v_measured.y(), v_measured.z();
+    VectorXd residual(3);
+    residual = v_measured - x.segment<3>(3);
 
-    // Measurement model H (3x16): velocity at indices 3-5
-    MatrixXd H = MatrixXd::Zero(3, 16);
+    // Measurement model H (3x15): dv at indices 3-5
+    MatrixXd H = MatrixXd::Zero(3, 15);
     H.block<3,3>(0, 3) = Matrix3d::Identity();
 
-    update(z, H, R_vel);
+    updateErrorState(residual, H, R_vel);
 }
 
-void KalmanFilter::update(const VectorXd& z, const MatrixXd& H, const MatrixXd& R)
+
+// Solà 7.3 "The error-state Kalman filter" — update step
+void KalmanFilter::updateErrorState(const VectorXd& residual, const MatrixXd& H, const MatrixXd& R)
 {
-    VectorXd z_pred = H * x;
-    VectorXd y = z - z_pred;
-    // Innovation covariance
+    // Solà 7.3 innovation covariance: S = H*P*H^T + R
+    // Total uncertainty in the residual = filter uncertainty + sensor noise
     MatrixXd S = H * P * H.transpose() + R;
-    // Near-optimal Kalman gain
-    MatrixXd K = P * H.transpose() * S.inverse();
-    // Update state estimate
-    x = x + K * y;
 
-    MatrixXd I = MatrixXd::Identity(x.size(), x.size());
-    // Update estimate covariance
-    P = (I - K * H) * P;
+    // Solà 7.3 Kalman gain: K = P*H^T * S^-1
+    // Weights how much to trust the measurement vs. the current estimate
+    MatrixXd K = P * H.transpose() * S.inverse();
+
+    // Solà 7.3 error state correction: dx = K * residual
+    // Then inject into nominal state (additive for pos/vel/bias, multiplicative for quaternion)
+    VectorXd dx = K * residual;
+    injectErrorState(dx);
+
+    // Solà 7.3 Joseph-form covariance update: P = (I-KH)*P*(I-KH)^T + K*R*K^T
+    MatrixXd I = MatrixXd::Identity(15, 15);
+    MatrixXd I_KH = I - K * H;
+    P = I_KH * P * I_KH.transpose() + K * R * K.transpose();
+    P = 0.5 * (P + P.transpose());  // fixes rounding errors
 }
 
-// ============================================================================
-// GETTERS
-// ============================================================================
 
 Vector3d KalmanFilter::getPosition() const
 {
@@ -190,41 +218,91 @@ void KalmanFilter::reset(const VectorXd& x0, const MatrixXd& P0)
 
 void KalmanFilter::normalizeQuaternion()
 {
-    // Extract quaternion from state
     Vector4d quat = x.segment<4>(6);
-    
-    // Normalize
     double norm = quat.norm();
-    if (norm > 1e-6) {
+    if (norm > 1e-9) {
         x.segment<4>(6) = quat / norm;
     } else {
-        // If quaternion is near zero, reset to identity
-        x(6) = 1.0;  // w
-        x(7) = 0.0;  // x
-        x(8) = 0.0;  // y
-        x(9) = 0.0;  // z
+        x(6) = 1.0;
+        x(7) = 0.0;
+        x(8) = 0.0;
+        x(9) = 0.0;
     }
 }
 
-VectorXd KalmanFilter::computeInnovation(const VectorXd& z_measured, const VectorXd& z_predicted)
+//  F : Jacobian of the error-state transition function
+MatrixXd KalmanFilter::computeF(double dt, const VectorXd& U) const
 {
-    // TODO: Compute innovation (measurement residual)
-    // For quaternions, need special handling (shortest path on sphere)
-    // For now, simple subtraction
-    return z_measured - z_predicted;
-}
+    (void)dt;
+    MatrixXd F = MatrixXd::Zero(15, 15);
 
-//P=FPF'  + Q
-MatrixXd KalmanFilter::computeF(double dt) const
-{
-    MatrixXd F = MatrixXd::Identity(16, 16);
-    F.block<3,3>(0,3) = Matrix3d::Identity() * dt;  // p depends on v
+    Quaterniond q(x(6), x(7), x(8), x(9));
+    q.normalize();
+    Matrix3d Rwb = q.toRotationMatrix();
+
+    Vector3d accel_bias = x.segment<3>(13);
+    // Apply same IMU1->body rotation as predict() so the Jacobian is consistent.
+    Vector3d accel_in = q_imu1_to_body_ * U.segment<3>(0);
+    Vector3d accel_body = accel_in - accel_bias;
+    Vector3d gyro_unbiased = q_imu1_to_body_ * U.segment<3>(3) - x.segment<3>(10);
+    //Eq 270-274 from Sola 7.3.1
+    F.block<3,3>(0, 3) = Matrix3d::Identity();       
+    F.block<3,3>(3, 6) = -Rwb * skew(accel_body);   
+    F.block<3,3>(3, 12) = -Rwb;                    
+    F.block<3,3>(6, 6) = -skew(gyro_unbiased);    
+    F.block<3,3>(6, 9) = -Matrix3d::Identity();    
+
     return F;
 }
+// G maps process noise into the error-state space
+MatrixXd KalmanFilter::computeG() const
+{
+    MatrixXd G = MatrixXd::Zero(15, 12);
 
-// ============================================================================
-// CSV I/O FOR TESTING
-// ============================================================================
+    Quaterniond q(x(6), x(7), x(8), x(9));
+    q.normalize();
+    Matrix3d Rwb = q.toRotationMatrix();
+ // Eq 276
+    G.block<3,3>(3, 0) = Rwb;
+    G.block<3,3>(6, 3) = Matrix3d::Identity();
+    G.block<3,3>(9, 6) = Matrix3d::Identity();
+    G.block<3,3>(12, 9) = Matrix3d::Identity();
+
+    return G;
+}
+// Helper for computeF
+Matrix3d KalmanFilter::skew(const Vector3d& v) const
+{
+    Matrix3d S;
+    S <<     0.0, -v.z(),  v.y(),
+          v.z(),    0.0, -v.x(),
+         -v.y(),  v.x(),   0.0;
+    return S;
+}
+
+// updates the nominal state with the error-state correction dx
+void KalmanFilter::injectErrorState(const VectorXd& dx)
+{
+    x.segment<3>(0) += dx.segment<3>(0);
+    x.segment<3>(3) += dx.segment<3>(3);
+
+    Vector3d dtheta = dx.segment<3>(6);
+    Quaterniond dq(
+        1.0, 
+        0.5 * dtheta.x(), 
+        0.5 * dtheta.y(), 
+        0.5 * dtheta.z()
+    );
+
+    Quaterniond q(x(6), x(7), x(8), x(9));
+    q = q * dq;
+    q.normalize();
+    x.segment<4>(6) << q.w(), q.x(), q.y(), q.z();
+
+    x.segment<3>(10) += dx.segment<3>(9);
+    x.segment<3>(13) += dx.segment<3>(12);
+}
+
 
 // Helper function to save state to CSV file
 void saveStateToCSV(const std::string& filename, const VectorXd& state, double timestamp)
