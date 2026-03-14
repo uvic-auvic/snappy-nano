@@ -1,9 +1,9 @@
 // Kalman Filter Implementation
-// Using an Error-state Extended Kalman Filter
+// Using an Error-state Extended Kalman Filter 
 // https://notanymike.github.io/Error-State-Extended-Kalman-Filter/
 /*
 Note that this does not work due to dead-reckoning drift from the IMU. 
-position and velcoity estimate drifts  
+position and velcoity estimate drifts
 A DVL should fix this (there are functions "update_velocity" for when we get a DVL)
  */
 // Good paper for quaternion EKF: https://www.iri.upc.edu/people/jsola/JoanSola/objectes/notes/kinematics.pdf
@@ -204,6 +204,26 @@ Quaterniond KalmanFilter::getOrientation() const
 {
     // State stores quaternion as [w, x, y, z] at indices 6-9
     return Quaterniond(x(6), x(7), x(8), x(9));
+}
+
+void KalmanFilter::setIMU2MeasurementNoise(const MatrixXd& R_imu2Input)
+{
+    R_imu2 = (R_imu2Input.rows() == 4) ? R_imu2Input.block<3,3>(1,1) : R_imu2Input;
+}
+
+void KalmanFilter::setDepthMeasurementNoise(const MatrixXd& R_depthInput)
+{
+    R_depth = R_depthInput;
+}
+
+void KalmanFilter::setProcessNoise(const MatrixXd& QInput)
+{
+    Q = QInput;
+}
+
+void KalmanFilter::setInitialCovariance(const MatrixXd& P0Input)
+{
+    P = P0Input;
 }
 
 void KalmanFilter::reset(const VectorXd& x0, const MatrixXd& P0)
