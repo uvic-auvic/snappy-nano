@@ -19,6 +19,7 @@ public:
 
     std::fstream imu1_file;
     std::fstream imu2_file;
+    std::fstream kalman_file;
     // std::fstream depth_file;
     double last_time_imu1_sec_ = 0.0;
     double last_time_imu2_sec_ = 0.0;
@@ -34,7 +35,7 @@ public:
         
         imu1_file.open("imu1.csv", std::fstream::app);
         imu2_file.open("imu2.csv", std::fstream::app);
-        
+        kalman_file.open("kalman.csv", std::fstream::app);
         // Create QoS profile matching RealSense camera publisher
         // RealSense uses: Best Effort reliability + Volatile durability
         auto qos = rclcpp::QoS(rclcpp::KeepLast(10))
@@ -149,6 +150,19 @@ private:
                 << msg->angular_velocity.x << ","
                 << msg->angular_velocity.y << ","
                 << msg->angular_velocity.z << std::endl;
+
+        kalman_file << msg->header.stamp.sec << "." << msg->header.stamp.nanosec << ","
+                    << kf.getPosition().x() << ","
+                    << kf.getPosition().y() << ","
+                    << kf.getPosition().z() << ","
+                    << kf.getVelocity().x() << ","
+                    << kf.getVelocity().y() << ","
+                    << kf.getVelocity().z() << ","
+                    << kf.getOrientation().w() << ","
+                    << kf.getOrientation().x() << ","
+                    << kf.getOrientation().y() << ","
+                    << kf.getOrientation().z() << std::endl;
+  
     }
     
     void imu2_callback(const sensor_msgs::msg::Imu::SharedPtr msg)

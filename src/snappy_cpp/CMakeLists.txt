@@ -14,6 +14,7 @@ option(WITH_CUDA "Build with CUDA and TensorRT support" OFF)
 option(BUILD_TESTING "Build tests" OFF)
 
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include/Inc)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -49,7 +50,7 @@ target_link_libraries(image_capture ${OpenCV_LIBS})
 add_executable(controller src/controller.cpp)
 ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
 
-add_executable(state_estimator src/state_estimator.cpp src/kalman.cpp)
+add_executable(state_estimator src/state_estimator.cpp src/include/src/kalman.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
 target_link_libraries(state_estimator Eigen3::Eigen)
 
