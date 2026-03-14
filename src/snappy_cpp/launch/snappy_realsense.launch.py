@@ -125,8 +125,8 @@ def generate_launch_description():
         realsense_launch,
         #computer_vision_node,
         #controller_node,
-        #state_estimator_node,
+        state_estimator_node,
         #planner_node,
         #pressure_sensor_node,
-        image_capture_node,
+        #image_capture_node,
     ])
