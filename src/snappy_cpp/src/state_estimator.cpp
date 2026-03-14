@@ -136,9 +136,10 @@ private:
                 "[IMU 1] Gyro: [%.3f, %.3f, %.3f] rad/s | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
-            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f]",
+            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f]",
                 kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
-                kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z());
+                kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
+                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z());
         }
         
         // Write all data to file

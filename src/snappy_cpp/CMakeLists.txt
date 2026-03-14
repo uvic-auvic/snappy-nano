@@ -22,6 +22,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 # Build all executables
 set(BOOST_ROOT "/usr")
@@ -48,8 +49,9 @@ target_link_libraries(image_capture ${OpenCV_LIBS})
 add_executable(controller src/controller.cpp)
 ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
 
-add_executable(state_estimator src/state_estimator.cpp)
+add_executable(state_estimator src/state_estimator.cpp src/kalman.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
+target_link_libraries(state_estimator Eigen3::Eigen)
 
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
