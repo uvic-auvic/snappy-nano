@@ -53,6 +53,14 @@ public:
     // Get covariance matrix
     MatrixXd getCovariance() const { return P; }
 
+    // Setters for noise covariances and initial conditions
+    void setIMU2MeasurementNoise(const MatrixXd& R_imu2Input);
+    void setDepthMeasurementNoise(const MatrixXd& R_depthInput);
+    void setProcessNoise(const MatrixXd& QInput);
+    void setInitialCovariance(const MatrixXd& P0Input);
+
+
+
     // Reset/reinitialize the filter
     void reset(const VectorXd& x0, const MatrixXd& P0);
 
@@ -67,6 +75,7 @@ private:
     MatrixXd Q;
 
     // Measurement noise covariances
+
     MatrixXd R_imu2;  
     MatrixXd R_depth;
     //MatrixXd R_vel;
