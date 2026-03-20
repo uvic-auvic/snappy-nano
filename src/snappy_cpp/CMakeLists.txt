@@ -60,6 +60,9 @@ ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
 
+add_executable(test_kalman src/test_kalman.cpp src/include/src/kalman.cpp)
+target_link_libraries(test_kalman Eigen3::Eigen)
+
 if(WITH_CUDA)
   find_package(CUDA REQUIRED)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
@@ -86,6 +89,7 @@ install(TARGETS
   state_estimator
   planner
   counter_publisher
+  test_kalman
   snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 
