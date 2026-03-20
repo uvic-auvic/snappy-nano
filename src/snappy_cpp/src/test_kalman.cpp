@@ -50,30 +50,53 @@ std::vector<VectorXd> loadIMUData(const std::string& filename, int cols) {
     return data;
 }
 
-int main() {
+int main(int argc, char** argv) {
 
     // ------------------------------------------------------------------
     // Load CSV data
     // imu1: [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z]  (camera frame)
-    // imu2: [accel_x, accel_y, accel_z, quat_x, quat_y, quat_z, quat_w]
+    // imu2: [accel_x, accel_y, accel_z, quat_x, quat_y, quat_z, quat_w] (optional)
     // ------------------------------------------------------------------
-    std::vector<VectorXd> imu1_data = loadIMUData("../../imu1_test1.csv", 6);
-    std::vector<VectorXd> imu2_data = loadIMUData("../../imu2_test1.csv", 7);
+    std::string imu1_file;
+    std::string imu2_file;
 
-    if (imu1_data.empty() || imu2_data.empty()) {
-        std::cerr << "Error: Missing IMU data. Need both imu1 and imu2 files." << std::endl;
+    if (argc >= 2) {
+        imu1_file = argv[1];
+    }
+    if (argc >= 3) {
+        imu2_file = argv[2];
+    }
+
+    std::vector<VectorXd> imu1_data = loadIMUData(imu1_file, 6);
+    if (imu1_data.empty()) {
+        std::cerr << "Error: Missing IMU1 data. Provide a valid imu1 CSV path." << std::endl;
         return 1;
+    }
+
+    std::vector<VectorXd> imu2_data;
+    bool use_imu2 = false;
+    if (!imu2_file.empty()) {
+        imu2_data = loadIMUData(imu2_file, 7);
+        use_imu2 = !imu2_data.empty();
+        if (!use_imu2) {
+            std::cerr << "Warning: IMU2 file could not be loaded. Running prediction-only with IMU1." << std::endl;
+        }
+    } else {
+        std::cout << "No IMU2 file provided. Running prediction-only with IMU1." << std::endl;
     }
 
     // ------------------------------------------------------------------
     // Initialize filter
     // ------------------------------------------------------------------
 
-    // Seed orientation from the first IMU2 (AHRS) sample.
-    // IMU2 format: [accel(0:2), quat_x(3), quat_y(4), quat_z(5), quat_w(6)]
-    const VectorXd& first_imu2 = imu2_data[0];
-    Quaterniond q_init(first_imu2(6), first_imu2(3), first_imu2(4), first_imu2(5));
-    q_init.normalize();
+    // Seed orientation from IMU2 if available, else use identity.
+    Quaterniond q_init = Quaterniond::Identity();
+    if (use_imu2) {
+        // IMU2 format: [accel(0:2), quat_x(3), quat_y(4), quat_z(5), quat_w(6)]
+        const VectorXd& first_imu2 = imu2_data[0];
+        q_init = Quaterniond(first_imu2(6), first_imu2(3), first_imu2(4), first_imu2(5));
+        q_init.normalize();
+    }
 
     VectorXd x0 = VectorXd::Zero(16);
     x0(6) = q_init.w();
@@ -107,7 +130,7 @@ int main() {
     // Replay loop
     // ------------------------------------------------------------------
     const double dt = 0.005;  // 200 Hz
-    size_t num_steps = std::min(imu1_data.size(), imu2_data.size());
+    size_t num_steps = use_imu2 ? std::min(imu1_data.size(), imu2_data.size()) : imu1_data.size();
     std::cout << "Running " << num_steps << " steps at dt=" << dt << "\n\n";
 
     std::ofstream output("filter_output.csv");
@@ -117,12 +140,14 @@ int main() {
         // IMU1: raw [accel(3), gyro(3)] in camera frame
         VectorXd U = imu1_data[i];
 
-        // IMU2: orientation quaternion from AHRS
-        const VectorXd& m2 = imu2_data[i];
-        Quaterniond quat_imu2(m2(6), m2(3), m2(4), m2(5));
-
         kf.predict(U, dt);
-        kf.updateIMU2(quat_imu2);
+        if (use_imu2) {
+            // IMU2: orientation quaternion from AHRS
+            const VectorXd& m2 = imu2_data[i];
+            Quaterniond quat_imu2(m2(6), m2(3), m2(4), m2(5));
+            quat_imu2.normalize();
+            kf.updateIMU2(quat_imu2);
+        }
 
         Vector3d pos = kf.getPosition();
         Vector3d vel = kf.getVelocity();
