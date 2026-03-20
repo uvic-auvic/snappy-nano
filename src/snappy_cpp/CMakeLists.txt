@@ -79,6 +79,9 @@ ament_target_dependencies(sensorTest
   snappy_interfaces
 )
 
+add_executable(test_kalman src/test_kalman.cpp src/include/src/kalman.cpp)
+target_link_libraries(test_kalman Eigen3::Eigen)
+
 add_executable(controller
   src/controller.cpp
   src/include/src/pid.cpp
