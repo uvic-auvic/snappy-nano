@@ -93,6 +93,9 @@ target_link_libraries(planner
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
 
+add_executable(test_kalman src/test_kalman.cpp src/include/src/kalman.cpp)
+target_link_libraries(test_kalman Eigen3::Eigen)
+
 if(WITH_CUDA)
   find_package(rosbridge_suite REQUIRED)
   find_package(CUDA REQUIRED)
