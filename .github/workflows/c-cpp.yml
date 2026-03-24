@@ -35,8 +35,8 @@ jobs:
       - name: Build with colcon
         run: |
           source /opt/ros/humble/setup.bash
-          colcon build --packages-select snappy_cpp
-
+          colcon build --packages-select snappy_cpp --cmake-args -DWITH_CUDA=OFF
+          
       - name: Upload build artifacts (optional)
         if: failure()
         uses: actions/upload-artifact@v3
@@ -44,4 +44,4 @@ jobs:
           name: build-logs
           path: build/snappy_cpp/**/*.log
 
-          colcon build --packages-select snappy_cpp --cmake-args -DWITH_CUDA=OFF
+
