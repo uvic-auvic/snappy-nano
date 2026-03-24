@@ -12,6 +12,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Update apt package list
+        run: sudo apt-get update
+
+      - name: Install ONNX Runtime development files
+        run: sudo apt-get install -y libonnxruntime-dev libonnxruntime1
+
+      - name: Verify ONNX Runtime installation
+        run: |
+          ls -la /usr/include/onnxruntime* || echo "Headers not found in /usr/include"
+          ls -la /usr/lib/libonnxruntime* || echo "Libraries not found in /usr/lib"
+          pkg-config --cflags --libs libonnxruntime || echo "pkg-config entry not found"
 
       - name: Set up ROS 2 Humble
         uses: ros-tooling/setup-ros@v0.7
@@ -22,3 +36,11 @@ jobs:
         run: |
           source /opt/ros/humble/setup.bash
           colcon build --packages-select snappy_cpp
+
+      - name: Upload build artifacts (optional)
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-logs
+          path: build/snappy_cpp/**/*.log
+
