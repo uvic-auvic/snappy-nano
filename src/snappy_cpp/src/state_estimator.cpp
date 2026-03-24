@@ -64,10 +64,9 @@ public:
         Vector3d accel_bias_init, gyro_bias_init;
         /*
         # accel_bias_x,accel_bias_y,accel_bias_z,gyro_bias_x,gyro_bias_y,gyro_bias_z
-        -0.432339510,0.481036414,-1.126488201,-0.000708921,0.002081580,-0.002908015
-        */
-        accel_bias_init << -0.432339510, 0.481036414, -1.126488201;
-        gyro_bias_init << -0.000708921, 0.002081580, -0.002908015;
+        -0.0196133,-0.284393,0.17987,-0.0021293,0,-0.00106465        */
+        accel_bias_init << -0.0196133, -0.284393, 0.17987;
+        gyro_bias_init << -0.0021293, 0, -0.00106465;
 
         VectorXd x0 = VectorXd::Zero(16);
         x0(6) = 1.0;  // identity quaternion [w, x, y, z]
