@@ -2,22 +2,24 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ "*" ]
+    branches: ["*"]
 
 jobs:
   build:
-
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Update apt package list
-        run: sudo apt-get update
+      - name: Add Microsoft package repository
+        run: |
+          sudo wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
 
       - name: Install ONNX Runtime development files
-        run: sudo apt-get install -y libonnxruntime-dev libonnxruntime1
+        run: sudo apt-get update |
+          sudo apt-get install -y libonnxruntime-dev libonnxruntime1
 
       - name: Verify ONNX Runtime installation
         run: |
