@@ -60,6 +60,20 @@ public:
             std::bind(&StateEstimator::depth_callback, this, std::placeholders::_1));   */  
 
     
+        // Set bias initial conditions from stationary data (calibration file)
+        Vector3d accel_bias_init, gyro_bias_init;
+        /*
+        # accel_bias_x,accel_bias_y,accel_bias_z,gyro_bias_x,gyro_bias_y,gyro_bias_z
+        -0.432339510,0.481036414,-1.126488201,-0.000708921,0.002081580,-0.002908015
+        */
+        accel_bias_init << -0.432339510, 0.481036414, -1.126488201;
+        gyro_bias_init << -0.000708921, 0.002081580, -0.002908015;
+
+        VectorXd x0 = VectorXd::Zero(16);
+        x0(6) = 1.0;  // identity quaternion [w, x, y, z]
+        x0.segment<3>(10) = gyro_bias_init;
+        x0.segment<3>(13) = accel_bias_init;
+
 
         // TODO: add uncertainty vaules, all set to 0 or 1 right now, need to tune based on sensor specs and expected noise levels
         MatrixXd P_init = MatrixXd::Identity(15, 15);
@@ -69,7 +83,6 @@ public:
         P_init.block<3,3>(9,9)   *= 0.01;  // gyro bias uncertainty
         P_init.block<3,3>(12,12) *= 0.01;  // accel bias uncertainty
 
-        kf.setInitialCovariance(P_init);
 
         MatrixXd Q_init = MatrixXd::Identity(12, 12);
         Q_init.block<3,3>(0,0) *= 0.1;    // accel noise
@@ -83,18 +96,6 @@ public:
         kf.setIMU2MeasurementNoise(R_imu2_init);
         kf.setDepthMeasurementNoise(R_depth_init);
 
-        // Set bias initial conditions from stationary data (calibration file)
-        Vector3d accel_bias_init, gyro_bias_init;
-        /*
-        # accel_bias_x,accel_bias_y,accel_bias_z,gyro_bias_x,gyro_bias_y,gyro_bias_z
-        -0.432339510,0.481036414,-1.126488201,-0.000708921,0.002081580,-0.002908015
-        */
-        accel_bias_init << -0.432339510, 0.481036414, -1.126488201;
-        gyro_bias_init << -0.000708921, 0.002081580, -0.002908015;
-
-        x0.segment<3>(10) = gyro_bias_init;
-        x0.segment<3>(13) = accel_bias_init;
-
         // IMU1(camera)->body(IMU2) frame calibration from scripts/calibrate_imu.py
         // File: src/imu1_to_body_calibration.csv
         const Quaterniond q_imu1_to_body(
@@ -105,6 +106,10 @@ public:
         );
         kf.setIMU1ToBodyRotation(q_imu1_to_body);
 
+       
+        kf.reset(x0, P_init);
+
+        
 
         /*
         // Alternative: separate gyro topic
