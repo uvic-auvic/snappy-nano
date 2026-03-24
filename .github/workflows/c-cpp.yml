@@ -18,8 +18,20 @@ jobs:
           sudo dpkg -i packages-microsoft-prod.deb
 
       - name: Install ONNX Runtime development files
-        run: sudo apt-get update |
-          sudo apt-get install -y libonnxruntime-dev libonnxruntime1
+        run: |
+          set -euxo pipefail
+          ORT_VER=1.17.3
+          curl -L -o onnxruntime.tgz \
+            https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-linux-x64-${ORT_VER}.tgz
+          tar -xzf onnxruntime.tgz
+          sudo mkdir -p /opt/onnxruntime
+          sudo cp -r onnxruntime-linux-x64-${ORT_VER}/* /opt/onnxruntime/
+
+          echo "/opt/onnxruntime/lib" | sudo tee /etc/ld.so.conf.d/onnxruntime.conf
+          sudo ldconfig
+
+          # If your build uses CMake, this is often enough:
+          echo "CMAKE_PREFIX_PATH=/opt/onnxruntime:\$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
 
       - name: Verify ONNX Runtime installation
         run: |
