@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Update apt package list
         run: sudo apt-get update
@@ -36,12 +34,3 @@ jobs:
         run: |
           source /opt/ros/humble/setup.bash
           colcon build --packages-select snappy_cpp --cmake-args -DWITH_CUDA=OFF
-          
-      - name: Upload build artifacts (optional)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: build/snappy_cpp/**/*.log
-
-
