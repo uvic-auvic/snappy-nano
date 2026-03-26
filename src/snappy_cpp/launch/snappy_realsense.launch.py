@@ -40,12 +40,12 @@ def generate_launch_description():
     )
 
     parameters_file_path = Path(
-        get_package_share_directory("ros2_xsens_mti_driver"),
+        get_package_share_directory("xsens_mti_ros2_driver"),
         "param",
         "xsens_mti_node.yaml",
     )
     xsens_mti_node = Node(
-        package="ros2_xsens_mti_driver",
+        package="xsens_mti_ros2_driver",
         executable="xsens_mti_node",
         name="xsens_mti_node",
         output="screen",
@@ -130,6 +130,7 @@ def generate_launch_description():
         [
             realsense_launch,
             computer_vision_node,
+            xsens_mti_node,
             # controller_node,
             # state_estimator_node,
             # planner_node,
