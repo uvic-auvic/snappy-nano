@@ -10,6 +10,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+option(WITH_CUDA "Build with CUDA and TensorRT support" OFF)
+option(BUILD_TESTING "Build tests" OFF)
+
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(ament_cmake REQUIRED)
@@ -19,6 +22,16 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+
+# Find and require ONNX Runtime
+find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
+find_library(ONNXRUNTIME_LIB onnxruntime PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQUIRED)
+
+message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
+message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
+include_directories(${ONNXRUNTIME_INCLUDE_DIR})
+link_directories(/usr/local/lib)
 
 # Build all executables
 set(BOOST_ROOT "/usr")
@@ -35,8 +48,12 @@ add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
 
 add_executable(computer_vision src/computer_vision.cpp)
-ament_target_dependencies(computer_vision rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge)
-target_link_libraries(computer_vision ${OpenCV_LIBS})
+ament_target_dependencies(computer_vision rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge ament_index_cpp)
+target_link_libraries(computer_vision ${ONNXRUNTIME_LIB} ${OpenCV_LIBS})
+
+add_executable(image_capture src/image_capture.cpp)
+ament_target_dependencies(image_capture rclcpp sensor_msgs cv_bridge)
+target_link_libraries(image_capture ${OpenCV_LIBS})
 
 add_executable(controller src/controller.cpp)
 ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
@@ -47,28 +64,55 @@ ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_m
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 
+add_executable(counter_publisher src/counter_publisher.cpp)
+ament_target_dependencies(counter_publisher rclcpp std_msgs)
+
+if(WITH_CUDA)
+  find_package(CUDA REQUIRED)
+  link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
+
+  find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
+
+  add_executable(cuda src/cuda.cpp)
+  target_include_directories(cuda PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+  ament_target_dependencies(cuda rclcpp std_msgs)
+  target_link_libraries(cuda
+    ${NVINFER}
+    ${CUDA_LIBRARIES}
+    ${OpenCV_LIBS}
+    /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
+  )
+endif()
+
+install(FILES src/yolo26n.onnx
+    DESTINATION share/${PROJECT_NAME}/models
+)
+
 # Install all executables
 install(TARGETS
   pressureSensor
   computer_vision
+  image_capture
   controller
   state_estimator
   planner
+  counter_publisher
   snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
+
+if(WITH_CUDA)
+  install(TARGETS cuda
+    DESTINATION lib/${PROJECT_NAME})
+endif()
 
 # Install launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/)
 
-
-option(BUILD_TESTING "Build tests" OFF)
-
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
-  # Add gtest executables
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(unit_tests tests/test_serial.cpp)
   ament_target_dependencies(unit_tests rclcpp)
