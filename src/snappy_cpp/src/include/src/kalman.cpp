@@ -10,12 +10,12 @@ A DVL should fix this (there are functions "update_velocity" for when we get a D
 
 
 /*
-All releivite to the sub's local frame, not the world frame.
-
+Output is world frame:
+Based on starting imu2 measurements:
 Position: 
-Postive x is always forward in refernce to the sub
-Postive y is always to the right of the sub
-Postive z is always down from the sub
+Postive x is forward in refernce to the sub at t = 0
+Postive y is to the right of the sub at t = 0
+Postive z is down from the sub at t = 0
 
 */
 
@@ -32,6 +32,7 @@ KalmanFilter::KalmanFilter()
 {
     // Default constructor with zero state and identity covariances
     x = VectorXd::Zero(16);
+    x(6) = 1.0;  // identity quaternion [w, x, y, z]
     P = MatrixXd::Identity(15, 15);
     Q = MatrixXd::Identity(12, 12);
     R_imu2 = MatrixXd::Identity(3, 3);
@@ -61,10 +62,11 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
 {
     //U : raw IMU measurements in the camera frame: [accel(3), gyro(3)]
 
+    // accel and gyro bias are in imu1s camera frame 
 
-    // Rotate raw IMU1 (camera frame) measurements into the filter body frame.
-    Vector3d accel_raw = U.segment<3>(0);
-    Vector3d gyro_raw  = U.segment<3>(3);
+    // Rotate raw IMU1 (camera frame) measurements into imu2's body frame.
+    Vector3d accel_raw = U.segment<3>(0) - x.segment<3>(13);  // remove accel bias
+    Vector3d gyro_raw  = U.segment<3>(3) - x.segment<3>(10);  // remove gyro bias
     Vector3d accel_in = q_imu1_to_body_ * accel_raw;
     Vector3d gyro_in  = q_imu1_to_body_ * gyro_raw;
     VectorXd U_body(6);
@@ -76,14 +78,14 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
     Quaterniond q(x(6), x(7), x(8), x(9));
     q.normalize();
 
-    Vector3d gyro_bias = x.segment<3>(10);
-    Vector3d accel_bias = x.segment<3>(13);
+    //Vector3d gyro_bias = x.segment<3>(10);
+    //Vector3d accel_bias = x.segment<3>(13);
 
     // Control input
-    Vector3d accel_body = U_body.segment<3>(0) - accel_bias;
-    Vector3d gyro = U_body.segment<3>(3) - gyro_bias;
+    Vector3d accel_body = U_body.segment<3>(0) /*- accel_bias*/;
+    Vector3d gyro = U_body.segment<3>(3) /*- gyro_bias*/;
 
-    // Convert acceleration to world frame and remove gravity
+    // Convert acceleration to world frame and remove gravity.
     Vector3d accel_world = q * accel_body;
     accel_world -= gravity;
 
@@ -113,7 +115,6 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
     // Error-state Jacobian
     MatrixXd F = computeF(dt, U);
 
-
     MatrixXd Phi = MatrixXd::Identity(15, 15) + F * dt;
    // MatrixXd Phi = (F * dt).exp(); // using matrix exponential
 
@@ -132,11 +133,22 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
 void KalmanFilter::updateIMU2(const Quaterniond& quat_measured)
 {
     Quaterniond q_meas = quat_measured.normalized();
+
+    // Define a local world frame at first IMU2 sample so output orientation is
+    // relative to the sub pose at startup (x-forward, y-right, z-down at t0).
+    if (!imu2_ref_initialized_) {
+        q_imu2_ref_ = q_meas;
+        imu2_ref_initialized_ = true;
+    }
+
+    Quaterniond q_meas_local = q_imu2_ref_.conjugate() * q_meas;
+    q_meas_local.normalize();
+
     Quaterniond q_state(x(6), x(7), x(8), x(9));
     q_state.normalize();
 
     // Sola 7.4.2
-    Quaterniond q_err = q_meas * q_state.conjugate();
+    Quaterniond q_err = q_meas_local * q_state.conjugate();
     if (q_err.w() < 0.0) {
         q_err.coeffs() *= -1.0;
     }
@@ -238,10 +250,17 @@ void KalmanFilter::setInitialCovariance(const MatrixXd& P0Input)
     P = P0Input;
 }
 
+void KalmanFilter::setIMU1ToBodyRotation(const Quaterniond& q_imu1_to_body)
+{
+    q_imu1_to_body_ = q_imu1_to_body.normalized();
+}
+
 void KalmanFilter::reset(const VectorXd& x0, const MatrixXd& P0)
 {
     x = x0;
     P = P0;
+    imu2_ref_initialized_ = false;
+    q_imu2_ref_ = Quaterniond::Identity();
     normalizeQuaternion();
     
     std::cout << "Kalman Filter reset" << std::endl;
