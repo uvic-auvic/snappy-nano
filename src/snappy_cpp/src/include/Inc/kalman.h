@@ -58,6 +58,7 @@ public:
     void setDepthMeasurementNoise(const MatrixXd& R_depthInput);
     void setProcessNoise(const MatrixXd& QInput);
     void setInitialCovariance(const MatrixXd& P0Input);
+    void setIMU1ToBodyRotation(const Quaterniond& q_imu1_to_body);
 
 
 
@@ -83,6 +84,11 @@ private:
     // Rotation from IMU1 (camera) body frame to the filter body frame (AHRS/IMU2 frame).
     // Defaults to identity; set by initializeFromStaticData().
     Quaterniond q_imu1_to_body_ = Quaterniond::Identity();
+
+    // IMU2 orientation reference used to define a local world frame at startup:
+    // +x forward, +y right, +z down relative to the sub at t0.
+    Quaterniond q_imu2_ref_ = Quaterniond::Identity();
+    bool imu2_ref_initialized_ = false;
 
     // Gravity vector 
     const Vector3d gravity = Vector3d(0, 0, 9.81);
