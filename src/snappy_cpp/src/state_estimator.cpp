@@ -167,10 +167,10 @@ private:
                 "[IMU 1] Gyro: [%.3f, %.3f, %.3f] rad/s | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
-            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f]",
+            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f]",
                 kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
                 kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
-                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z());
+                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w());
         }
         
         // Write all data to file
@@ -202,7 +202,7 @@ private:
             RCLCPP_INFO(this->get_logger(), "✅ First IMU message received!");
             imu_received_ = true;
         }
-        imu_count_++;
+        imu2_count_++;
         const double now_sec = rclcpp::Time(msg->header.stamp).seconds();
         if (!imu2_initialized_) {
             imu2_initialized_ = true;
@@ -211,7 +211,7 @@ private:
         kf.updateIMU2(Quaterniond(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z));
         last_time_imu2_sec_ = now_sec;
         // Print combined IMU data every 20 messages
-        if (imu_count_ % 20 == 0) {
+        if (imu2_count_ % 20 == 0) {
             RCLCPP_INFO(this->get_logger(), 
                 "[IMU 2] Orient: [%.3f, %.3f, %.3f, %.3f] rad | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
@@ -294,6 +294,7 @@ private:
     bool gyro_received_ = false;
     bool accel_received_ = false;
     int imu_count_ = 0;
+    int imu2_count_ = 0;
     int gyro_count_ = 0;
     int accel_count_ = 0;
 };
