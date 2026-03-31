@@ -24,6 +24,16 @@ find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+
+# Find and require ONNX Runtime
+find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
+find_library(ONNXRUNTIME_LIB onnxruntime PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQUIRED)
+
+message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
+message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
+include_directories(${ONNXRUNTIME_INCLUDE_DIR})
+link_directories(/usr/local/lib)
 
 # Build all executables
 set(BOOST_ROOT "/usr")
@@ -40,8 +50,8 @@ add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
 
 add_executable(computer_vision src/computer_vision.cpp)
-ament_target_dependencies(computer_vision rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge)
-target_link_libraries(computer_vision ${OpenCV_LIBS})
+ament_target_dependencies(computer_vision rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge ament_index_cpp)
+target_link_libraries(computer_vision ${ONNXRUNTIME_LIB} ${OpenCV_LIBS})
 
 add_executable(image_capture src/image_capture.cpp)
 ament_target_dependencies(image_capture rclcpp sensor_msgs cv_bridge)
@@ -79,6 +89,10 @@ if(WITH_CUDA)
     /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
   )
 endif()
+
+install(FILES src/yolo26n.onnx
+    DESTINATION share/${PROJECT_NAME}/models
+)
 
 # Install all executables
 install(TARGETS

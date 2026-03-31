@@ -20,14 +20,14 @@ public:
         cout << "Test1" << endl;
 
         // Inititalize OpenCV windows
-        //namedWindow("RealSense Color Stream", WINDOW_AUTOSIZE);
+        // namedWindow("RealSense Color Stream", WINDOW_AUTOSIZE);
         //namedWindow("RealSense Depth Stream", WINDOW_AUTOSIZE);
         //namedWindow("RealSense Depth Colorized Stream", WINDOW_AUTOSIZE);
         //namedWindow("Sobel Edge Detected Stream", WINDOW_AUTOSIZE);
 
         // Inititalize subscribers
         color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/camera/color/image_raw", rclcpp::SensorDataQoS(),
+            "/camera/camera/color/image_rect_raw", rclcpp::SensorDataQoS(),
             bind(&ImageCapture::color_callback, this, placeholders::_1));
 
         depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
@@ -80,10 +80,10 @@ private:
 
         GaussianBlur(gray, gray, Size(3, 3), 0, 0, BORDER_DEFAULT);
 
-        cout << "Test5" << std::endl;
+        // cout << "Test5" << std::endl;
 
         // Convert to gray
-        //cvtColor(gray, src_gray, COLOR_BGR2GRAY);
+        // cvtColor(gray, src_gray, COLOR_BGR2GRAY);
 
         cout << "Test6" << std::endl;
 
@@ -105,10 +105,11 @@ private:
     void color_callback(const sensor_msgs::msg::Image::SharedPtr msg){
         // Convert image and display
         try {
+            RCLCPP_INFO(this->get_logger(), "color_callback: received image");
             cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(msg, "bgr8");
-            //imshow("RealSense Color Stream", cv_ptr->image);
+            imshow("RealSense Color Stream", cv_ptr->image);
             waitKey(1);
-            
+
             // Save image with timestamped filename
             string filename = name_image("color");
             imwrite(filename, cv_ptr->image);
@@ -137,7 +138,7 @@ private:
                 }
                 double scale = (maxVal > 0.0) ? 255.0 / maxVal : 1.0;
                 depth16.convertTo(display, CV_8U, scale);
-            } 
+            }
             else if (msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1) {
                 // Convert 32-bit float depth (meters) to 8-bit, ignoring zeros
                 Mat depth32 = cv_ptr->image;
@@ -148,11 +149,11 @@ private:
                 }
                 double scale = (maxVal > 0.0) ? 255.0 / maxVal : 1.0;
                 depth32.convertTo(display, CV_8U, scale);
-            } 
+            }
             else if (cv_ptr->image.type() == CV_8UC1) {
                 // Already 8-bit mono
                 display = cv_ptr->image;
-            } 
+            }
             else {
                 // Fallback: convert color to grayscale
                 cvtColor(cv_ptr->image, display, COLOR_BGR2GRAY);
@@ -185,7 +186,7 @@ private:
             sensor_msgs::msg::Image::SharedPtr ros_img = out_msg.toImageMsg();
 
             waitKey(1);
-        } 
+        }
         catch (const cv_bridge::Exception &e) {
         //    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception (depth): %s", e.what());
         }
