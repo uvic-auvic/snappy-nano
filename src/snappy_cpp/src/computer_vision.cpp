@@ -102,7 +102,7 @@ public:
 
         // Subscribe to RealSense camera topics
         color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/camera/color/image_rect_raw", 10,
+            "/camera/camera/color/image_raw", 10,
             std::bind(&ComputerVision::color_callback, this, std::placeholders::_1));
 
         depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(

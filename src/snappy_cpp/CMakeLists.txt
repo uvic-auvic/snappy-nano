@@ -23,6 +23,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(rosbridge_suite REQUIRED)
 
 # Find and require ONNX Runtime
 find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
@@ -72,19 +73,23 @@ if(WITH_CUDA)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
 
   find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
+  find_library(NVONNXPARSER nvonnxparser PATHS /usr/lib/aarch64-linux-gnu /usr/lib/x86_64-linux-gnu REQUIRED)
 
   add_executable(cuda src/cuda.cpp)
   target_include_directories(cuda PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
-  ament_target_dependencies(cuda rclcpp std_msgs)
+  ament_target_dependencies(cuda rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp)
   target_link_libraries(cuda
     ${NVINFER}
+    ${NVONNXPARSER}
     ${CUDA_LIBRARIES}
     ${OpenCV_LIBS}
     /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
   )
 endif()
 
-install(FILES src/yolo26n.onnx
+install(FILES
+    src/yolo26n.onnx
+    src/yolo26s.onnx
     DESTINATION share/${PROJECT_NAME}/models
 )
 

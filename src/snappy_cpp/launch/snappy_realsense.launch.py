@@ -126,11 +126,24 @@ def generate_launch_description():
         ],
     )
 
+    cuda_node = TimerAction(
+        period=3.0,
+        actions=[
+            Node(
+                package="snappy_cpp",
+                executable="cuda",
+                name="cuda",
+                output="screen",
+            )
+        ],
+    )
+
     return LaunchDescription(
         [
             realsense_launch,
-            computer_vision_node,
+            # computer_vision_node,
             xsens_mti_node,
+            cuda_node,
             # controller_node,
             # state_estimator_node,
             # planner_node,
