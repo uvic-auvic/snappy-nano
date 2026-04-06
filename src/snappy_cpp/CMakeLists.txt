@@ -23,7 +23,6 @@ find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ament_index_cpp REQUIRED)
-find_package(rosbridge_suite REQUIRED)
 
 # Find and require ONNX Runtime
 find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
@@ -69,6 +68,7 @@ add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
 
 if(WITH_CUDA)
+  find_package(rosbridge_suite REQUIRED)
   find_package(CUDA REQUIRED)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
 
