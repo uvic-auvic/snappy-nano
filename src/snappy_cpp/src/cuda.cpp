@@ -5,6 +5,9 @@
 #include <cuda_runtime.h>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <algorithm>
@@ -18,6 +21,10 @@
 #include <string>
 #include <vector>
 #include <mutex>
+
+#include "snappy_cpp/msg/detection_array.hpp"
+#include "snappy_cpp/msg/object_detection.hpp"
+#include "snappy_cpp/msg/bounding_box2_d.hpp"
 
 using namespace std::chrono_literals;
 
@@ -49,12 +56,19 @@ public:
         cv::namedWindow("Detections (TensorRT)", cv::WINDOW_AUTOSIZE);
         RCLCPP_INFO(get_logger(), "OpenCV window created");
 
-        colorCameraFeed_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/camera/color/image_raw",
-            rclcpp::SensorDataQoS(),
-            std::bind(&CudaNode::color_callback, this, std::placeholders::_1)
-        );
+        // Create publisher for detections
+        detection_publisher_ = this->create_publisher<snappy_cpp::msg::DetectionArray>(
+            "/cuda_node/detections", rclcpp::SensorDataQoS());
+        RCLCPP_INFO(get_logger(), "Created detection publisher on /cuda_node/detections");
+
+        color_sub_.subscribe(this, "/camera/camera/color/image_raw");
+        depth_sub_.subscribe(this, "/camera/camera/aligned_depth_to_color/image_raw");
+        sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(SyncPolicy(10), color_sub_, depth_sub_);
+        sync_->registerCallback(std::bind(&CudaNode::sync_callback, this, std::placeholders::_1, std::placeholders::_2));
+
+
         RCLCPP_INFO(get_logger(), "Subscribed to /camera/camera/color/image_raw");
+        RCLCPP_INFO(get_logger(), "Subscribed to /camera/camera/aligned_depth_to_color/image_raw");
     }
 
     ~CudaNode() override
@@ -90,9 +104,19 @@ private:
         int   class_id;
     };
 
+    // Detection results with inference time and timestamp
+    struct DetectionResult {
+        std::vector<Detection> detections;
+        float inference_time_ms;
+        rclcpp::Time timestamp;
+    };
+
     // Constants matching computer_vision.cpp
     static constexpr float CONF_THRESH = 0.25f;  // lowered for sensitivity - NMS-free head
     static constexpr int NUM_CLASSES = 80;
+
+    // Message filter synchronization policy
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image, sensor_msgs::msg::Image> SyncPolicy;
 
     class TRTLogger : public nvinfer1::ILogger {
     public:
@@ -428,9 +452,9 @@ private:
             float bw = x2 - x1;
             float bh = y2 - y1;
 
-            RCLCPP_INFO(this->get_logger(),
-                "✓ Detection: %s | conf=%.2f | box=[%.0f, %.0f, %.0f, %.0f]",
-                CLASS_NAMES[class_id].c_str(), conf, x1, y1, bw, bh);
+            // RCLCPP_INFO(this->get_logger(),
+            //     "✓ Detection: %s | conf=%.2f | box=[%.0f, %.0f, %.0f, %.0f]",
+            //     CLASS_NAMES[class_id].c_str(), conf, x1, y1, bw, bh);
 
             result.push_back({{x1, y1, bw, bh}, conf, class_id});
         }
@@ -440,6 +464,54 @@ private:
         }
 
         return result;
+    }
+
+    // this ill be called right after line 433 inside parse_detections funciton
+    void data_for_missionPlanner(const std::vector<Detection>& [[maybe_unused]] detections) {
+
+
+    }
+
+    float distance_away(const Detection& d) {
+        //will take object that is detected and overlay it with the depth feed to figure out distance away
+        if (latest_depth_.empty()) {
+            return -1.0f;  // No depth data available
+        }
+
+        // Define a crop region around the detection box
+        int x1 = std::clamp(static_cast<int>(d.box.x), 0, latest_depth_.cols - 1);
+        int y1 = std::clamp(static_cast<int>(d.box.y), 0, latest_depth_.rows - 1);
+        int x2 = std::clamp(static_cast<int>(d.box.x + d.box.width), 0, latest_depth_.cols);
+        int y2 = std::clamp(static_cast<int>(d.box.y + d.box.height), 0, latest_depth_.rows);
+
+        if (x2 <= x1 || y2 <= y1) {
+            return -1.0f;  // Invalid crop region
+        }
+
+        cv::Mat roi = latest_depth_(cv::Rect(x1, y1, x2 - x1, y2 - y1));
+
+        // Collect valid depth values from the ROI
+        std::vector<uint16_t> depth_values;
+        depth_values.reserve(roi.rows * roi.cols);
+
+        for (int y = 0; y < roi.rows; ++y) {
+            for (int x = 0; x < roi.cols; ++x) {
+                uint16_t depth_mm = roi.at<uint16_t>(y, x);
+                if (depth_mm > 0) {  // Only include valid depth measurements
+                    depth_values.push_back(depth_mm);
+                }
+            }
+        }
+
+        if (depth_values.empty()) {
+            return -1.0f;  // No valid depth in this region
+        }
+
+        // Calculate median depth
+        std::sort(depth_values.begin(), depth_values.end());
+        uint16_t median_depth = depth_values[depth_values.size() / 2];
+
+        return median_depth / 1000.0f;  // Convert mm to meters
     }
 
     // Draw detections matching computer_vision.cpp
@@ -454,8 +526,14 @@ private:
             cv::Rect rect(x, y, w, h);
             cv::rectangle(frame, rect, cv::Scalar(0, 255, 0), 2);
 
+            // Get distance from depth feed
+            float distance_m = distance_away(d);
+            std::string distance_str = (distance_m > 0) ? 
+                std::to_string((int)(distance_m * 100)) + "cm" : "N/A";
+
             std::string label = CLASS_NAMES[d.class_id] + " " +
-                                std::to_string((int)(d.conf * 100)) + "%";
+                                std::to_string((int)(d.conf * 100)) + "%" +
+                                " [" + distance_str + "]";
 
             int baseLine = 0;
             cv::Size textSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.6, 2, &baseLine);
@@ -473,9 +551,15 @@ private:
         }
     }
 
-    void run_inference(const cv::Mat& frame)
+    void run_inference(const cv::Mat& frame, const cv::Mat& depth, rclcpp::Time timestamp, DetectionResult& result)
     {
         auto t0 = std::chrono::steady_clock::now();
+        
+        // Store depth for distance calculations
+        {
+            std::lock_guard<std::mutex> lock(display_mutex_);
+            latest_depth_ = depth.clone();
+        }
 
         // Store preprocessing parameters
         float scale;
@@ -510,6 +594,11 @@ private:
         std::vector<Detection> detections = parse_detections(
             host_output_, frame.cols, frame.rows, scale, pad_x, pad_y);
 
+        // Store results
+        result.detections = detections;
+        result.inference_time_ms = ms;
+        result.timestamp = timestamp;
+
         // Draw detections on frame
         cv::Mat annotated = frame.clone();
         draw_detections(annotated, detections);
@@ -527,23 +616,38 @@ private:
         }
     }
 
-    void color_callback(const sensor_msgs::msg::Image::SharedPtr msg) {
+    void sync_callback(const sensor_msgs::msg::Image::ConstSharedPtr color_msg, const sensor_msgs::msg::Image::ConstSharedPtr depth_msg) {
         try {
-            if (!msg) {
+            if (!color_msg || !depth_msg) {
                 RCLCPP_ERROR(this->get_logger(), "Received null image message");
                 return;
             }
 
-            cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(msg, "bgr8");
-            cv::Mat color_image = cv_ptr->image;
+            // Convert color image
+            cv_bridge::CvImageConstPtr color_ptr = cv_bridge::toCvShare(color_msg, "bgr8");
+            cv::Mat color_image = color_ptr->image;
 
             if (color_image.empty()) {
-                RCLCPP_ERROR(this->get_logger(), "Received empty image from cv_bridge");
+                RCLCPP_ERROR(this->get_logger(), "Received empty color image from cv_bridge");
                 return;
             }
 
-            // Run TensorRT inference
-            run_inference(color_image);
+            // Convert depth image (16-bit grayscale, 1 channel)
+            cv_bridge::CvImageConstPtr depth_ptr = cv_bridge::toCvShare(depth_msg, "16UC1");
+            cv::Mat depth_image = depth_ptr->image;
+
+            if (depth_image.empty()) {
+                RCLCPP_ERROR(this->get_logger(), "Received empty depth image from cv_bridge");
+                return;
+            }
+
+            // Run TensorRT inference with depth data
+            DetectionResult det_result;
+            rclcpp::Time timestamp(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
+            run_inference(color_image, depth_image, timestamp, det_result);
+
+            // Publish detections
+            publish_detections(det_result);
 
             // Display detection results
             cv::Mat detection;
@@ -568,6 +672,46 @@ private:
         }
     }
 
+    void publish_detections(const DetectionResult& det_result)
+    {
+        auto detection_array = std::make_unique<snappy_cpp::msg::DetectionArray>();
+        detection_array->header.stamp = det_result.timestamp;
+        detection_array->header.frame_id = "camera_link";
+        detection_array->inference_time_ms = static_cast<uint32_t>(det_result.inference_time_ms);
+
+        for (const auto& detection : det_result.detections) {
+            snappy_cpp::msg::ObjectDetection obj_det;
+            obj_det.object_class = CLASS_NAMES[detection.class_id];
+            obj_det.confidence = detection.conf;
+            
+            // Calculate distance for this detection
+            float distance = distance_away(detection);
+            obj_det.distance_m = distance;
+
+            // Populate bounding box
+            obj_det.bounding_box.x = detection.box.x;
+            obj_det.bounding_box.y = detection.box.y;
+            obj_det.bounding_box.width = detection.box.width;
+            obj_det.bounding_box.height = detection.box.height;
+
+            // Convert rclcpp::Time to builtin_interfaces/Time
+            obj_det.timestamp.sec = det_result.timestamp.seconds();
+            obj_det.timestamp.nanosec = det_result.timestamp.nanoseconds() % 1000000000;
+
+            detection_array->detections.push_back(obj_det);
+        }
+
+        detection_publisher_->publish(*detection_array);
+
+        // Log publication
+        if (!detection_array->detections.empty()) {
+            RCLCPP_INFO(this->get_logger(), 
+                "Published %zu detections (inference: %.1fms)", 
+                detection_array->detections.size(), 
+                det_result.inference_time_ms);
+        }
+    }
+
     struct TRTDestroyer {
         template <typename T>
         void operator()(T* object) const
@@ -578,7 +722,14 @@ private:
         }
     };
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr colorCameraFeed_;
+    // Message filter subscriptions and synchronizer
+    message_filters::Subscriber<sensor_msgs::msg::Image> color_sub_;
+    message_filters::Subscriber<sensor_msgs::msg::Image> depth_sub_;
+    std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
+
+    // Detection publisher
+    rclcpp::Publisher<snappy_cpp::msg::DetectionArray>::SharedPtr detection_publisher_;
+
     TRTLogger trt_logger_;
 
     nvinfer1::ICudaEngine* engine_ = nullptr;
@@ -599,6 +750,7 @@ private:
 
     // Display state
     cv::Mat latest_detection_;
+    cv::Mat latest_depth_;
     std::mutex display_mutex_;
 };
 

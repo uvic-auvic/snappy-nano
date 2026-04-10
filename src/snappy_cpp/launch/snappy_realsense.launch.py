@@ -146,7 +146,7 @@ def generate_launch_description():
             cuda_node,
             # controller_node,
             # state_estimator_node,
-            # planner_node,
+            planner_node,
             # pressure_sensor_node,
             # image_capture_node,
         ]

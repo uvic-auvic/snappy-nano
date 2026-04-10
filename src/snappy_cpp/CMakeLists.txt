@@ -23,6 +23,16 @@ find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+# Generate message files
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/BoundingBox2D.msg"
+  "msg/ObjectDetection.msg"
+  "msg/DetectionArray.msg"
+  DEPENDENCIES std_msgs builtin_interfaces
+)
 
 # Find and require ONNX Runtime
 find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
@@ -39,10 +49,6 @@ find_package(Boost REQUIRED)
 
 add_library(serial_lib src/include/src/serial.cpp)
 ament_target_dependencies(serial_lib rclcpp std_msgs)
-
-add_executable(snappy_cpp src/test.cpp)
-ament_target_dependencies(snappy_cpp rclcpp std_msgs)
-target_link_libraries(snappy_cpp ${Boost_LIBRARIES})
 
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
@@ -63,6 +69,11 @@ ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_m
 
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
+add_dependencies(planner ${PROJECT_NAME})
+target_link_libraries(planner
+  ${PROJECT_NAME}__rosidl_typesupport_cpp
+  ${PROJECT_NAME}__rosidl_typesupport_c
+)
 
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
@@ -70,6 +81,7 @@ ament_target_dependencies(counter_publisher rclcpp std_msgs)
 if(WITH_CUDA)
   find_package(rosbridge_suite REQUIRED)
   find_package(CUDA REQUIRED)
+  find_package(message_filters REQUIRED)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
 
   find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
@@ -77,8 +89,13 @@ if(WITH_CUDA)
 
   add_executable(cuda src/cuda.cpp)
   target_include_directories(cuda PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
-  ament_target_dependencies(cuda rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp)
+  ament_target_dependencies(cuda rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
+  
+  # Link to generated message library
+  add_dependencies(cuda ${PROJECT_NAME})
   target_link_libraries(cuda
+    ${PROJECT_NAME}__rosidl_typesupport_cpp
+    ${PROJECT_NAME}__rosidl_typesupport_c
     ${NVINFER}
     ${NVONNXPARSER}
     ${CUDA_LIBRARIES}
@@ -102,7 +119,6 @@ install(TARGETS
   state_estimator
   planner
   counter_publisher
-  snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 
 if(WITH_CUDA)
