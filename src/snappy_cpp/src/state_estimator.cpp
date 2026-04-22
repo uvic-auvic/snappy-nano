@@ -42,10 +42,9 @@ public:
         
         // From on-board IMU
         imu_sub2_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/imu/data",
+            "/imu", //"/imu/data"
             qos,
             std::bind(&StateEstimator::imu2_callback, this, std::placeholders::_1));
-        
         /*
         // Alternative: separate gyro topic
         gyro_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -62,6 +61,7 @@ public:
             
         RCLCPP_INFO(this->get_logger(), "State Estimator subscribed to:");
         RCLCPP_INFO(this->get_logger(), "  - /camera/camera/imu");
+        RCLCPP_INFO(this->get_logger(), "  - /imu");
         RCLCPP_INFO(this->get_logger(), "  - /camera/camera/gyro/sample");
         RCLCPP_INFO(this->get_logger(), "  - /camera/camera/accel/sample");
         RCLCPP_INFO(this->get_logger(), "Waiting for IMU data...");
@@ -93,7 +93,7 @@ private:
         imu1_file << msg->linear_acceleration.x << ","
                 << msg->linear_acceleration.y << ","
                 << msg->linear_acceleration.z << ","
-                << msg->angular_velocity.x << ","
+            << msg->angular_velocity.x << ","
                 << msg->angular_velocity.y << ","
                 << msg->angular_velocity.z << ","
                 << std::endl;

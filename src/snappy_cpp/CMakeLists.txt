@@ -19,6 +19,20 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Task.msg"
+  "msg/Pose.msg"
+  DEPENDENCIES "std_msgs" "geometry_msgs"
+)
+
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+)
 
 # Build all executables
 set(BOOST_ROOT "/usr")
@@ -55,6 +69,26 @@ install(TARGETS
   state_estimator
   planner
   snappy_cpp
+add_executable(controller 
+  src/controller.cpp
+  src/include/src/pid.cpp
+  src/include/src/motorboard.cpp
+)
+ament_target_dependencies(controller
+  rclcpp
+  std_msgs
+  geometry_msgs
+  rosidl_default_generators
+  tf2
+  tf2_geometry_msgs
+)
+
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(controller "${cpp_typesupport_target}")
+
+install(TARGETS
+  helloWorld
+  controller
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files
