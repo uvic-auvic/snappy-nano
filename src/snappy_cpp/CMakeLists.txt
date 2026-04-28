@@ -16,7 +16,6 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -29,6 +28,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Pose.msg"
   DEPENDENCIES "std_msgs" "geometry_msgs"
 )
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src/include
@@ -41,9 +41,10 @@ find_package(Boost REQUIRED)
 add_library(serial_lib src/include/src/serial.cpp)
 ament_target_dependencies(serial_lib rclcpp std_msgs)
 
-add_executable(snappy_cpp src/test.cpp)
-ament_target_dependencies(snappy_cpp rclcpp std_msgs)
-target_link_libraries(snappy_cpp ${Boost_LIBRARIES})
+add_executable(helloWorld src/test.cpp)
+set_target_properties(helloWorld PROPERTIES OUTPUT_NAME "snappy_cpp")
+ament_target_dependencies(helloWorld rclcpp std_msgs)
+target_link_libraries(helloWorld ${Boost_LIBRARIES})
 
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
@@ -52,8 +53,8 @@ add_executable(computer_vision src/computer_vision.cpp)
 ament_target_dependencies(computer_vision rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge)
 target_link_libraries(computer_vision ${OpenCV_LIBS})
 
-add_executable(controller src/controller.cpp)
-ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
+# add_executable(controller src/controller.cpp)
+# ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
 
 add_executable(state_estimator src/state_estimator.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
@@ -61,14 +62,7 @@ ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_m
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 
-# Install all executables
-install(TARGETS
-  pressureSensor
-  computer_vision
-  controller
-  state_estimator
-  planner
-  snappy_cpp
+
 add_executable(controller 
   src/controller.cpp
   src/include/src/pid.cpp
@@ -78,19 +72,29 @@ ament_target_dependencies(controller
   rclcpp
   std_msgs
   geometry_msgs
-  rosidl_default_generators
   tf2
   tf2_geometry_msgs
 )
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(controller "${cpp_typesupport_target}")
+target_link_libraries(helloWorld "${cpp_typesupport_target}")
+# install(TARGETS
+#   helloWorld
+#   controller
+#   DESTINATION lib/${PROJECT_NAME})
 
+
+# Install all executables
 install(TARGETS
-  helloWorld
+  pressureSensor
+  computer_vision
   controller
-  DESTINATION lib/${PROJECT_NAME})
-
+  state_estimator
+  planner
+  helloWorld
+  DESTINATION lib/${PROJECT_NAME}
+)
 # Install launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})

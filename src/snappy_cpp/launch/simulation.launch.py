@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
-
+#from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
 import os
@@ -37,6 +37,7 @@ def generate_launch_description():
         '/thrusters/vertical_fore/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
         '/thrusters/vertical_aft/cmd@std_msgs/msg/Float64@ignition.msgs.Double',
         '/auv/forward_camera/image_raw@sensor_msgs/msg/Image@ignition.msgs.Image',
+        '/imu@sensor_msgs/msg/Imu@ignition.msgs.IMU'
     ]
 
     gz_sim_cmd = [
@@ -46,7 +47,7 @@ def generate_launch_description():
     ]
 
     parameter_bridge_cmd = [
-        'ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
+        'ros2', 'run', 'ros_ign_bridge', 'parameter_bridge',
     ] + bridge_topics
 
     set_headless_env = SetEnvironmentVariable(
@@ -79,6 +80,13 @@ def generate_launch_description():
         cmd=parameter_bridge_cmd,
         output='screen',
     )
+    # parameter_bridge_process = Node(
+    #     package='ros_ign_bridge',
+    #     executable='parameter_bridge',
+    #     arguments=bridge_topics,
+    #     parameters=[{'use_sim_time': True}],
+    #     output='screen'
+    # )
 
     return LaunchDescription([
         declare_world,
