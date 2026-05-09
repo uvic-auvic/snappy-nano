@@ -6,6 +6,12 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
 #include <chrono>
+#include <controller.h>
+
+struct MotorCmd {
+    uint8_t mask;
+    float   speed;
+};
 
 using namespace std::chrono_literals;
 
@@ -33,8 +39,50 @@ public:
 
         RCLCPP_INFO(get_logger(), "Controller started — publishing on /motor_cmd at 10 Hz");
     }
+    // Single message — all motors same sign
+    void forward    (float s) { sendCmd(MotorCalls::FORWARD,    s);  }
+    void backward   (float s) { sendCmd(MotorCalls::FORWARD,   -s);  }
+    void down       (float s) { sendCmd(MotorCalls::VERTICAL, -s); }
+    void up    (float s) { sendCmd(MotorCalls::VERTICAL,  s); }
 
+    // Dual message — opposing signs
+    void strafeRight(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW,  s},
+            {MotorCalls::BACK_YAW,   s}   // same sign = strafe
+        );
+    }
+    void strafeLeft(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW, -s},
+            {MotorCalls::BACK_YAW,  -s}   // same sign, both reversed
+        );
+        
+    void yawRight(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW,  s},
+            {MotorCalls::BACK_YAW,  -s}   // opposite sign = yaw
+        );
+    }
+        
+    void yawLeft(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW, -s},
+            {MotorCalls::BACK_YAW,   s}
+        );
+    }
+        
+    void strafeLeft(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW, -s},
+            {MotorCalls::BACK_YAW,  -s}   // same sign, both reversed
+        );
+    }
+    
+    void stop(){ sendCmd(MotorCalls::ALL, 0.0f); }
 private:
+    
+    //this funciton I am leaving in the code base for testing microROS communication, the sendCmd function will be used for building out our movement system
     void publish_cmd()
     {
         //double motor_select = this->get_parameter("motor_select").as_double();
@@ -52,10 +100,24 @@ private:
 
         //RCLCPP_INFO(get_logger(), "Publishing: motors=%.0f speed=%.1f", motor_select, speed);
     }
+    
+    void sendCmd(uint8_t mask, float speed)
+    {
+        auto msg = std_msgs::msg::Float32MultiArray();
+        msg.data = {static_cast<float>(mask), speed};
+        pub_->publish(msg);
+    }
+
 
     rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
     rclcpp::TimerBase::SharedPtr timer_;
     int flag_;
+    
+    
+    void publish_dual_cmd(MotorCmd a, MotorCmd b) {
+        sendCmd(a.mask, a.speed);
+        sendCmd(b.mask, b.speed);
+    }
 };
 
 int main(int argc, char * argv[])
