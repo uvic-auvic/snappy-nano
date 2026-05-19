@@ -78,6 +78,7 @@ ament_target_dependencies(controller
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(controller "${cpp_typesupport_target}")
+target_link_libraries(planner "${cpp_typesupport_target}")
 target_link_libraries(helloWorld "${cpp_typesupport_target}")
 # install(TARGETS
 #   helloWorld

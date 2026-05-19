@@ -25,6 +25,8 @@ class Controller : public rclcpp::Node {
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.5f, 0.0f, 0.1f)
+
+            // make a basic task that keeps sub where it is until new task... 
          {
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
