@@ -43,35 +43,47 @@ static const std::vector<std::string> CLASS_NAMES = {
     "hair drier","toothbrush"
 };
 
-class CudaNode : public rclcpp::Node
+class FrontCamNode: public rclcpp::Node
 {
 public:
-    CudaNode() : Node("cuda_node")
+    FrontCamNode() : Node("front_cam")
     {
         RCLCPP_INFO(get_logger(), "=== CUDA + TensorRT YOLO Node ===");
+
+        // Declare and get camera namespace parameter
+        this->declare_parameter<std::string>("camera_namespace", "camera");
+        camera_namespace_ = this->get_parameter("camera_namespace").as_string();
+
+        RCLCPP_INFO(get_logger(), "CUDA Node initialized for camera: %s", camera_namespace_.c_str());
+
         checkCUDA();
         build_engine_from_onnx();
         allocate_buffers();
 
-        cv::namedWindow("Detections (TensorRT)", cv::WINDOW_AUTOSIZE);
-        RCLCPP_INFO(get_logger(), "OpenCV window created");
+        display_window_name_ = "Detections (TensorRT) [" + camera_namespace_ + "]";
+        cv::namedWindow(display_window_name_, cv::WINDOW_AUTOSIZE);
+        RCLCPP_INFO(get_logger(), "OpenCV window created: %s", display_window_name_.c_str());
 
-        // Create publisher for detections
+        // Create publisher for detections with camera-specific topic
+        std::string detection_topic = "/" + camera_namespace_ + "/detections";
         detection_publisher_ = this->create_publisher<snappy_cpp::msg::DetectionArray>(
-            "/cuda_node/detections", rclcpp::SensorDataQoS());
-        RCLCPP_INFO(get_logger(), "Created detection publisher on /cuda_node/detections");
+            detection_topic, rclcpp::SensorDataQoS());
+        RCLCPP_INFO(get_logger(), "Created detection publisher on %s", detection_topic.c_str());
 
-        color_sub_.subscribe(this, "/camera/camera/color/image_raw");
-        depth_sub_.subscribe(this, "/camera/camera/aligned_depth_to_color/image_raw");
+        // Build topic names using camera namespace
+        std::string color_topic = "/" + camera_namespace_ + "/" + camera_namespace_ + "/color/image_raw";
+        std::string depth_topic = "/" + camera_namespace_ + "/" + camera_namespace_ + "/aligned_depth_to_color/image_raw";
+
+        color_sub_.subscribe(this, color_topic);
+        depth_sub_.subscribe(this, depth_topic);
         sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(SyncPolicy(10), color_sub_, depth_sub_);
-        sync_->registerCallback(std::bind(&CudaNode::sync_callback, this, std::placeholders::_1, std::placeholders::_2));
+        sync_->registerCallback(std::bind(&FrontCamNode::sync_callback, this, std::placeholders::_1, std::placeholders::_2));
 
-
-        RCLCPP_INFO(get_logger(), "Subscribed to /camera/camera/color/image_raw");
-        RCLCPP_INFO(get_logger(), "Subscribed to /camera/camera/aligned_depth_to_color/image_raw");
+        RCLCPP_INFO(get_logger(), "Subscribed to color: %s", color_topic.c_str());
+        RCLCPP_INFO(get_logger(), "Subscribed to depth: %s", depth_topic.c_str());
     }
 
-    ~CudaNode() override
+    ~FrontCamNode() override
     {
         if (context_ != nullptr) {
             delete context_;
@@ -467,7 +479,7 @@ private:
     }
 
     // this ill be called right after line 433 inside parse_detections funciton
-    void data_for_missionPlanner(const std::vector<Detection>& [[maybe_unused]] detections) {
+    void data_for_missionPlanner(const std::vector<Detection>& detections) {
 
 
     }
@@ -528,7 +540,7 @@ private:
 
             // Get distance from depth feed
             float distance_m = distance_away(d);
-            std::string distance_str = (distance_m > 0) ? 
+            std::string distance_str = (distance_m > 0) ?
                 std::to_string((int)(distance_m * 100)) + "cm" : "N/A";
 
             std::string label = CLASS_NAMES[d.class_id] + " " +
@@ -554,7 +566,7 @@ private:
     void run_inference(const cv::Mat& frame, const cv::Mat& depth, rclcpp::Time timestamp, DetectionResult& result)
     {
         auto t0 = std::chrono::steady_clock::now();
-        
+
         // Store depth for distance calculations
         {
             std::lock_guard<std::mutex> lock(display_mutex_);
@@ -657,7 +669,14 @@ private:
             }
 
             if (!detection.empty()) {
-                cv::imshow("Detections (TensorRT)", detection);
+                cv::imshow(display_window_name_, detection);
+
+                // Position windows side-by-side based on camera namespace
+                int x_pos = 0;
+                if (camera_namespace_.find("455") != std::string::npos) {
+                    x_pos = 680;  // Position camera_455 to the right
+                }
+                cv::moveWindow(display_window_name_, x_pos, 0);
             }
 
             int key = cv::waitKey(1);
@@ -683,7 +702,7 @@ private:
             snappy_cpp::msg::ObjectDetection obj_det;
             obj_det.object_class = CLASS_NAMES[detection.class_id];
             obj_det.confidence = detection.conf;
-            
+
             // Calculate distance for this detection
             float distance = distance_away(detection);
             obj_det.distance_m = distance;
@@ -705,9 +724,9 @@ private:
 
         // Log publication
         if (!detection_array->detections.empty()) {
-            RCLCPP_INFO(this->get_logger(), 
-                "Published %zu detections (inference: %.1fms)", 
-                detection_array->detections.size(), 
+            RCLCPP_INFO(this->get_logger(),
+                "Published %zu detections (inference: %.1fms)",
+                detection_array->detections.size(),
                 det_result.inference_time_ms);
         }
     }
@@ -721,6 +740,10 @@ private:
             }
         }
     };
+
+    // Camera configuration
+    std::string camera_namespace_;
+    std::string display_window_name_;
 
     // Message filter subscriptions and synchronizer
     message_filters::Subscriber<sensor_msgs::msg::Image> color_sub_;
@@ -758,7 +781,7 @@ private:
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<CudaNode>();
+    auto node = std::make_shared<FrontCamNode>();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
