@@ -26,7 +26,8 @@ class Controller : public rclcpp::Node {
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.5f, 0.0f, 0.1f)
 
-            // make a basic task that keeps sub where it is until new task... 
+            
+
          {
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
@@ -41,6 +42,13 @@ class Controller : public rclcpp::Node {
             // Receive states from state estimator
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
                 "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
+            
+            snappy_cpp::msg::Task static_task_;
+            static_task_.type = "hold";
+            static_task_.direction = "on";
+            static_task_.magnitude = 1;
+            static_task_.absolute= false;
+            static_task_.overwrite = false;
 
             // Publish every 100ms ??
             status_timer_ = this->create_wall_timer(

@@ -90,22 +90,13 @@
         <pose>0 0 0 0 0 0</pose>
         <inertial>
           <mass>23.4</mass> <!-- kg -->
-          <pose>0 0 0 0 0 0</pose> <!-- center of gravity in Gazebo forward-left-up frame -->
+          <pose>-0.007 0 0 0 0 0</pose> <!-- center of gravity in Gazebo forward-left-up frame -->
           <inertia>
             <ixx>1.1</ixx><iyy>1.7</iyy><izz>1.4</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
           </inertia>
         </inertial>
 
-
-	<!-- <collision name="collision">
-          <pose>0 0 0 1.57 0 1.57</pose>
-          <geometry>
-            <mesh>
-              <uri>2025-2026_Full_ASSEMBLY.dae</uri>
-            </mesh>
-          </geometry>
-	</collision> -->
 
         <!-- <collision name="collision">  
           <geometry>
@@ -424,14 +415,13 @@
         <thrust_direction>1 0 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
-        <velocity_control>false</velocity_control>
       </plugin>
 
 
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
         <link_name>thruster_forward_starboard</link_name>
         <joint_name>thruster_forward_starboard_joint</joint_name>
-        <command_topic>/thrusters/forward_starboard/cmd</command_topic>
+        <!-- <command_topic>/thrusters/forward_starboard/cmd</command_topic> -->
         <thrust_direction>1 0 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient> 
         <propeller_diameter>0.076</propeller_diameter> <!--T200 diameter-->
@@ -439,7 +429,7 @@
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
         <link_name>thruster_lateral_port</link_name>
         <joint_name>thruster_lateral_port_joint</joint_name>
-        <command_topic>/thrusters/lateral_port/cmd</command_topic>
+        <!-- <command_topic>/thrusters/lateral_port/cmd</command_topic> -->
         <thrust_direction>0 -1 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
@@ -447,7 +437,7 @@
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
         <link_name>thruster_lateral_starboard</link_name>
         <joint_name>thruster_lateral_starboard_joint</joint_name>
-        <command_topic>/thrusters/lateral_starboard/cmd</command_topic>
+        <!-- <command_topic>/thrusters/lateral_starboard/cmd</command_topic> -->
         <thrust_direction>0 1 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
@@ -455,7 +445,7 @@
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
         <link_name>thruster_vertical_fore</link_name>
         <joint_name>thruster_vertical_fore_joint</joint_name>
-        <command_topic>/thrusters/vertical_fore/cmd</command_topic>
+        <!-- <command_topic>/thrusters/vertical_fore/cmd</command_topic> -->
         <thrust_direction>0 0 1</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
@@ -463,7 +453,7 @@
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
         <link_name>thruster_vertical_aft</link_name>
         <joint_name>thruster_vertical_aft_joint</joint_name>
-        <command_topic>/thrusters/vertical_aft/cmd</command_topic>
+        <!-- <command_topic>/thrusters/vertical_aft/cmd</command_topic> -->
         <thrust_direction>0 0 1</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>

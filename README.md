@@ -2,25 +2,24 @@
 
 - this is a c++ ros2 project that is going to be used to run AUVIC's submarine for this years competition cycle
 
-## Build project
-The workspace assumes ROS 2 Humble is already installed.
+### Subsystem: [Planner, State Estimator, Controller, Simulation]
 
+### Overview
+
+This branch combines the updated state estimator, PID controller node, and gazebo to allow work with data in the gazebo simulator.
+
+This build assumes Gazebo Ignition is installed on version 6.17.1
+
+### Details
+
+##Build Project
 ```bash
-cd ~/auvic/snappy-nano
+cd ~/snappy-nano
 source /opt/ros/humble/setup.bash
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install --packages-select snappy_cpp
 source install/setup.bash
 ```
-
-## Run Ignition Gazebo by itself
-
-```bash
-ros2 launch snappy_cpp simulation.launch.py headless:=false world:=<path/to/world.sdf>
-```
-
-`simulation.launch.py` loads `worlds/kraken.sdf`, exports the world + mesh paths, and starts the `ros_gz_bridge` parameters listed in the file so ROS topics such as `/thrusters/<name>/cmd` are available immediately.
-
 ## Run the simulator with the ROS stack
 
 ```bash
