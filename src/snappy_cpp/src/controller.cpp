@@ -42,13 +42,9 @@ class Controller : public rclcpp::Node {
             // Receive states from state estimator
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
                 "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
-            
-            snappy_cpp::msg::Task static_task_;
-            static_task_.type = "hold";
-            static_task_.direction = "on";
-            static_task_.magnitude = 1;
-            static_task_.absolute= false;
-            static_task_.overwrite = false;
+                
+            //currently state estimator does not publish state. maybe parse through IMU..
+           
 
             // Publish every 100ms ??
             status_timer_ = this->create_wall_timer(
@@ -60,11 +56,19 @@ class Controller : public rclcpp::Node {
     private:
         // Publish state to planner
         void status_callback() {
+            auto static_task_ = snappy_cpp::msg::Task();
+            static_task_.type = "hold";
+            static_task_.direction = "on";
+            static_task_.magnitude = 1;
+            static_task_.absolute= false;
+            static_task_.overwrite = false;
+
             auto status_message = std_msgs::msg::String();
             auto [position_error, orientation_error ] = computeError();
 
             if (position_error == -1 && orientation_error == -1) {
-                status_message.data = "Fail";
+                status_message.data = "No target. Staying static.";
+                parseTask(static_task_);
             } else if ((position_error < error_threshold) && (orientation_error < error_threshold)) {
                 status_message.data = "Success";
                 in_progress_ = false;

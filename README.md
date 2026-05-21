@@ -42,3 +42,11 @@ Arguments let teammates choose which nodes to launch:
 | `start_pressure_sensor` | `false` | Enable the serial pressure sensor node (needs hardware). |
 
 The launch file automatically includes `simulation.launch.py`, so one command brings up Ignition Gazebo, the ROS⇄Gazebo bridge, and the requested ROS 2 nodes for testing against the virtual vehicle.
+
+
+
+For manual control of the motors while the sim is running all motors follow a similar convention to:
+```bash
+/model/auv/joint/thruster_forward_port_joint/cmd_thrust
+```
+all topics take Float64 as a message representing the rad/s which gets converted to Newtons in the sim.
