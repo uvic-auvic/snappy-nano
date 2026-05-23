@@ -23,6 +23,16 @@ find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+# Generate message files
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/BoundingBox2D.msg"
+  "msg/ObjectDetection.msg"
+  "msg/DetectionArray.msg"
+  DEPENDENCIES std_msgs builtin_interfaces
+)
 
 # Find and require ONNX Runtime
 find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
@@ -40,16 +50,12 @@ find_package(Boost REQUIRED)
 add_library(serial_lib src/include/src/serial.cpp)
 ament_target_dependencies(serial_lib rclcpp std_msgs)
 
-add_executable(snappy_cpp src/test.cpp)
-ament_target_dependencies(snappy_cpp rclcpp std_msgs)
-target_link_libraries(snappy_cpp ${Boost_LIBRARIES})
-
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
 
-add_executable(computer_vision src/computer_vision.cpp)
-ament_target_dependencies(computer_vision rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge ament_index_cpp)
-target_link_libraries(computer_vision ${ONNXRUNTIME_LIB} ${OpenCV_LIBS})
+add_executable(computer_vision_cpu src/computer_vision_cpu.cpp)
+ament_target_dependencies(computer_vision_cpu rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge ament_index_cpp)
+target_link_libraries(computer_vision_cpu ${ONNXRUNTIME_LIB} ${OpenCV_LIBS})
 
 add_executable(image_capture src/image_capture.cpp)
 ament_target_dependencies(image_capture rclcpp sensor_msgs cv_bridge)
@@ -63,45 +69,75 @@ ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_m
 
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
+add_dependencies(planner ${PROJECT_NAME})
+target_link_libraries(planner
+  ${PROJECT_NAME}__rosidl_typesupport_cpp
+  ${PROJECT_NAME}__rosidl_typesupport_c
+)
 
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
 
 if(WITH_CUDA)
+  find_package(rosbridge_suite REQUIRED)
   find_package(CUDA REQUIRED)
+  find_package(message_filters REQUIRED)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
 
   find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
+  find_library(NVONNXPARSER nvonnxparser PATHS /usr/lib/aarch64-linux-gnu /usr/lib/x86_64-linux-gnu REQUIRED)
 
-  add_executable(cuda src/cuda.cpp)
-  target_include_directories(cuda PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
-  ament_target_dependencies(cuda rclcpp std_msgs)
-  target_link_libraries(cuda
+  add_executable(front_cam src/front_cam.cpp)
+  add_executable(bottom_cam src/bottom_cam.cpp)
+  target_include_directories(front_cam PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+  ament_target_dependencies(front_cam rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
+  target_include_directories(bottom_cam PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+  ament_target_dependencies(bottom_cam rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
+
+  # Link to generated message library
+  add_dependencies(front_cam ${PROJECT_NAME})
+  target_link_libraries(front_cam
+    ${PROJECT_NAME}__rosidl_typesupport_cpp
+    ${PROJECT_NAME}__rosidl_typesupport_c
     ${NVINFER}
+    ${NVONNXPARSER}
+    ${CUDA_LIBRARIES}
+    ${OpenCV_LIBS}
+    /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
+  )
+  add_dependencies(bottom_cam ${PROJECT_NAME})
+  target_link_libraries(bottom_cam
+    ${PROJECT_NAME}__rosidl_typesupport_cpp
+    ${PROJECT_NAME}__rosidl_typesupport_c
+    ${NVINFER}
+    ${NVONNXPARSER}
     ${CUDA_LIBRARIES}
     ${OpenCV_LIBS}
     /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
   )
 endif()
 
-install(FILES src/yolo26n.onnx
+install(FILES
+    src/yolo26n.onnx
+    src/yolo26s.onnx
     DESTINATION share/${PROJECT_NAME}/models
 )
 
 # Install all executables
 install(TARGETS
   pressureSensor
-  computer_vision
+  computer_vision_cpu
   image_capture
   controller
   state_estimator
   planner
   counter_publisher
-  snappy_cpp
   DESTINATION lib/${PROJECT_NAME})
 
 if(WITH_CUDA)
-  install(TARGETS cuda
+  install(TARGETS front_cam
+    DESTINATION lib/${PROJECT_NAME})
+  install(TARGETS bottom_cam
     DESTINATION lib/${PROJECT_NAME})
 endif()
 

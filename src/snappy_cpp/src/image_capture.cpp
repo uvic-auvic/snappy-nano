@@ -27,7 +27,7 @@ public:
 
         // Inititalize subscribers
         color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/camera/color/image_rect_raw", rclcpp::SensorDataQoS(),
+            "/camera/camera/color/image_raw", rclcpp::SensorDataQoS(),
             bind(&ImageCapture::color_callback, this, placeholders::_1));
 
         depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
