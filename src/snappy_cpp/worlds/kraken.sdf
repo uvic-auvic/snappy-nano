@@ -89,10 +89,11 @@
       <link name="chassis">
         <pose>0 0 0 0 0 0</pose>
         <inertial>
-          <mass>23.4</mass> <!-- kg -->
-          <pose>-0.007 0 0 0 0 0</pose> <!-- center of gravity in Gazebo forward-left-up frame -->
+          <mass>24.48</mass> <!-- kg -->
+          <pose>0 0 -0.03 0 0 0</pose> <!-- center of gravity in Gazebo forward-left-up frame -->
           <inertia>
-            <ixx>1.1</ixx><iyy>1.7</iyy><izz>1.4</izz>
+            <!-- <ixx>1.1</ixx><iyy>1.7</iyy><izz>1.4</izz> -->
+            <ixx>1.2</ixx><iyy>2.5</iyy><izz>2.5</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
           </inertia>
         </inertial>
@@ -116,11 +117,11 @@
           </geometry>
         </collision>
 
-        <!-- <buoyancy>
+        <buoyancy>
           <center_of_volume>0 0 0</center_of_volume>
           <volume>0.0246</volume>
           <compensation>1.0</compensation>
-        </buoyancy> -->
+        </buoyancy>
 
         <visual name="visual">
           <pose>0 0 0 1.57 0 1.57</pose>
@@ -222,13 +223,18 @@
         <current_velocity>0 0 0</current_velocity> <!-- world-frame pool current -->
         <link_name>chassis</link_name>
         <added_mass>
-          <ixx>0</ixx><iyy>0</iyy><izz>0</izz> <!-- placeholder until tank data available -->
+          <!-- <ixx>0</ixx><iyy>0</iyy><izz>0</izz>  -->
+          <ixx>15</ixx><iyy>25</iyy><izz>25</izz><!-- placeholder until tank data available -->
         </added_mass>
         <linear_damping>
-          <x>8</x><y>8</y><z>12</z> <!-- N·s/m, tune from tow-tank pull tests -->
+           <x>25</x><y>35</y><z>80</z>
+          <!-- <x>8</x><y>8</y><z>12</z>  -->
+          <!-- N·s/m, tune from tow-tank pull tests -->
         </linear_damping>
         <angular_damping>
-          <x>1.5</x><y>1.5</y><z>2</z> <!-- N·m·s, rotational drag estimates -->
+          <!-- <x>1.5</x><y>1.5</y><z>2</z>  -->
+          <!-- N·m·s, rotational drag estimates -->
+          <x>25</x><y>35</y><z>20</z>
         </angular_damping>
         <projected_area>
           <x>0.12</x><y>0.18</y><z>0.1</z> <!-- m^2 cross-sections; refine from CAD -->
@@ -237,171 +243,249 @@
 
       <!-- ============ Thruster Links + Joints ============ -->
 
-      <!-- Visuals commented out for performance. -->
-      <!-- Surge pair -->
-      <link name="thruster_forward_port">
-        <pose>0.35 0.18 -0.05 0 0 0</pose>
+      <!-- Visuals just for alignment accuracy.-->
+
+      <!-- 4 vertical thrusters -->
+      <link name="thruster_vertical_port_fore">
+        <pose>.07 0.17 0.19 0 0 0</pose>
         <inertial>
-          <mass>0.2</mass>
+          <mass>0.001</mass>
           <inertia>
-            <ixx>1e-3</ixx><iyy>1e-3</iyy><izz>1e-3</izz>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
           </inertia>
         </inertial>
-        <!-- <visual name="t200_visual">
+        <visual name="t200_visual">
+          <transparency>1</transparency>
           <geometry>
-            <mesh>
-              <uri>file://t200_prop.dae</uri>
-              <scale>0.001 0.001 0.001</scale>
-            </mesh>
+          <sphere><radius>.05</radius></sphere>
           </geometry>
-        </visual> -->
+        </visual>
+
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
+      </link>
+
+      <link name="thruster_vertical_starboard_fore">
+        <pose>.07 -0.17 0.19 0 0 0</pose>
+        <inertial>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name="t200_visual">
+          <transparency>1</transparency>
+          <geometry>
+          <sphere><radius>.05</radius></sphere>
+          </geometry>
+        </visual>
+
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
+      </link>
+
+
+      <link name="thruster_vertical_port_aft">
+        <pose>-.53 0.17 0.19 0 0 0</pose>
+        <inertial>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name="t200_visual">
+          <transparency>1</transparency>
+          <geometry>
+          <sphere><radius>.05</radius></sphere>
+          </geometry>
+        </visual>
+
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
+      </link>
+
+      <link name="thruster_vertical_starboard_aft">
+        <pose>-.53 -0.17 0.19 0 0 0</pose>
+        <inertial>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name="t200_visual">
+          <transparency>1</transparency>
+          <geometry>
+          <sphere><radius>.05</radius></sphere>
+          </geometry>
+        </visual>
+
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
+      </link>
+
+      <!-- forward pair -->
+      <link name="thruster_forward_port">
+        <pose>-.23 0.28 0.17 0 -1.5708 0</pose>
+        <inertial>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name="t200_visual">
+          <transparency>1</transparency>
+          <geometry>
+            <sphere><radius>.05</radius></sphere>
+          </geometry>
+        </visual>
+
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
       </link>
 
       <link name="thruster_forward_starboard">
-        <pose>0.35 -0.18 -0.05 0 0 0</pose>
+        <pose>-.23 -0.28 0.17 0 -1.5708 0</pose>
         <inertial>
-          <mass>0.2</mass>
+          <mass>0.001</mass>
           <inertia>
-            <ixx>1e-3</ixx><iyy>1e-3</iyy><izz>1e-3</izz>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
           </inertia>
         </inertial>
-        <!-- <visual name="t200_visual">
+        <visual name="t200_visual">
+          <transparency>1</transparency>
           <geometry>
-            <mesh>
-              <uri>file://t200_prop.dae</uri>
-              <scale>0.001 0.001 0.001</scale>
-            </mesh>
+          <sphere><radius>.05</radius></sphere>
           </geometry>
-        </visual> -->
+        </visual>
+
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
       </link>
 
-      <!-- Sway pair -->
-      <link name="thruster_lateral_port">
-        <pose>0.05 0.25 -0.05 0 0 1.5708</pose>
+      <!-- Rotation pair -->
+      <link name="thruster_lateral_fore">
+        <pose>.07 0 .06 -1.5708 0 0</pose>  
         <inertial>
-          <mass>0.2</mass>
+          <mass>0.001</mass>
           <inertia>
-            <ixx>1e-3</ixx><iyy>1e-3</iyy><izz>1e-3</izz>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
           </inertia>
         </inertial>
-        <!-- <visual name="t200_visual">
+        <visual name="t200_visual">
+          <transparency>1</transparency>
           <geometry>
-            <mesh>
-              <uri>file://t200_prop.dae</uri>
-              <scale>0.001 0.001 0.001</scale>
-            </mesh>
+          <sphere><radius>.05</radius></sphere> 
           </geometry>
-        </visual> -->
+        </visual>
+
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
       </link>
 
-      <link name="thruster_lateral_starboard">
-        <pose>0.05 -0.25 -0.05 0 0 -1.5708</pose>
+      <link name="thruster_lateral_aft">
+        <pose>-.53 0 .06 -1.5708 0 0</pose> 
         <inertial>
-          <mass>0.2</mass>
+          <mass>0.001</mass>
           <inertia>
-            <ixx>1e-3</ixx><iyy>1e-3</iyy><izz>1e-3</izz>
+            <ixx>1e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz>
             <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
           </inertia>
         </inertial>
-        <!-- <visual name="t200_visual">
+        <visual name="t200_visual">
+          <transparency>1</transparency>
           <geometry>
-            <mesh>
-              <uri>file://t200_prop.dae</uri>
-              <scale>0.001 0.001 0.001</scale>
-            </mesh>
+            <sphere><radius>.05</radius></sphere>
           </geometry>
-        </visual> -->
-      </link>
+        </visual>
 
-      <!-- Heave pair -->
-      <link name="thruster_vertical_fore">
-        <pose>0.25 0 -0.05 1.5708 0 0</pose>
-        <inertial>
-          <mass>0.2</mass>
-          <inertia>
-            <ixx>1e-3</ixx><iyy>1e-3</iyy><izz>1e-3</izz>
-            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
-          </inertia>
-        </inertial>
-        <!-- <visual name="t200_visual">
-          <geometry>
-            <mesh>
-              <uri>file://t200_prop.dae</uri>
-              <scale>0.001 0.001 0.001</scale>
-            </mesh>
-          </geometry>
-        </visual> -->
-      </link>
-
-      <link name="thruster_vertical_aft">
-        <pose>-0.25 0 -0.05 1.5708 0 0</pose>
-        <inertial>
-          <mass>0.2</mass>
-          <inertia>
-            <ixx>1e-3</ixx><iyy>1e-3</iyy><izz>1e-3</izz>
-            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
-          </inertia>
-        </inertial>
-        <!-- <visual name="t200_visual">
-          <geometry>
-            <mesh>
-              <uri>file://t200_prop.dae</uri>
-              <scale>0.001 0.001 0.001</scale>
-            </mesh>
-          </geometry>
-        </visual> -->
+        <self_collide>false</self_collide>
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
       </link>
 
       <!-- Fixed joints to chassis -->
-      <joint name="thruster_forward_port_joint" type="revolute">
+      <joint name="thruster_vertical_port_fore_joint" type="fixed">
+        <parent>chassis</parent>
+        <child>thruster_vertical_port_fore</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <!-- <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit> -->
+        </axis>
+      </joint>
+      <joint name="thruster_vertical_starboard_fore_joint" type="fixed">
+        <parent>chassis</parent>
+        <child>thruster_vertical_starboard_fore</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <!-- <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit> -->
+        </axis>
+      </joint>
+        <joint name="thruster_vertical_port_aft_joint" type="fixed">
+        <parent>chassis</parent>
+        <child>thruster_vertical_port_aft</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <!-- <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit> -->
+        </axis>
+      </joint>
+      <joint name="thruster_vertical_starboard_aft_joint" type="fixed">
+        <parent>chassis</parent>
+        <child>thruster_vertical_starboard_aft</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <!-- <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit> -->
+        </axis>
+      </joint>
+      <joint name="thruster_forward_port_joint" type="fixed">
         <parent>chassis</parent>
         <child>thruster_forward_port</child>
         <axis>
-          <xyz>1 0 0</xyz>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
+          <xyz>0 1 0</xyz>
         </axis>
       </joint>
-      <joint name="thruster_forward_starboard_joint" type="revolute">
+      <joint name="thruster_forward_starboard_joint" type="fixed">
         <parent>chassis</parent>
         <child>thruster_forward_starboard</child>
         <axis>
-          <xyz>1 0 0</xyz>
-          <limit>
-            <lower>-1e16</lower>
-            <upper>1e16</upper>
-          </limit>
-        </axis>
-      </joint>
-      <joint name="thruster_lateral_port_joint" type="fixed">
-        <parent>chassis</parent>
-        <child>thruster_lateral_port</child>
-        <axis>
           <xyz>0 1 0</xyz>
         </axis>
       </joint>
-      <joint name="thruster_lateral_starboard_joint" type="fixed">
+      <joint name="thruster_lateral_fore_joint" type="fixed">
         <parent>chassis</parent>
-        <child>thruster_lateral_starboard</child>
-        <axis>
-          <xyz>0 1 0</xyz>
-        </axis>
-      </joint>
-      <joint name="thruster_vertical_fore_joint" type="fixed">
-        <parent>chassis</parent>
-        <child>thruster_vertical_fore</child>
+        <child>thruster_lateral_fore</child>
         <axis>
           <xyz>0 0 1</xyz>
         </axis>
       </joint>
-      <joint name="thruster_vertical_aft_joint" type="fixed">
+      <joint name="thruster_lateral_aft_joint" type="fixed">
         <parent>chassis</parent>
-        <child>thruster_vertical_aft</child>
+        <child>thruster_lateral_aft</child>
         <axis>
           <xyz>0 0 1</xyz>
         </axis>
@@ -409,50 +493,68 @@
 
       <!-- ============ Thruster Plugins ============ -->
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
-        <link_name>thruster_forward_port</link_name>
-        <joint_name>thruster_forward_port_joint</joint_name>
+        <link_name>thruster_vertical_port_fore</link_name>
+        <joint_name>thruster_vertical_port_fore_joint</joint_name>
         <!-- <command_topic>/thrusters/forward_port/cmd</command_topic> -->  <!--command_topic is deprecated-->>
         <thrust_direction>1 0 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
 
-
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
-        <link_name>thruster_forward_starboard</link_name>
-        <joint_name>thruster_forward_starboard_joint</joint_name>
+        <link_name>thruster_vertical_starboard_fore</link_name>
+        <joint_name>thruster_vertical_starboard_fore_joint</joint_name>
         <!-- <command_topic>/thrusters/forward_starboard/cmd</command_topic> -->
         <thrust_direction>1 0 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient> 
         <propeller_diameter>0.076</propeller_diameter> <!--T200 diameter-->
       </plugin>
+
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
-        <link_name>thruster_lateral_port</link_name>
-        <joint_name>thruster_lateral_port_joint</joint_name>
+        <link_name>thruster_vertical_port_aft</link_name>
+        <joint_name>thruster_vertical_port_aft_joint</joint_name>
+        <!-- <command_topic>/thrusters/forward_port/cmd</command_topic> -->  <!--command_topic is deprecated-->>
+        <thrust_direction>1 0 0</thrust_direction>
+        <thrust_coefficient>1</thrust_coefficient>
+        <propeller_diameter>0.076</propeller_diameter>
+      </plugin>
+
+      <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
+        <link_name>thruster_vertical_starboard_aft</link_name>
+        <joint_name>thruster_vertical_starboard_aft_joint</joint_name>
+        <!-- <command_topic>/thrusters/forward_starboard/cmd</command_topic> -->
+        <thrust_direction>1 0 0</thrust_direction>
+        <thrust_coefficient>1</thrust_coefficient> 
+        <propeller_diameter>0.076</propeller_diameter> <!--T200 diameter-->
+      </plugin>
+
+      <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
+        <link_name>thruster_forward_port</link_name>
+        <joint_name>thruster_forward_port_joint</joint_name>
         <!-- <command_topic>/thrusters/lateral_port/cmd</command_topic> -->
         <thrust_direction>0 -1 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
-        <link_name>thruster_lateral_starboard</link_name>
-        <joint_name>thruster_lateral_starboard_joint</joint_name>
+        <link_name>thruster_forward_starboard</link_name>
+        <joint_name>thruster_forward_starboard_joint</joint_name>
         <!-- <command_topic>/thrusters/lateral_starboard/cmd</command_topic> -->
         <thrust_direction>0 1 0</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
-        <link_name>thruster_vertical_fore</link_name>
-        <joint_name>thruster_vertical_fore_joint</joint_name>
+        <link_name>thruster_lateral_fore</link_name>
+        <joint_name>thruster_lateral_fore_joint</joint_name>
         <!-- <command_topic>/thrusters/vertical_fore/cmd</command_topic> -->
         <thrust_direction>0 0 1</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
-        <link_name>thruster_vertical_aft</link_name>
-        <joint_name>thruster_vertical_aft_joint</joint_name>
+        <link_name>thruster_lateral_aft</link_name>
+        <joint_name>thruster_lateral_aft_joint</joint_name>
         <!-- <command_topic>/thrusters/vertical_aft/cmd</command_topic> -->
         <thrust_direction>0 0 1</thrust_direction>
         <thrust_coefficient>1</thrust_coefficient>
