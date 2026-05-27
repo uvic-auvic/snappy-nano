@@ -20,6 +20,8 @@ Postive z is down from the sub at t = 0
 */
 
 
+// Might have to update this to have global orientation error, p.g 70
+
 #include "kalman.h"
 #include <iostream>
 #include <fstream>
@@ -61,16 +63,18 @@ KalmanFilter::KalmanFilter(VectorXd x0Input, MatrixXd P0Input, MatrixXd QInput,
 void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
 {
     //U : raw IMU measurements in the camera frame: [accel(3), gyro(3)]
-
     // accel and gyro bias are in imu1s camera frame 
 
+    Vector3d gyro_bias = x.segment<3>(10);
+    Vector3d accel_bias = x.segment<3>(13);
+
     // Rotate raw IMU1 (camera frame) measurements into imu2's body frame.
-    Vector3d accel_raw = U.segment<3>(0) - x.segment<3>(13);  // remove accel bias
-    Vector3d gyro_raw  = U.segment<3>(3) - x.segment<3>(10);  // remove gyro bias
+    Vector3d accel_raw = U.segment<3>(0) - accel_bias;  // remove accel bias
+    Vector3d gyro_raw  = U.segment<3>(3) - gyro_bias;  // remove gyro bias
     Vector3d accel_in = q_imu1_to_body_ * accel_raw;
     Vector3d gyro_in  = q_imu1_to_body_ * gyro_raw;
-    VectorXd U_body(6);
-    U_body << accel_in, gyro_in;
+    //VectorXd U_body(6);
+    //U_body << accel_in, gyro_in;
 
     // State x: [pos(3), vel(3), quat(4), gyro_bias(3), accel_bias(3)]
     Vector3d position = x.segment<3>(0);
@@ -78,15 +82,12 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
     Quaterniond q(x(6), x(7), x(8), x(9));
     q.normalize();
 
-    //Vector3d gyro_bias = x.segment<3>(10);
-    //Vector3d accel_bias = x.segment<3>(13);
-
     // Control input
-    Vector3d accel_body = U_body.segment<3>(0) /*- accel_bias*/;
-    Vector3d gyro = U_body.segment<3>(3) /*- gyro_bias*/;
+    // Vector3d accel_body = U_body.segment<3>(0) /*- accel_bias*/;
+    // Vector3d gyro = U_body.segment<3>(3) /*- gyro_bias*/;
 
     // Convert acceleration to world frame and remove gravity.
-    Vector3d accel_world = q * accel_body;
+    Vector3d accel_world = q * accel_in;
     accel_world -= gravity;
 
     // Integrate position & velocity
@@ -98,9 +99,9 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
     //  q_dot = 0.5 * q ⊗ omega
     Quaterniond dq(
         1.0,
-        0.5 * gyro.x() * dt,
-        0.5 * gyro.y() * dt,
-        0.5 * gyro.z() * dt
+        0.5 * gyro_in.x() * dt,
+        0.5 * gyro_in.y() * dt,
+        0.5 * gyro_in.z() * dt
     );
 
     q = q * dq;
@@ -147,8 +148,8 @@ void KalmanFilter::updateIMU2(const Quaterniond& quat_measured)
     Quaterniond q_state(x(6), x(7), x(8), x(9));
     q_state.normalize();
 
-    // Sola 7.4.2
-    Quaterniond q_err = q_meas_local * q_state.conjugate();
+    // Sola 7.4.2 (right-invariant error for q <- q * dq)
+    Quaterniond q_err = q_state.conjugate() * q_meas_local;
     if (q_err.w() < 0.0) {
         q_err.coeffs() *= -1.0;
     }
@@ -176,8 +177,14 @@ void KalmanFilter::updateDepth(double depth_measured)
 }
 
 // For when we get a DVL
+// Should use a Small R_vel since DVL velocity measurements are usually pretty accurate
 void KalmanFilter::updateVelocity(const Vector3d& v_measured, const Matrix3d& R_vel)
 {
+    Quaterniond q(x(6), x(7), x(8), x(9));
+    q.normalize();
+
+    v_measured = q * v_measured; // rotate velocity measurement into world frame
+    
     // Measurement: velocity only (3x1)
     VectorXd residual(3);
     residual = v_measured - x.segment<3>(3);
@@ -282,6 +289,7 @@ void KalmanFilter::normalizeQuaternion()
 }
 
 //  F : Jacobian of the error-state transition function
+// Look at 310-312 might need to update thiss
 MatrixXd KalmanFilter::computeF(double dt, const VectorXd& U) const
 {
     (void)dt;

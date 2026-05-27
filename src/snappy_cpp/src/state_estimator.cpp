@@ -23,7 +23,7 @@ public:
     std::fstream imu2_file;
     std::fstream kalman_file;
     // std::fstream depth_file;
-    double last_time_imu1_sec_ = 0.0;
+    double last_time_imu1_sec_ = 0.0; // for dt
     double last_time_imu2_sec_ = 0.0;
     KalmanFilter kf;
 
@@ -37,7 +37,7 @@ public:
         
         imu1_file.open("imu1.csv", std::fstream::app);
         imu2_file.open("imu2.csv", std::fstream::app);
-        kalman_file.open("kalman.csv", std::fstream::app);
+        kalman_file.open("kalman.csv", std::fstream::app); // output of kalman
         // Create QoS profile matching RealSense camera publisher
         // RealSense uses: Best Effort reliability + Volatile durability
         auto qos = rclcpp::QoS(rclcpp::KeepLast(10))
@@ -89,8 +89,11 @@ public:
         Q_init.block<3,3>(9,9) *= 0.01;   // accel bias random walk
         kf.setProcessNoise(Q_init);
        
+        // To get better R_ vaules, should take stationary data and compute standard deviation
+
         MatrixXd R_imu2_init = MatrixXd::Identity(3, 3) * 0.01;  // IMU2 orientation noise
         MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.05;  // depth sensor noise
+        //MatrixXd R_vel_init = MatrixXd::Identity(3, 3) * 0.1; // velocity measurement noise
         kf.setIMU2MeasurementNoise(R_imu2_init);
         kf.setDepthMeasurementNoise(R_depth_init);
 
