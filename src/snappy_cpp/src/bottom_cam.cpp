@@ -17,10 +17,11 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <mutex>
+#include <cmath>
 
 #include "snappy_cpp/msg/detection_array.hpp"
 #include "snappy_cpp/msg/object_detection.hpp"
@@ -43,7 +44,7 @@ static const std::vector<std::string> CLASS_NAMES = {
     "hair drier","toothbrush"
 };
 
-class BottomCamNode : public rclcpp::Node
+class BottomCamNode: public rclcpp::Node
 {
 public:
     BottomCamNode() : Node("bottom_cam")
@@ -52,17 +53,28 @@ public:
 
         // Declare and get camera namespace parameter
         this->declare_parameter<std::string>("camera_namespace", "camera");
+        this->declare_parameter<double>("inference_hz", 10.0);
+        this->declare_parameter<bool>("display", false);
+        this->declare_parameter<int>("distance_samples", 100);
+
         camera_namespace_ = this->get_parameter("camera_namespace").as_string();
+        inference_hz_ = this->get_parameter("inference_hz").as_double();
+        display_ = this->get_parameter("display").as_bool();
+        distance_samples_ = std::max(1, this->get_parameter("distance_samples").as_int());
 
         RCLCPP_INFO(get_logger(), "CUDA Node initialized for camera: %s", camera_namespace_.c_str());
+        RCLCPP_INFO(get_logger(), "Settings: inference_hz=%.1f, display=%s, distance_samples=%d",
+                    inference_hz_, display_ ? "true" : "false", distance_samples_);
 
         checkCUDA();
         build_engine_from_onnx();
         allocate_buffers();
 
         display_window_name_ = "Detections (TensorRT) [" + camera_namespace_ + "]";
-        cv::namedWindow(display_window_name_, cv::WINDOW_AUTOSIZE);
-        RCLCPP_INFO(get_logger(), "OpenCV window created: %s", display_window_name_.c_str());
+        if (display_) {
+            cv::namedWindow(display_window_name_, cv::WINDOW_AUTOSIZE);
+            RCLCPP_INFO(get_logger(), "OpenCV window created: %s", display_window_name_.c_str());
+        }
 
         // Create publisher for detections with camera-specific topic
         std::string detection_topic = "/" + camera_namespace_ + "/detections";
@@ -105,6 +117,9 @@ public:
             cudaStreamDestroy(stream_);
             stream_ = nullptr;
         }
+        if (display_) {
+            cv::destroyWindow(display_window_name_);
+        }
     }
 
 
@@ -114,6 +129,7 @@ private:
         cv::Rect2f box;   // x, y, width, height in original image pixels
         float conf;
         int   class_id;
+        float distance_m = -1.0f;
     };
 
     // Detection results with inference time and timestamp
@@ -361,6 +377,7 @@ private:
         }
 
         host_output_.resize(output_count_);
+        input_tensor_.resize(input_count_);
     }
 
     // Letterbox preprocessing matching computer_vision.cpp
@@ -387,7 +404,7 @@ private:
         return out;
     }
 
-    std::vector<float> preprocess(const cv::Mat& image, float& scale, int& pad_x, int& pad_y)
+    void preprocess(const cv::Mat& image, float& scale, int& pad_x, int& pad_y)
     {
         // Apply letterbox to maintain aspect ratio
         cv::Mat letterboxed = letterboxFeed(image, input_w_, input_h_, scale, pad_x, pad_y);
@@ -404,15 +421,12 @@ private:
         std::vector<cv::Mat> channels(3);
         cv::split(float_img, channels);
 
-        std::vector<float> input_tensor(input_count_);
         const size_t plane = static_cast<size_t>(input_h_ * input_w_);
         for (int c = 0; c < 3; ++c) {
-            std::memcpy(input_tensor.data() + c * plane,
+            std::memcpy(input_tensor_.data() + c * plane,
                         channels[c].data,
                         plane * sizeof(float));
         }
-
-        return input_tensor;
     }
 
     // Parse YOLO detections matching computer_vision.cpp
@@ -468,11 +482,12 @@ private:
             //     "✓ Detection: %s | conf=%.2f | box=[%.0f, %.0f, %.0f, %.0f]",
             //     CLASS_NAMES[class_id].c_str(), conf, x1, y1, bw, bh);
 
-            result.push_back({{x1, y1, bw, bh}, conf, class_id});
+            result.push_back({{x1, y1, bw, bh}, conf, class_id, -1.0f});
         }
 
         if (!result.empty()) {
-            RCLCPP_INFO(this->get_logger(), "=== %zu detection(s) this frame ===", result.size());
+            RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                "Detections this frame: %zu", result.size());
         }
 
         return result;
@@ -484,46 +499,48 @@ private:
 
     }
 
-    float distance_away(const Detection& d) {
-        //will take object that is detected and overlay it with the depth feed to figure out distance away
-        if (latest_depth_.empty()) {
-            return -1.0f;  // No depth data available
+    float distance_away(const Detection& d, const cv::Mat& depth_image) {
+        if (depth_image.empty() || depth_image.type() != CV_16UC1) {
+            return -1.0f;
         }
 
-        // Define a crop region around the detection box
-        int x1 = std::clamp(static_cast<int>(d.box.x), 0, latest_depth_.cols - 1);
-        int y1 = std::clamp(static_cast<int>(d.box.y), 0, latest_depth_.rows - 1);
-        int x2 = std::clamp(static_cast<int>(d.box.x + d.box.width), 0, latest_depth_.cols);
-        int y2 = std::clamp(static_cast<int>(d.box.y + d.box.height), 0, latest_depth_.rows);
+        int x1 = std::clamp(static_cast<int>(d.box.x), 0, depth_image.cols - 1);
+        int y1 = std::clamp(static_cast<int>(d.box.y), 0, depth_image.rows - 1);
+        int x2 = std::clamp(static_cast<int>(d.box.x + d.box.width), 0, depth_image.cols);
+        int y2 = std::clamp(static_cast<int>(d.box.y + d.box.height), 0, depth_image.rows);
 
         if (x2 <= x1 || y2 <= y1) {
-            return -1.0f;  // Invalid crop region
+            return -1.0f;
         }
 
-        cv::Mat roi = latest_depth_(cv::Rect(x1, y1, x2 - x1, y2 - y1));
+        const int roi_w = x2 - x1;
+        const int roi_h = y2 - y1;
+        const int grid = std::max(1, static_cast<int>(std::sqrt(static_cast<double>(distance_samples_))));
+        const int step_x = std::max(1, roi_w / grid);
+        const int step_y = std::max(1, roi_h / grid);
 
-        // Collect valid depth values from the ROI
         std::vector<uint16_t> depth_values;
-        depth_values.reserve(roi.rows * roi.cols);
+        depth_values.reserve(static_cast<size_t>(grid * grid));
 
-        for (int y = 0; y < roi.rows; ++y) {
-            for (int x = 0; x < roi.cols; ++x) {
-                uint16_t depth_mm = roi.at<uint16_t>(y, x);
-                if (depth_mm > 0) {  // Only include valid depth measurements
+        const int y_offset = step_y / 2;
+        const int x_offset = step_x / 2;
+        for (int y = y1 + y_offset; y < y2; y += step_y) {
+            const uint16_t* row_ptr = depth_image.ptr<uint16_t>(y);
+            for (int x = x1 + x_offset; x < x2; x += step_x) {
+                uint16_t depth_mm = row_ptr[x];
+                if (depth_mm > 0) {
                     depth_values.push_back(depth_mm);
                 }
             }
         }
 
         if (depth_values.empty()) {
-            return -1.0f;  // No valid depth in this region
+            return -1.0f;
         }
 
-        // Calculate median depth
-        std::sort(depth_values.begin(), depth_values.end());
-        uint16_t median_depth = depth_values[depth_values.size() / 2];
-
-        return median_depth / 1000.0f;  // Convert mm to meters
+        auto mid = depth_values.begin() + (depth_values.size() / 2);
+        std::nth_element(depth_values.begin(), mid, depth_values.end());
+        return static_cast<float>(*mid) / 1000.0f;
     }
 
     // Draw detections matching computer_vision.cpp
@@ -538,10 +555,8 @@ private:
             cv::Rect rect(x, y, w, h);
             cv::rectangle(frame, rect, cv::Scalar(0, 255, 0), 2);
 
-            // Get distance from depth feed
-            float distance_m = distance_away(d);
-            std::string distance_str = (distance_m > 0) ?
-                std::to_string((int)(distance_m * 100)) + "cm" : "N/A";
+            std::string distance_str = (d.distance_m > 0) ?
+                std::to_string((int)(d.distance_m * 100)) + "cm" : "N/A";
 
             std::string label = CLASS_NAMES[d.class_id] + " " +
                                 std::to_string((int)(d.conf * 100)) + "%" +
@@ -563,25 +578,19 @@ private:
         }
     }
 
-    void run_inference(const cv::Mat& frame, const cv::Mat& depth, rclcpp::Time timestamp, DetectionResult& result)
+    void run_inference(const cv::Mat& frame, rclcpp::Time timestamp, DetectionResult& result)
     {
         auto t0 = std::chrono::steady_clock::now();
-
-        // Store depth for distance calculations
-        {
-            std::lock_guard<std::mutex> lock(display_mutex_);
-            latest_depth_ = depth.clone();
-        }
 
         // Store preprocessing parameters
         float scale;
         int pad_x, pad_y;
 
         // Preprocess with letterboxing
-        std::vector<float> input_tensor = preprocess(frame, scale, pad_x, pad_y);
+        preprocess(frame, scale, pad_x, pad_y);
 
         // Copy input to GPU
-        cudaMemcpyAsync(device_buffers_[0], input_tensor.data(),
+        cudaMemcpyAsync(device_buffers_[0], input_tensor_.data(),
                         input_count_ * sizeof(float), cudaMemcpyHostToDevice, stream_);
 
         // Set input and output tensor addresses for TensorRT 10 API
@@ -611,21 +620,6 @@ private:
         result.inference_time_ms = ms;
         result.timestamp = timestamp;
 
-        // Draw detections on frame
-        cv::Mat annotated = frame.clone();
-        draw_detections(annotated, detections);
-
-        // Add inference time and detection count info
-        std::string info = "Infer: " + std::to_string((int)ms) + "ms (TensorRT GPU)"
-                         + "  det: " + std::to_string(detections.size());
-        cv::putText(annotated, info, {10, 30},
-            cv::FONT_HERSHEY_SIMPLEX, 0.8, {0, 255, 255}, 2, cv::LINE_AA);
-
-        // Display result
-        {
-            std::lock_guard<std::mutex> lock(display_mutex_);
-            latest_detection_ = annotated;
-        }
     }
 
     void sync_callback(const sensor_msgs::msg::Image::ConstSharedPtr color_msg, const sensor_msgs::msg::Image::ConstSharedPtr depth_msg) {
@@ -653,36 +647,48 @@ private:
                 return;
             }
 
+            const rclcpp::Time now = this->get_clock()->now();
+            const double min_inference_period = inference_hz_ > 0.0 ? (1.0 / inference_hz_) : 0.0;
+            if (min_inference_period > 0.0 && last_inference_time_.has_value() &&
+                (now - *last_inference_time_).seconds() < min_inference_period) {
+                return;
+            }
+            last_inference_time_ = now;
+
             // Run TensorRT inference with depth data
             DetectionResult det_result;
             rclcpp::Time timestamp(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
-            run_inference(color_image, depth_image, timestamp, det_result);
+            run_inference(color_image, timestamp, det_result);
+
+            for (auto& detection : det_result.detections) {
+                detection.distance_m = distance_away(detection, depth_image);
+            }
 
             // Publish detections
             publish_detections(det_result);
 
-            // Display detection results
-            cv::Mat detection;
-            {
-                std::lock_guard<std::mutex> lock(display_mutex_);
-                detection = latest_detection_.clone();
-            }
+            if (display_) {
+                cv::Mat annotated = color_image.clone();
+                draw_detections(annotated, det_result.detections);
 
-            if (!detection.empty()) {
-                cv::imshow(display_window_name_, detection);
+                std::string info = "Infer: " + std::to_string((int)det_result.inference_time_ms) + "ms (TensorRT GPU)"
+                                 + "  det: " + std::to_string(det_result.detections.size());
+                cv::putText(annotated, info, {10, 30},
+                    cv::FONT_HERSHEY_SIMPLEX, 0.8, {0, 255, 255}, 2, cv::LINE_AA);
 
-                // Position windows side-by-side based on camera namespace
+                cv::imshow(display_window_name_, annotated);
+
                 int x_pos = 0;
                 if (camera_namespace_.find("455") != std::string::npos) {
-                    x_pos = 680;  // Position camera_455 to the right
+                    x_pos = 680;
                 }
                 cv::moveWindow(display_window_name_, x_pos, 0);
-            }
 
-            int key = cv::waitKey(1);
-            if (key == 27) {  // ESC key to exit
-                RCLCPP_INFO(this->get_logger(), "ESC key pressed, exiting");
-                rclcpp::shutdown();
+                int key = cv::waitKey(1);
+                if (key == 27) {
+                    RCLCPP_INFO(this->get_logger(), "ESC key pressed, exiting");
+                    rclcpp::shutdown();
+                }
             }
         } catch (cv_bridge::Exception& e) {
             RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
@@ -703,9 +709,7 @@ private:
             obj_det.object_class = CLASS_NAMES[detection.class_id];
             obj_det.confidence = detection.conf;
 
-            // Calculate distance for this detection
-            float distance = distance_away(detection);
-            obj_det.distance_m = distance;
+            obj_det.distance_m = detection.distance_m;
 
             // Populate bounding box
             obj_det.bounding_box.x = detection.box.x;
@@ -722,9 +726,8 @@ private:
 
         detection_publisher_->publish(*detection_array);
 
-        // Log publication
         if (!detection_array->detections.empty()) {
-            RCLCPP_INFO(this->get_logger(),
+            RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
                 "Published %zu detections (inference: %.1fms)",
                 detection_array->detections.size(),
                 det_result.inference_time_ms);
@@ -744,6 +747,10 @@ private:
     // Camera configuration
     std::string camera_namespace_;
     std::string display_window_name_;
+    double inference_hz_ = 10.0;
+    bool display_ = false;
+    int distance_samples_ = 100;
+    std::optional<rclcpp::Time> last_inference_time_;
 
     // Message filter subscriptions and synchronizer
     message_filters::Subscriber<sensor_msgs::msg::Image> color_sub_;
@@ -770,11 +777,7 @@ private:
     size_t input_count_ = 0;
     size_t output_count_ = 0;
     std::vector<float> host_output_;
-
-    // Display state
-    cv::Mat latest_detection_;
-    cv::Mat latest_depth_;
-    std::mutex display_mutex_;
+    std::vector<float> input_tensor_;
 };
 
 
