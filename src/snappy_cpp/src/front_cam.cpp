@@ -12,6 +12,7 @@
 #include <opencv2/opencv.hpp>
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -44,7 +45,7 @@ static const std::vector<std::string> CLASS_NAMES = {
     "hair drier","toothbrush"
 };
 
-class FrontCamNode: public rclcpp::Node
+class FrontCamNode : public rclcpp::Node
 {
 public:
     FrontCamNode() : Node("front_cam")
@@ -61,6 +62,7 @@ public:
         inference_hz_ = this->get_parameter("inference_hz").as_double();
         display_ = this->get_parameter("display").as_bool();
         distance_samples_ = std::max(1, this->get_parameter("distance_samples").as_int());
+        distance_grid_ = std::max(1, static_cast<int>(std::ceil(std::sqrt(static_cast<double>(distance_samples_)))));
 
         RCLCPP_INFO(get_logger(), "CUDA Node initialized for camera: %s", camera_namespace_.c_str());
         RCLCPP_INFO(get_logger(), "Settings: inference_hz=%.1f, display=%s, distance_samples=%d",
@@ -493,7 +495,7 @@ private:
         return result;
     }
 
-    // this ill be called right after line 433 inside parse_detections funciton
+    // This will be called right after line 433 inside parse_detections function
     void data_for_missionPlanner(const std::vector<Detection>& [[maybe_unused]] detections) {
 
 
@@ -515,7 +517,7 @@ private:
 
         const int roi_w = x2 - x1;
         const int roi_h = y2 - y1;
-        const int grid = std::max(1, static_cast<int>(std::sqrt(static_cast<double>(distance_samples_))));
+        const int grid = distance_grid_;
         const int step_x = std::max(1, roi_w / grid);
         const int step_y = std::max(1, roi_h / grid);
 
@@ -538,9 +540,17 @@ private:
             return -1.0f;
         }
 
-        auto mid = depth_values.begin() + (depth_values.size() / 2);
+        const size_t mid_idx = depth_values.size() / 2;
+        auto mid = depth_values.begin() + static_cast<std::ptrdiff_t>(mid_idx);
         std::nth_element(depth_values.begin(), mid, depth_values.end());
-        return static_cast<float>(*mid) / 1000.0f;
+
+        if ((depth_values.size() % 2U) != 0U) {
+            return static_cast<float>(*mid) / 1000.0f;
+        }
+
+        auto lower_max = std::max_element(depth_values.begin(), mid);
+        const float even_median_mm = (static_cast<float>(*lower_max) + static_cast<float>(*mid)) * 0.5f;
+        return even_median_mm / 1000.0f;
     }
 
     // Draw detections matching computer_vision.cpp
@@ -578,7 +588,7 @@ private:
         }
     }
 
-    void run_inference(const cv::Mat& frame, rclcpp::Time timestamp, DetectionResult& result)
+    bool run_inference(const cv::Mat& frame, rclcpp::Time timestamp, DetectionResult& result)
     {
         auto t0 = std::chrono::steady_clock::now();
 
@@ -600,7 +610,7 @@ private:
         // TensorRT 10 API: use enqueueV3() with CUDA stream only
         if (!context_->enqueueV3(stream_)) {
             RCLCPP_ERROR(get_logger(), "TensorRT enqueue failed");
-            return;
+            return false;
         }
 
         // Copy output from GPU
@@ -620,6 +630,7 @@ private:
         result.inference_time_ms = ms;
         result.timestamp = timestamp;
 
+        return true;
     }
 
     void sync_callback(const sensor_msgs::msg::Image::ConstSharedPtr color_msg, const sensor_msgs::msg::Image::ConstSharedPtr depth_msg) {
@@ -653,12 +664,13 @@ private:
                 (now - *last_inference_time_).seconds() < min_inference_period) {
                 return;
             }
-            last_inference_time_ = now;
-
             // Run TensorRT inference with depth data
             DetectionResult det_result;
             rclcpp::Time timestamp(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
-            run_inference(color_image, timestamp, det_result);
+            if (!run_inference(color_image, timestamp, det_result)) {
+                return;
+            }
+            last_inference_time_ = now;
 
             for (auto& detection : det_result.detections) {
                 detection.distance_m = distance_away(detection, depth_image);
@@ -750,6 +762,7 @@ private:
     double inference_hz_ = 10.0;
     bool display_ = false;
     int distance_samples_ = 100;
+    int distance_grid_ = 10;
     std::optional<rclcpp::Time> last_inference_time_;
 
     // Message filter subscriptions and synchronizer
