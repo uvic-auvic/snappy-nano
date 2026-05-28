@@ -92,7 +92,6 @@ void KalmanFilter::predict(Eigen::VectorXd& U, double dt)
 
     // Integrate position & velocity
     position += velocity * dt + 0.5 * accel_world * dt * dt;
-
     velocity += accel_world * dt;
 
     // Integrates gyroscope angular velocity into the quaternion using a first-order approximation (small angle assumption)
@@ -183,11 +182,11 @@ void KalmanFilter::updateVelocity(const Vector3d& v_measured, const Matrix3d& R_
     Quaterniond q(x(6), x(7), x(8), x(9));
     q.normalize();
 
-    v_measured = q * v_measured; // rotate velocity measurement into world frame
+    const Vector3d v_world = q * v_measured; // rotate velocity measurement into world frame
     
     // Measurement: velocity only (3x1)
     VectorXd residual(3);
-    residual = v_measured - x.segment<3>(3);
+    residual = v_world - x.segment<3>(3);
 
     // Measurement model H (3x15): dv at indices 3-5
     MatrixXd H = MatrixXd::Zero(3, 15);
@@ -304,7 +303,7 @@ MatrixXd KalmanFilter::computeF(double dt, const VectorXd& U) const
     Vector3d accel_in = q_imu1_to_body_ * U.segment<3>(0);
     Vector3d accel_body = accel_in - accel_bias;
     Vector3d gyro_unbiased = q_imu1_to_body_ * U.segment<3>(3) - x.segment<3>(10);
-    //Eq 270-274 from Sola 7.3.1
+   
     F.block<3,3>(0, 3) = Matrix3d::Identity();       
     F.block<3,3>(3, 6) = -Rwb * skew(accel_body);   
     F.block<3,3>(3, 12) = -Rwb;                    
@@ -321,9 +320,9 @@ MatrixXd KalmanFilter::computeG() const
     Quaterniond q(x(6), x(7), x(8), x(9));
     q.normalize();
     Matrix3d Rwb = q.toRotationMatrix();
- // Eq 276
-    G.block<3,3>(3, 0) = Rwb;
-    G.block<3,3>(6, 3) = Matrix3d::Identity();
+ 
+    G.block<3,3>(3, 0) = -Rwb;
+    G.block<3,3>(6, 3) = -1 * Matrix3d::Identity();
     G.block<3,3>(9, 6) = Matrix3d::Identity();
     G.block<3,3>(12, 9) = Matrix3d::Identity();
 
@@ -342,8 +341,8 @@ Matrix3d KalmanFilter::skew(const Vector3d& v) const
 // updates the nominal state with the error-state correction dx
 void KalmanFilter::injectErrorState(const VectorXd& dx)
 {
-    x.segment<3>(0) += dx.segment<3>(0);
-    x.segment<3>(3) += dx.segment<3>(3);
+    x.segment<3>(0) += dx.segment<3>(0); // p = p + dp
+    x.segment<3>(3) += dx.segment<3>(3); // v = v + dv
 
     Vector3d dtheta = dx.segment<3>(6);
     Quaterniond dq(
