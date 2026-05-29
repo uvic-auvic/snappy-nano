@@ -57,6 +57,7 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -115,7 +116,7 @@ public:
         camera_namespaces_ = this->get_parameter("camera_namespaces").as_string_array();
         inference_hz_ = this->get_parameter("inference_hz").as_double();
         display_ = this->get_parameter("display").as_bool();
-        distance_samples_ = std::max(1, this->get_parameter("distance_samples").as_int());
+        distance_samples_ = std::max(1, static_cast<int>(this->get_parameter("distance_samples").as_int()));
         distance_grid_ = std::max(1, static_cast<int>(std::ceil(std::sqrt(static_cast<double>(distance_samples_)))));
 
         if (camera_namespaces_.empty()) {
@@ -392,10 +393,10 @@ private:
                 throw std::runtime_error("Failed to create TensorRT builder");
             }
 
-            const uint32_t flags = 1U << static_cast<uint32_t>(
-                nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+            // TensorRT 10 networks are always explicit-batch; the
+            // kEXPLICIT_BATCH flag is deprecated, so create with no flags.
             auto network = std::unique_ptr<nvinfer1::INetworkDefinition, TRTDestroyer>(
-                builder->createNetworkV2(flags));
+                builder->createNetworkV2(0));
             if (!network) {
                 throw std::runtime_error("Failed to create TensorRT network");
             }
@@ -621,12 +622,13 @@ private:
             cam->sync = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
                 SyncPolicy(10), cam->color_sub, cam->depth_sub);
 
+            // message_filters' Synchronizer doesn't reliably bind capturing
+            // lambdas, so use std::bind to a member function (the cam index is
+            // pre-bound; the two messages come from the placeholders).
             const size_t cam_index = i;
             cam->sync->registerCallback(
-                [this, cam_index](const sensor_msgs::msg::Image::ConstSharedPtr& color_msg,
-                                  const sensor_msgs::msg::Image::ConstSharedPtr& depth_msg) {
-                    this->sync_callback(cam_index, color_msg, depth_msg);
-                });
+                std::bind(&CameraInferenceNode::sync_callback, this, cam_index,
+                          std::placeholders::_1, std::placeholders::_2));
 
             if (display_) {
                 cv::namedWindow(cam->display_window_name, cv::WINDOW_AUTOSIZE);
