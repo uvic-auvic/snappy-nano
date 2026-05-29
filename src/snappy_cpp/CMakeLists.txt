@@ -84,29 +84,35 @@ if(WITH_CUDA)
   find_package(message_filters REQUIRED)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
 
+  # Compile the fused preprocessing kernel (.cu) with nvcc. Orin Nano is Ampere
+  # (compute capability 8.7); override with -DCMAKE_CUDA_ARCHITECTURES if needed.
+  # Set the architecture + policy BEFORE enable_language so it actually applies.
+  if(POLICY CMP0104)
+    cmake_policy(SET CMP0104 NEW)
+  endif()
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 87)
+  endif()
+  enable_language(CUDA)
+
   find_library(NVINFER nvinfer PATHS /usr/lib/aarch64-linux-gnu)
   find_library(NVONNXPARSER nvonnxparser PATHS /usr/lib/aarch64-linux-gnu /usr/lib/x86_64-linux-gnu REQUIRED)
 
-  add_executable(front_cam src/front_cam.cpp)
-  add_executable(bottom_cam src/bottom_cam.cpp)
-  target_include_directories(front_cam PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
-  ament_target_dependencies(front_cam rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
-  target_include_directories(bottom_cam PRIVATE /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
-  ament_target_dependencies(bottom_cam rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
+  # Single shared multi-camera inference node (replaces front_cam + bottom_cam,
+  # which were byte-for-byte duplicate per-camera TensorRT pipelines).
+  add_executable(camera_inference
+    src/camera_inference.cpp
+    src/preprocess_cuda.cu)
+  target_include_directories(camera_inference PRIVATE
+    src /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+  set_target_properties(camera_inference PROPERTIES
+    CUDA_STANDARD 17
+    CUDA_STANDARD_REQUIRED ON)
+  ament_target_dependencies(camera_inference rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
 
   # Link to generated message library
-  add_dependencies(front_cam ${PROJECT_NAME})
-  target_link_libraries(front_cam
-    ${PROJECT_NAME}__rosidl_typesupport_cpp
-    ${PROJECT_NAME}__rosidl_typesupport_c
-    ${NVINFER}
-    ${NVONNXPARSER}
-    ${CUDA_LIBRARIES}
-    ${OpenCV_LIBS}
-    /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
-  )
-  add_dependencies(bottom_cam ${PROJECT_NAME})
-  target_link_libraries(bottom_cam
+  add_dependencies(camera_inference ${PROJECT_NAME})
+  target_link_libraries(camera_inference
     ${PROJECT_NAME}__rosidl_typesupport_cpp
     ${PROJECT_NAME}__rosidl_typesupport_c
     ${NVINFER}
@@ -135,9 +141,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME})
 
 if(WITH_CUDA)
-  install(TARGETS front_cam
-    DESTINATION lib/${PROJECT_NAME})
-  install(TARGETS bottom_cam
+  install(TARGETS camera_inference
     DESTINATION lib/${PROJECT_NAME})
 endif()
 

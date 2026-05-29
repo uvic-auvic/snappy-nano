@@ -166,33 +166,31 @@ def generate_launch_description():
         ],
     )
 
-    # Front camera node (D455) with proper namespace
-    front_cam = TimerAction(
+    # Single shared TensorRT inference node serving both cameras (D455 front,
+    # D405 bottom). Replaces the former front_cam + bottom_cam processes: one
+    # CUDA context / engine for all cameras. Add a camera by appending its
+    # namespace to camera_namespaces.
+    camera_inference = TimerAction(
         period=3.0,
         actions=[
             Node(
                 package="snappy_cpp",
-                executable="front_cam",
-                name="front_cam",
+                executable="camera_inference",
+                name="camera_inference",
                 output="screen",
                 parameters=[
-                    {"camera_namespace": "d455"},
-                ],
-            )
-        ],
-    )
-
-    # Bottom camera node (D405) with proper namespace
-    bottom_cam = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="bottom_cam",
-                name="bottom_cam",
-                output="screen",
-                parameters=[
-                    {"camera_namespace": "d405"},
+                    {"camera_namespaces": ["d455", "d405"]},
+                    {"inference_hz": 10.0},
+                    {"display": True},
+                    {"distance_samples": 100},
+                    # 0 => one queue slot per camera.
+                    {"queue_depth": 0},
+                    # Batch all cameras into one inference (0 => number of cameras).
+                    # Only takes effect if the engine has a dynamic batch axis.
+                    {"max_batch": 0},
+                    # Coalescing window to let both cameras' frames join one batch.
+                    # 0 => opportunistic (no added latency); try 5-15ms to batch more.
+                    {"batch_collect_ms": 0.0},
                 ],
             )
         ],
@@ -205,8 +203,8 @@ def generate_launch_description():
             d455_launch,
             d405_launch,
             xsens_mti_node,
-            front_cam,
-            bottom_cam,
+            camera_inference,
+            pressure_sensor_node,
             planner_node,
         ]
     )
