@@ -181,7 +181,7 @@ def generate_launch_description():
                 parameters=[
                     {"camera_namespaces": ["d455", "d405"]},
                     {"inference_hz": 10.0},
-                    {"display": False},
+                    {"display": True},
                     {"distance_samples": 100},
                     # 0 => one queue slot per camera.
                     {"queue_depth": 0},
@@ -204,6 +204,7 @@ def generate_launch_description():
             d405_launch,
             xsens_mti_node,
             camera_inference,
+            pressure_sensor_node,
             planner_node,
         ]
     )
