@@ -30,12 +30,14 @@ def generate_launch_description():
     bridge_topics = [
         '/clock@rosgraph_msgs/msg/Clock@ignition.msgs.Clock',
         '/model/auv/pose@geometry_msgs/msg/PoseStamped@ignition.msgs.Pose',
+        '/model/auv/joint/thruster_vertical_port_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/model/auv/joint/thruster_vertical_starboard_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/model/auv/joint/thruster_vertical_port_aft_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/model/auv/joint/thruster_vertical_starboard_aft_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
         '/model/auv/joint/thruster_forward_port_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
         '/model/auv/joint/thruster_forward_starboard_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
-        '/model/auv/joint/thruster_lateral_port_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
-        '/model/auv/joint/thruster_lateral_starboard_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
-        '/model/auv/joint/thruster_vertical_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
-        '/model/auv/joint/thruster_vertical_aft_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/model/auv/joint/thruster_lateral_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
+        '/model/auv/joint/thruster_lateral_aft_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
         '/auv/forward_camera/image_raw@sensor_msgs/msg/Image@ignition.msgs.Image',
         '/imu@sensor_msgs/msg/Imu@ignition.msgs.IMU'
     ]

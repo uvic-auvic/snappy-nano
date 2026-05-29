@@ -118,8 +118,8 @@ class Controller : public rclcpp::Node {
 
         // Receive states from state estimator nodes, update PID values
         void state_callback(const snappy_cpp::msg::Pose & msg) {
-            RCLCPP_INFO(this->get_logger(), "Received current position: (%.2f, %.2f, %.2f)",
-            msg.position.x, msg.position.y, msg.position.z);
+            // RCLCPP_INFO(this->get_logger(), "Received current position: (%.2f, %.2f, %.2f)",
+            // msg.position.x, msg.position.y, msg.position.z);
             
             position_current_ = msg.position;
             orientation_current_ = msg.orientation;
