@@ -16,6 +16,34 @@
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
+namespace MotorCalls {
+    constexpr uint8_t ALL          = 255;  // 11111111
+    constexpr uint8_t NONE         = 0;
+
+    // Individual motors
+    // POINTED UP AND DOWN
+    constexpr uint8_t FRONT_LEFT   = 1;    // 00000001
+    constexpr uint8_t FRONT_RIGHT  = 4;    // 00000010
+    constexpr uint8_t BACK_RIGHT = 16; //00010000
+    constexpr uint8_t BACK_LEFT = 64; //01000000
+
+    // POINTED LEFT AND RIGHT
+    constexpr uint8_t FRONT_YAW = 2; //00000010
+    constexpr uint8_t BACK_YAW = 32; //00100000
+
+    // POINTED FORWARD AND BACK
+    constexpr uint8_t FORWARD_RIGHT = 8; //00001000
+    constexpr uint8_t FORWARD_LEFT = 128; //10000000
+
+    constexpr uint8_t VERTICAL = FRONT_LEFT | FRONT_RIGHT | BACK_RIGHT  | BACK_LEFT;   // 85
+    constexpr uint8_t FORWARD = FORWARD_RIGHT | FORWARD_LEFT;        // 136
+}
+
+struct MotorCmd {
+    uint8_t mask;
+    float   speed;
+};
+
 class Controller : public rclcpp::Node {
     public: 
         Controller() : Node("controller"),
@@ -25,10 +53,11 @@ class Controller : public rclcpp::Node {
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.5f, 0.0f, 0.1f)
-
-            
-
          {
+            flag_ = 0;
+
+            //publish motor command
+            motor_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/motor_cmd", 10);
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
 
@@ -53,6 +82,46 @@ class Controller : public rclcpp::Node {
                 100ms, std::bind(&Controller::trajectory_callback, this));
         }
 
+    void forward    (float s) { sendCmd(MotorCalls::FORWARD,    s);  }
+    void backward   (float s) { sendCmd(MotorCalls::FORWARD,   -s);  }
+    void down       (float s) { sendCmd(MotorCalls::VERTICAL, -s); }
+    void up    (float s) { sendCmd(MotorCalls::VERTICAL,  s); }
+
+        // Dual message — opposing signs
+    void strafeRight(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW,  s},
+            {MotorCalls::BACK_YAW,   s}   // same sign = strafe
+        );
+    }
+    void strafeLeft(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW, -s},
+            {MotorCalls::BACK_YAW,  -s}   // same sign, both reversed
+        );
+        
+    void yawRight(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW,  s},
+            {MotorCalls::BACK_YAW,  -s}   // opposite sign = yaw
+        );
+    }
+        
+    void yawLeft(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW, -s},
+            {MotorCalls::BACK_YAW,   s}
+        );
+    }
+        
+    void strafeLeft(float s) {
+        sendDualCmd(
+            {MotorCalls::FRONT_YAW, -s},
+            {MotorCalls::BACK_YAW,  -s}   // same sign, both reversed
+        );
+    }
+    
+    void stop(){ sendCmd(MotorCalls::ALL, 0.0f); }
     private:
         // Publish state to planner
         void status_callback() {
@@ -216,6 +285,34 @@ class Controller : public rclcpp::Node {
             }
             in_progress_ = true;
         }
+
+        //this funciton I am leaving in the code base for testing microROS communication, the sendCmd function will be used for building out our movement system
+        void publish_cmd()
+        {
+            //double motor_select = this->get_parameter("motor_select").as_double();
+            //double speed = this->get_parameter("speed").as_double();
+
+            auto msg = std_msgs::msg::Float32MultiArray();
+        if (flag_ < 40) {
+            msg.data = {1.0, 20.0 + static_cast<float>(flag_)};
+            flag_++;
+        } else {
+            msg.data = {255.0, 0.0};
+        }
+            //msg.data = {static_cast<float>(motor_select), static_cast<float>(speed)};
+            pub_->publish(msg);
+
+            //RCLCPP_INFO(get_logger(), "Publishing: motors=%.0f speed=%.1f", motor_select, speed);
+        }
+        
+        void sendCmd(uint8_t mask, float speed)
+        {
+            auto msg = std_msgs::msg::Float32MultiArray();
+            msg.data = {static_cast<float>(mask), speed};
+            pub_->publish(msg);
+        }
+
+
         
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
         rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr trajectory_publisher_;
@@ -240,6 +337,15 @@ class Controller : public rclcpp::Node {
         geometry_msgs::msg::Quaternion orientation_current_;
         std::optional<geometry_msgs::msg::Quaternion> orientation_target_;
         const double error_threshold = 0.005;
+    
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
+        rclcpp::TimerBase::SharedPtr timer_;
+        int flag_;
+
+        void publish_dual_cmd(MotorCmd a, MotorCmd b) {
+            sendCmd(a.mask, a.speed);
+            sendCmd(b.mask, b.speed);
+    }
         
 };
 
