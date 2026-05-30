@@ -11,7 +11,7 @@ class PressureSensorNode : public rclcpp::Node
 public:
     PressureSensorNode() : Node("pressure_sensor_node"), serial_fd_(-1)
     {
-        publisher_ = this->create_publisher<std_msgs::msg::String>("pressure_data", 10);
+        publisher_ = this->create_publisher<std_msgs::msg::Float32>("pressure_data", 10);
         
         // Open serial port with non-blocking flag
         serial_fd_ = open("/dev/ttyUSB0", O_RDONLY | O_NOCTTY | O_NONBLOCK);

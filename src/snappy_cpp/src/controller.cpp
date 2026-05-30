@@ -71,6 +71,10 @@ class Controller : public rclcpp::Node {
             // Receive states from state estimator
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
                 "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
+            
+            // Receive dpeth value from pressure node
+            depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+                "pressure_data", 10, std::bind(&Controller::depth_callback, this, _1));
                 
             //currently state estimator does not publish state. maybe parse through IMU..
            
@@ -99,7 +103,7 @@ class Controller : public rclcpp::Node {
             {MotorCalls::FRONT_YAW, -s},
             {MotorCalls::BACK_YAW,  -s}   // same sign, both reversed
         );
-        
+    }   
     void yawRight(float s) {
         sendDualCmd(
             {MotorCalls::FRONT_YAW,  s},
@@ -200,10 +204,27 @@ class Controller : public rclcpp::Node {
             tf2::Matrix3x3(q_current).getRPY(roll, pitch, yaw);
             float thrust_x = pid_x_.update(position_current_.x);
             float thrust_y = pid_y_.update(position_current_.y);
-            float thrust_z = pid_z_.update(position_current_.z);
+            //float thrust_z = pid_z_.update(position_current_.z);
             float thrust_roll = pid_roll_.update(roll);
             float thrust_pitch = pid_pitch_.update(pitch);
             float thrust_yaw = pid_yaw_.update(yaw);
+        }
+        
+        void depth_callback(const std_msgs::msg::Float32 & msg) {
+            float current_depth = msg.data;
+            // Update the Z-axis PID with current depth
+            float z_thrust = pid_z_.update(current_depth);
+
+            // Apply the thrust to the vertical motors
+            if (z_thrust > 0) {
+                up(z_thrust); 
+            } else if (z_thrust < 0) {
+                // use absolute value since 'down' likely expects a positive magnitude mapped to downward thrust
+                down(std::abs(z_thrust)); 
+            } else {
+                // If thrust is exactly 0, stop vertical movement
+                sendCmd(MotorCalls::VERTICAL, 0.0f);
+            }
         }
 
         // Compute difference between current and target
