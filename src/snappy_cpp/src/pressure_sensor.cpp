@@ -23,9 +23,9 @@ public:
         // Configure serial port
         struct termios tty;
         tcgetattr(serial_fd_, &tty);
-        //this is the line to set baud rate, B9600 is what the arduino code from blue robotics is set to 
+        //this is the line to set baud rate, B115200 matches the device configuration
         // thus it must match
-        cfsetispeed(&tty, B9600);
+        cfsetispeed(&tty, B115200);
         tty.c_cflag |= (CLOCAL | CREAD);
         tty.c_cflag &= ~PARENB;
         tty.c_cflag &= ~CSTOPB;
