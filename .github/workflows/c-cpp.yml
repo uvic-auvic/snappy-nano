@@ -2,16 +2,42 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ "*" ]
+    branches: ["*"]
 
 jobs:
   build:
-
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Add Microsoft package repository
+        run: |
+          sudo wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+
+      - name: Install ONNX Runtime development files
+        run: |
+          set -euxo pipefail
+          ORT_VER=1.17.3
+          curl -L -o onnxruntime.tgz \
+            https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-linux-x64-${ORT_VER}.tgz
+          tar -xzf onnxruntime.tgz
+          sudo mkdir -p /opt/onnxruntime
+          sudo cp -r onnxruntime-linux-x64-${ORT_VER}/* /opt/onnxruntime/
+
+          echo "/opt/onnxruntime/lib" | sudo tee /etc/ld.so.conf.d/onnxruntime.conf
+          sudo ldconfig
+
+          # If your build uses CMake, this is often enough:
+          echo "CMAKE_PREFIX_PATH=/opt/onnxruntime:\$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
+
+      - name: Verify ONNX Runtime installation
+        run: |
+          ls -la /usr/include/onnxruntime* || echo "Headers not found in /usr/include"
+          ls -la /usr/lib/libonnxruntime* || echo "Libraries not found in /usr/lib"
+          pkg-config --cflags --libs libonnxruntime || echo "pkg-config entry not found"
 
       - name: Set up ROS 2 Humble
         uses: ros-tooling/setup-ros@v0.7
@@ -21,4 +47,4 @@ jobs:
       - name: Build with colcon
         run: |
           source /opt/ros/humble/setup.bash
-          colcon build --packages-select snappy_cpp
+          colcon build --packages-select snappy_cpp --cmake-args -DWITH_CUDA=OFF

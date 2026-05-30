@@ -9,6 +9,9 @@ cmake_install.cmake
 Makefile
 ament_cmake_environment_hooks/
 .colcon/
+color/
+depth/
+edges/
 
 # === ROS 2 Launch/Params/Generated ===
 *.launch.py~
@@ -34,6 +37,10 @@ src/snappy_cpp/worlds/boundary_edges.*
 src/snappy_cpp/worlds/hydro_plugin_snippet.sdf
 src/snappy_cpp/worlds/quad_test.stl
 src/snappy_cpp/worlds/raw_parts/
+
+/color
+/depth
+/edges
 
 # === IDE/Editor Specific ===
 

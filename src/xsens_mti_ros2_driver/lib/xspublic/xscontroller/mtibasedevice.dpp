@@ -28,12 +28,12 @@ mtibasedevice.cpp.o: mtibasedevice.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xstypes/xsstringarray.h ../xstypes/xsfilterprofilearray.h \
- ../xstypes/xsfilterprofile.h ../xstypes/xsfilterprofilekind.h \
- ../xstypes/xsintarray.h ../xstypes/xssyncline.h xsdef.h \
- ../xstypes/xstypesdef.h synclinemk4.h synclinegmt.h \
- ../xstypes/xssyncsettingarray.h ../xstypes/xssyncsetting.h \
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xstypes/xsstringarray.h \
+ ../xstypes/xsfilterprofilearray.h ../xstypes/xsfilterprofile.h \
+ ../xstypes/xsfilterprofilekind.h ../xstypes/xsintarray.h \
+ ../xstypes/xssyncline.h xsdef.h ../xstypes/xstypesdef.h synclinemk4.h \
+ synclinegmt.h ../xstypes/xssyncsettingarray.h ../xstypes/xssyncsetting.h \
  ../xstypes/xssyncline.h ../xstypes/xssyncfunction.h \
  ../xstypes/xssyncpolarity.h ../xstypes/xsportinfo.h \
  ../xstypes/xsdeviceid.h ../xstypes/xsbaud.h xsicccommand.h \
@@ -125,6 +125,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xstypes/xsstringarray.h:
 ../xstypes/xsfilterprofilearray.h:

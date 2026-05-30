@@ -31,10 +31,10 @@ xdacommunicatorfactory.cpp.o: xdacommunicatorfactory.cpp xscontrollerconfig.h \
  xsaccesscontrolmode.h datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h ../xstypes/xsbaud.h \
- dataparser.h ../xscommon/threading.h mtthread.h datapoller.h \
- usbcommunicator.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h \
+ ../xstypes/xsbaud.h dataparser.h ../xscommon/threading.h mtthread.h \
+ datapoller.h usbcommunicator.h
 xdacommunicatorfactory.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -129,6 +129,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xstypes/xsportinfo.h:
 ../xstypes/xsdeviceid.h:

@@ -33,7 +33,8 @@ communicator.cpp.o: communicator.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h
 communicator.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -132,4 +133,5 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:

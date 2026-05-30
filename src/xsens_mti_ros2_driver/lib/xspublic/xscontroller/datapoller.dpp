@@ -5,8 +5,8 @@ datapoller.cpp.o: datapoller.cpp xscontrollerconfig.h \
  ../xstypes/xsarray.h datapoller.h ../xscommon/threading.h \
  ../xscommon/xsens_mutex.h ../xstypes/xsthread.h ../xstypes/xstime.h \
  ../xstypes/xstimestamp.h ../xstypes/xsstring.h ../xstypes/xstimeinfo.h \
- ../xstypes/xstimestamp.h dataparser.h ../xstypes/xsresultvalue.h \
- ../xstypes/xsbytearray.h
+ ../xstypes/xstimestamp.h ../xstypes/xsbytearray.h dataparser.h \
+ ../xstypes/xsresultvalue.h
 datapoller.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -26,6 +26,6 @@ datapoller.h:
 ../xstypes/xsstring.h:
 ../xstypes/xstimeinfo.h:
 ../xstypes/xstimestamp.h:
+../xstypes/xsbytearray.h:
 dataparser.h:
 ../xstypes/xsresultvalue.h:
-../xstypes/xsbytearray.h:

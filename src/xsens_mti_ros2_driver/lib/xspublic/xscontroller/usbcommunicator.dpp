@@ -30,10 +30,10 @@ usbcommunicator.cpp.o: usbcommunicator.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h ../xstypes/xsbaud.h \
- dataparser.h ../xscommon/threading.h ../xscommon/xsens_mutex.h \
- mtthread.h datapoller.h usbinterface.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h \
+ ../xstypes/xsbaud.h dataparser.h ../xscommon/threading.h \
+ ../xscommon/xsens_mutex.h mtthread.h datapoller.h usbinterface.h
 usbcommunicator.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -122,6 +122,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xstypes/xsportinfo.h:
 ../xstypes/xsdeviceid.h:

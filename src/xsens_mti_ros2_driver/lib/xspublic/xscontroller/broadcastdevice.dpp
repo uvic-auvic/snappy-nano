@@ -28,13 +28,13 @@ broadcastdevice.cpp.o: broadcastdevice.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- xscontrol_def.h xsdef.h ../xstypes/xstypesdef.h devicefactory.h \
- ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h ../xstypes/xsbaud.h \
- ../xstypes/xsvector3.h ../xstypes/xsvector.h ../xstypes/xsmath.h \
- ../xstypes/xsfloatmath.h ../xstypes/xsmath2.h ../xstypes/xssyncsetting.h \
- ../xstypes/xssyncline.h ../xstypes/xssyncfunction.h \
- ../xstypes/xssyncpolarity.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h xscontrol_def.h xsdef.h ../xstypes/xstypesdef.h \
+ devicefactory.h ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h \
+ ../xstypes/xsbaud.h ../xstypes/xsvector3.h ../xstypes/xsvector.h \
+ ../xstypes/xsmath.h ../xstypes/xsfloatmath.h ../xstypes/xsmath2.h \
+ ../xstypes/xssyncsetting.h ../xstypes/xssyncline.h \
+ ../xstypes/xssyncfunction.h ../xstypes/xssyncpolarity.h
 broadcastdevice.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -119,6 +119,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 xscontrol_def.h:
 xsdef.h:

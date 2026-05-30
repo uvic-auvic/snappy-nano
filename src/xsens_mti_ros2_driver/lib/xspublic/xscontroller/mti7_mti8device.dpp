@@ -28,12 +28,12 @@ mti7_mti8device.cpp.o: mti7_mti8device.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xstypes/xsstringarray.h ../xstypes/xsfilterprofilearray.h \
- ../xstypes/xsfilterprofile.h ../xstypes/xsfilterprofilekind.h \
- ../xstypes/xsintarray.h ../xstypes/xssyncline.h \
- ../xstypes/xsstatusflag.h ../xstypes/xsvector.h ../xstypes/xsmath.h \
- ../xstypes/xsfloatmath.h ../xstypes/xsmath2.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xstypes/xsstringarray.h \
+ ../xstypes/xsfilterprofilearray.h ../xstypes/xsfilterprofile.h \
+ ../xstypes/xsfilterprofilekind.h ../xstypes/xsintarray.h \
+ ../xstypes/xssyncline.h ../xstypes/xsstatusflag.h ../xstypes/xsvector.h \
+ ../xstypes/xsmath.h ../xstypes/xsfloatmath.h ../xstypes/xsmath2.h
 mti7_mti8device.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -120,6 +120,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xstypes/xsstringarray.h:
 ../xstypes/xsfilterprofilearray.h:

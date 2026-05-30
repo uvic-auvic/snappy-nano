@@ -29,13 +29,13 @@ devicefactory.cpp.o: devicefactory.cpp xscontrollerconfig.h \
  xsaccesscontrolmode.h datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- devicetypes.h mtixdevice.h mtibasedevice.h mtdevice.h \
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h devicetypes.h mtixdevice.h mtibasedevice.h mtdevice.h \
  ../xstypes/xsstringarray.h ../xstypes/xsfilterprofilearray.h \
  ../xstypes/xsfilterprofile.h ../xstypes/xsfilterprofilekind.h \
  ../xstypes/xsintarray.h ../xstypes/xssyncline.h mtix0device.h \
  mtix00device.h mtigdevice.h mti7_mti8device.h mti3x0device.h \
- mti6x0device.h mti8x0device.h mti9x0device.h dotdevice.h
+ mti6x0device.h mti8x0_mti9x0device.h dotdevice.h
 devicefactory.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -123,6 +123,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 devicetypes.h:
 mtixdevice.h:
@@ -140,6 +141,5 @@ mtigdevice.h:
 mti7_mti8device.h:
 mti3x0device.h:
 mti6x0device.h:
-mti8x0device.h:
-mti9x0device.h:
+mti8x0_mti9x0device.h:
 dotdevice.h:

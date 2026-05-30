@@ -39,6 +39,7 @@
 #include <condition_variable>
 #include <list>
 #include "xsens_time_handler.h"
+#include "high_rate_interpolator.h"
 
 struct XsDataPacket;
 struct XsDevice;
@@ -58,6 +59,9 @@ protected:
 	void onError(XsDevice *, XsResultValue error) override;
 
 private:
+	void checkHighRateParameters();
+	void handleInterpolation(const XsDataPacket *packet, std::unique_lock<std::mutex> &lock);
+	
 	std::mutex m_mutex;
 	std::condition_variable m_condition;
 	std::list<RosXsDataPacket> m_buffer;
@@ -65,6 +69,8 @@ private:
 	rclcpp::Node::SharedPtr parent_node;
 
 	XsensTimeHandler m_timeHandler;
+	HighRateInterpolator m_interpolator;
+	bool m_interpolationEnabled;
 };
 
 #endif

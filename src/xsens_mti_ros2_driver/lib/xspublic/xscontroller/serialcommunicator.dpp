@@ -29,13 +29,13 @@ serialcommunicator.cpp.o: serialcommunicator.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h ../xstypes/xsbaud.h \
- dataparser.h ../xscommon/threading.h ../xscommon/xsens_mutex.h \
- mtthread.h datapoller.h protocolhandler.h ../xstypes/xsportinfoarray.h \
- ../xstypes/xsportinfo.h ../xstypes/xsdid.h xsscanner.h \
- ../xstypes/xsintarray.h ../xstypes/xsstringarray.h xsusbhubinfo.h \
- deviceredetector.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h \
+ ../xstypes/xsbaud.h dataparser.h ../xscommon/threading.h \
+ ../xscommon/xsens_mutex.h mtthread.h datapoller.h protocolhandler.h \
+ ../xstypes/xsportinfoarray.h ../xstypes/xsportinfo.h ../xstypes/xsdid.h \
+ xsscanner.h ../xstypes/xsintarray.h ../xstypes/xsstringarray.h \
+ xsusbhubinfo.h deviceredetector.h
 serialcommunicator.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -122,6 +122,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xstypes/xsportinfo.h:
 ../xstypes/xsdeviceid.h:

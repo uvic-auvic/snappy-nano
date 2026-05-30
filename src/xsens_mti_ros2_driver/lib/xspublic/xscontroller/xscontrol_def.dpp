@@ -46,18 +46,18 @@ xscontrol_def.cpp.o: xscontrol_def.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h dataparser.h \
- ../xscommon/threading.h ../xscommon/xsens_mutex.h mtthread.h \
- datapoller.h restorecommunication.h mtix0device.h mtibasedevice.h \
- mtdevice.h ../xstypes/xsstringarray.h ../xstypes/xsfilterprofilearray.h \
- ../xstypes/xsfilterprofile.h ../xstypes/xsintarray.h \
- ../xstypes/xssyncline.h mtix00device.h mtigdevice.h ../xstypes/xsdid.h \
- xsdeviceptrarray.h xsdeviceptr.h ../xstypes/xssyncsetting.h \
- ../xstypes/xssyncline.h ../xstypes/xssyncfunction.h \
- ../xstypes/xssyncpolarity.h ../xstypes/xsmath.h \
- ../xstypes/xsdeviceidarray.h ../xstypes/xssyncsettingarray.h \
- ../xstypes/xssyncsetting.h broadcastdevice.h idfetchhelpers.h \
- xscontrol_public.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h dataparser.h ../xscommon/threading.h \
+ ../xscommon/xsens_mutex.h mtthread.h datapoller.h restorecommunication.h \
+ mtix0device.h mtibasedevice.h mtdevice.h ../xstypes/xsstringarray.h \
+ ../xstypes/xsfilterprofilearray.h ../xstypes/xsfilterprofile.h \
+ ../xstypes/xsintarray.h ../xstypes/xssyncline.h mtix00device.h \
+ mtigdevice.h ../xstypes/xsdid.h xsdeviceptrarray.h xsdeviceptr.h \
+ ../xstypes/xssyncsetting.h ../xstypes/xssyncline.h \
+ ../xstypes/xssyncfunction.h ../xstypes/xssyncpolarity.h \
+ ../xstypes/xsmath.h ../xstypes/xsdeviceidarray.h \
+ ../xstypes/xssyncsettingarray.h ../xstypes/xssyncsetting.h \
+ broadcastdevice.h idfetchhelpers.h xscontrol_public.h
 xscontrol_def.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -185,6 +185,7 @@ datapacketcache.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 dataparser.h:
 ../xscommon/threading.h:

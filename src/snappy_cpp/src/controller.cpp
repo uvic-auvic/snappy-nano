@@ -1,3 +1,10 @@
+// this file will have all the controller logic for the submarine
+// Motor command publisher — publishes Float32MultiArray on /motor_cmd
+// data[0] = MotorSelect (0–255, cast to uint8 on the STM32 side) 11111111 (255) = all 8 motors
+// data[1] = Speed       (–100.0 to 100.0)
+
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -16,6 +23,7 @@
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
+<<<<<<< HEAD
 namespace MotorCalls {
     constexpr uint8_t ALL          = 255;  // 11111111
     constexpr uint8_t NONE         = 0;

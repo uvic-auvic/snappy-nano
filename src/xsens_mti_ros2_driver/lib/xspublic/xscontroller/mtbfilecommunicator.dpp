@@ -29,8 +29,8 @@ mtbfilecommunicator.cpp.o: mtbfilecommunicator.cpp xscontrollerconfig.h \
  xsaccesscontrolmode.h datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xscommon/threading.h ../xscommon/xprintf.h \
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xscommon/threading.h ../xscommon/xprintf.h \
  ../xscommon/xsens_debugtools.h ../xscommon/xsens_janitors.h \
  ../xstypes/xsportinfo.h ../xstypes/xsdeviceid.h ../xstypes/xsbaud.h \
  messageextractor.h
@@ -121,6 +121,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xscommon/threading.h:
 ../xscommon/xprintf.h:

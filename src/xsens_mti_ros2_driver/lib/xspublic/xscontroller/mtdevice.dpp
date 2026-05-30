@@ -27,14 +27,14 @@ mtdevice.cpp.o: mtdevice.cpp xscontrollerconfig.h ../xscommon/journaller.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xstypes/xsstringarray.h ../xstypes/xsfilterprofilearray.h \
- ../xstypes/xsfilterprofile.h ../xstypes/xsfilterprofilekind.h \
- ../xstypes/xsintarray.h xsdef.h ../xstypes/xstypesdef.h \
- ../xstypes/xssensorranges.h ../xstypes/xsdeviceid.h \
- ../xstypes/xsvector3.h ../xstypes/xsvector.h ../xstypes/xsmath.h \
- ../xstypes/xsfloatmath.h ../xstypes/xsmath2.h xsselftestresult.h \
- ../xstypes/xsstatusflag.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xstypes/xsstringarray.h \
+ ../xstypes/xsfilterprofilearray.h ../xstypes/xsfilterprofile.h \
+ ../xstypes/xsfilterprofilekind.h ../xstypes/xsintarray.h xsdef.h \
+ ../xstypes/xstypesdef.h ../xstypes/xssensorranges.h \
+ ../xstypes/xsdeviceid.h ../xstypes/xsvector3.h ../xstypes/xsvector.h \
+ ../xstypes/xsmath.h ../xstypes/xsfloatmath.h ../xstypes/xsmath2.h \
+ xsselftestresult.h ../xstypes/xsstatusflag.h
 mtdevice.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -119,6 +119,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xstypes/xsstringarray.h:
 ../xstypes/xsfilterprofilearray.h:

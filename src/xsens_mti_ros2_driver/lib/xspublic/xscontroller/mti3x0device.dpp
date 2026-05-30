@@ -28,11 +28,11 @@ mti3x0device.cpp.o: mti3x0device.cpp xscontrollerconfig.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h \
- ../xstypes/xsstringarray.h ../xstypes/xsfilterprofilearray.h \
- ../xstypes/xsfilterprofile.h ../xstypes/xsfilterprofilekind.h \
- ../xstypes/xsintarray.h ../xstypes/xssyncline.h \
- ../xstypes/xsdatapacket.h ../xstypes/xsmessage.h \
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h ../xstypes/xsstringarray.h \
+ ../xstypes/xsfilterprofilearray.h ../xstypes/xsfilterprofile.h \
+ ../xstypes/xsfilterprofilekind.h ../xstypes/xsintarray.h \
+ ../xstypes/xssyncline.h ../xstypes/xsdatapacket.h ../xstypes/xsmessage.h \
  ../xstypes/xsushortvector.h ../xstypes/xsscrdata.h \
  ../xstypes/xsscrdatafloat.h ../xstypes/xsfloatvector.h \
  ../xstypes/xscalibrateddata.h ../xstypes/xsvector3.h \
@@ -134,6 +134,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 ../xstypes/xsstringarray.h:
 ../xstypes/xsfilterprofilearray.h:

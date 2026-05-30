@@ -33,10 +33,10 @@ scanner.cpp.o: scanner.cpp xscontrollerconfig.h ../xscommon/journaller.h \
  datapacketcache.h ../xstypes/xsdeviceoptionflag.h \
  ../xstypes/xsoutputconfigurationarray.h \
  ../xstypes/xsoutputconfiguration.h lastresultmanager.h xsgnssplatform.h \
- xsubloxgnssplatform.h xsoperationalmode.h xsdevice_public.h dataparser.h \
- ../xscommon/threading.h ../xscommon/xsens_mutex.h mtthread.h \
- datapoller.h usbcommunicator.h ../xscommon/xsens_janitors.h \
- enumerateusbdevices.h
+ xsubloxgnssplatform.h xsoperationalmode.h xsleverarmtype.h \
+ xsdevice_public.h dataparser.h ../xscommon/threading.h \
+ ../xscommon/xsens_mutex.h mtthread.h datapoller.h usbcommunicator.h \
+ ../xscommon/xsens_janitors.h enumerateusbdevices.h
 scanner.cpp:
 xscontrollerconfig.h:
 ../xscommon/journaller.h:
@@ -137,6 +137,7 @@ lastresultmanager.h:
 xsgnssplatform.h:
 xsubloxgnssplatform.h:
 xsoperationalmode.h:
+xsleverarmtype.h:
 xsdevice_public.h:
 dataparser.h:
 ../xscommon/threading.h:
