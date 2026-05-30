@@ -11,6 +11,7 @@
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float32.hpp"
 #include "snappy_cpp/msg/task.hpp"
 #include "snappy_cpp/msg/pose.hpp"
 #include <tf2/LinearMath/Quaternion.h>
@@ -23,7 +24,6 @@
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
-<<<<<<< HEAD
 namespace MotorCalls {
     constexpr uint8_t ALL          = 255;  // 11111111
     constexpr uint8_t NONE         = 0;
@@ -65,7 +65,7 @@ class Controller : public rclcpp::Node {
             flag_ = 0;
 
             //publish motor command
-            motor_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>("/motor_cmd", 10);
+            motor_publisher_ = create_publisher<std_msgs::msg::Float32MultiArray>("/motor_cmd", 10);
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
 
@@ -101,36 +101,21 @@ class Controller : public rclcpp::Node {
 
         // Dual message — opposing signs
     void strafeRight(float s) {
-        sendDualCmd(
-            {MotorCalls::FRONT_YAW,  s},
-            {MotorCalls::BACK_YAW,   s}   // same sign = strafe
-        );
+        sendCmd(MotorCalls::FRONT_YAW, s);
+        sendCmd(MotorCalls::BACK_YAW, s);   // same sign = strafe
     }
     void strafeLeft(float s) {
-        sendDualCmd(
-            {MotorCalls::FRONT_YAW, -s},
-            {MotorCalls::BACK_YAW,  -s}   // same sign, both reversed
-        );
+        sendCmd(MotorCalls::FRONT_YAW, -s);
+        sendCmd(MotorCalls::BACK_YAW, -s);   // same sign, both reversed
     }   
     void yawRight(float s) {
-        sendDualCmd(
-            {MotorCalls::FRONT_YAW,  s},
-            {MotorCalls::BACK_YAW,  -s}   // opposite sign = yaw
-        );
+        sendCmd(MotorCalls::FRONT_YAW, s);
+        sendCmd(MotorCalls::BACK_YAW, -s);   // opposite sign = yaw
     }
         
     void yawLeft(float s) {
-        sendDualCmd(
-            {MotorCalls::FRONT_YAW, -s},
-            {MotorCalls::BACK_YAW,   s}
-        );
-    }
-        
-    void strafeLeft(float s) {
-        sendDualCmd(
-            {MotorCalls::FRONT_YAW, -s},
-            {MotorCalls::BACK_YAW,  -s}   // same sign, both reversed
-        );
+        sendCmd(MotorCalls::FRONT_YAW, -s);
+        sendCmd(MotorCalls::BACK_YAW, s);
     }
     
     void stop(){ sendCmd(MotorCalls::ALL, 0.0f); }
@@ -338,16 +323,17 @@ class Controller : public rclcpp::Node {
         {
             auto msg = std_msgs::msg::Float32MultiArray();
             msg.data = {static_cast<float>(mask), speed};
-            pub_->publish(msg);
+            motor_publisher_->publish(msg);
         }
 
 
-        
+	rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr motor_publisher_;
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
         rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr trajectory_publisher_;
         rclcpp::Subscription<snappy_cpp::msg::Task>::SharedPtr task_subscription_; 
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
-        rclcpp::TimerBase::SharedPtr status_timer_;
+	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
+	rclcpp::TimerBase::SharedPtr status_timer_;
         rclcpp::TimerBase::SharedPtr trajectory_timer_;
 
         PID pid_x_;
@@ -371,7 +357,7 @@ class Controller : public rclcpp::Node {
         rclcpp::TimerBase::SharedPtr timer_;
         int flag_;
 
-        void publish_dual_cmd(MotorCmd a, MotorCmd b) {
+        void sendDualCmd(MotorCmd a, MotorCmd b) {
             sendCmd(a.mask, a.speed);
             sendCmd(b.mask, b.speed);
     }
