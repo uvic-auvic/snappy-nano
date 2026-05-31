@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-
+#include "snappy_cpp/msg/pose.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 
@@ -42,10 +42,9 @@ public:
         
         // From on-board IMU
         imu_sub2_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/imu/data",
+            "/imu", //"/imu/data"
             qos,
             std::bind(&StateEstimator::imu2_callback, this, std::placeholders::_1));
-        
         /*
         // Alternative: separate gyro topic
         gyro_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -59,9 +58,13 @@ public:
             qos,
             std::bind(&StateEstimator::accel_callback, this, std::placeholders::_1));
         */
-            
+        publisher_ = this->create_publisher<snappy_cpp::msg::Pose>(
+            "state_estimator/state", 10
+        );
+
         RCLCPP_INFO(this->get_logger(), "State Estimator subscribed to:");
         RCLCPP_INFO(this->get_logger(), "  - /camera/camera/imu");
+        RCLCPP_INFO(this->get_logger(), "  - /imu");
         RCLCPP_INFO(this->get_logger(), "  - /camera/camera/gyro/sample");
         RCLCPP_INFO(this->get_logger(), "  - /camera/camera/accel/sample");
         RCLCPP_INFO(this->get_logger(), "Waiting for IMU data...");
@@ -93,7 +96,7 @@ private:
         imu1_file << msg->linear_acceleration.x << ","
                 << msg->linear_acceleration.y << ","
                 << msg->linear_acceleration.z << ","
-                << msg->angular_velocity.x << ","
+            << msg->angular_velocity.x << ","
                 << msg->angular_velocity.y << ","
                 << msg->angular_velocity.z << ","
                 << std::endl;
@@ -101,20 +104,26 @@ private:
     
     void imu2_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
+        //pose message
+        auto pose = snappy_cpp::msg::Pose();
+
+
         if (!imu_received_) {
             RCLCPP_INFO(this->get_logger(), "✅ First IMU message received!");
             imu_received_ = true;
         }
         imu_count_++;
-        
+        pose.position.x = msg->linear_acceleration.x;
+        pose.position.y = msg->linear_acceleration.y;
+        pose.position.z = msg->linear_acceleration.z;
         // Print combined IMU data every 20 messages
         if (imu_count_ % 20 == 0) {
             RCLCPP_INFO(this->get_logger(), 
                 "[IMU 2] Orient: [%.3f, %.3f, %.3f, %.3f] rad | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
-        }
-        
+        }   
+        publisher_->publish(pose);
         // Write all data to file
         imu2_file << msg->linear_acceleration.x << ","
                 << msg->linear_acceleration.y << ","
@@ -171,6 +180,7 @@ private:
 
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub1_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub2_;
+    rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr publisher_;
     //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub_;
     //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub_;
     rclcpp::TimerBase::SharedPtr check_timer_;

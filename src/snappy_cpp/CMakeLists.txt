@@ -19,20 +19,26 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(builtin_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Task.msg"
+  "msg/Pose.msg"
   "msg/BoundingBox2D.msg"
   "msg/ObjectDetection.msg"
   "msg/DetectionArray.msg"
-  DEPENDENCIES std_msgs builtin_interfaces
+  "msg/ThrusterCommand.msg"
+  DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # Find and require ONNX Runtime
 find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
@@ -40,7 +46,10 @@ find_library(ONNXRUNTIME_LIB onnxruntime PATHS /usr/lib /usr/local/lib /usr/lib/
 
 message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
 message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
-include_directories(${ONNXRUNTIME_INCLUDE_DIR})
+include_directories(
+  ${ONNXRUNTIME_INCLUDE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+)
 link_directories(/usr/local/lib)
 
 # Build all executables
@@ -61,8 +70,8 @@ add_executable(image_capture src/image_capture.cpp)
 ament_target_dependencies(image_capture rclcpp sensor_msgs cv_bridge)
 target_link_libraries(image_capture ${OpenCV_LIBS})
 
-add_executable(controller src/controller.cpp)
-ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
+# add_executable(controller src/controller.cpp)
+# ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
 
 add_executable(state_estimator src/state_estimator.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
@@ -129,6 +138,31 @@ install(FILES
     DESTINATION share/${PROJECT_NAME}/models
 )
 
+
+add_executable(controller
+  src/controller.cpp
+  src/include/src/pid.cpp
+  src/include/src/motorboard.cpp
+)
+ament_target_dependencies(controller
+  rclcpp
+  std_msgs
+  geometry_msgs
+  tf2
+  tf2_geometry_msgs
+)
+
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(controller "${cpp_typesupport_target}")
+target_link_libraries(state_estimator "${cpp_typesupport_target}")
+target_link_libraries(planner "${cpp_typesupport_target}")
+#target_link_libraries(helloWorld "${cpp_typesupport_target}")
+# install(TARGETS
+#   helloWorld
+#   controller
+#   DESTINATION lib/${PROJECT_NAME})
+
+
 # Install all executables
 install(TARGETS
   pressureSensor
@@ -147,7 +181,12 @@ endif()
 
 # Install launch files
 install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}/)
+  DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY worlds
+  DESTINATION share/${PROJECT_NAME})
+
+option(BUILD_TESTING "Build tests" OFF)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
