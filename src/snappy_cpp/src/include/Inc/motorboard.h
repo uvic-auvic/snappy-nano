@@ -5,7 +5,7 @@
 #include <cstdint>
 
 #include "rclcpp/rclcpp.hpp"
-#include "snappy_cpp/msg/thruster_command.hpp"
+#include "snappy_interfaces/msg/thruster_command.hpp"
 
 namespace MotorCalls {
     constexpr uint8_t ALL          = 255;  // 11111111
@@ -37,7 +37,7 @@ namespace Motor {
 
             Motorboard() = delete;
 
-            explicit Motorboard(rclcpp::Publisher<snappy_cpp::msg::ThrusterCommand>::SharedPtr motor_publisher);
+            explicit Motorboard(rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher);
 
             // Initialize the motorboard
             void on();
@@ -89,7 +89,7 @@ namespace Motor {
             void set_leds(const int& led, const int& mode); // Which LED and blink mode
 
         private:
-            rclcpp::Publisher<snappy_cpp::msg::ThrusterCommand>::SharedPtr motor_publisher_;
+            rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher_;
     };
 }
 

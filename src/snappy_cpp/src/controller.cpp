@@ -17,7 +17,7 @@
 #include "std_msgs/msg/float32.hpp"
 #include "snappy_cpp/msg/task.hpp"
 #include "snappy_cpp/msg/pose.hpp"
-#include "snappy_cpp/msg/thruster_command.hpp"
+#include "snappy_interfaces/msg/thruster_command.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <queue>
@@ -43,7 +43,9 @@ class Controller : public rclcpp::Node {
             flag_ = 0;
 
             //publish motor command
-            motor_publisher_ = create_publisher<snappy_cpp::msg::ThrusterCommand>("/motor_cmd", 10);
+            // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
+            motor_publisher_ = create_publisher<snappy_interfaces::msg::ThrusterCommand>(
+                "/motor_cmd", rclcpp::QoS(10).best_effort());
             motorboard_ = std::make_unique<Motor::Motorboard>(motor_publisher_);
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
@@ -263,7 +265,7 @@ class Controller : public rclcpp::Node {
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;
-        rclcpp::Publisher<snappy_cpp::msg::ThrusterCommand>::SharedPtr motor_publisher_;
+        rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher_;
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
         rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr trajectory_publisher_;
         rclcpp::Subscription<snappy_cpp::msg::Task>::SharedPtr task_subscription_;

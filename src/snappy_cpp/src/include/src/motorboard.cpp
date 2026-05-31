@@ -3,7 +3,7 @@
 
 namespace Motor {
 
-Motorboard::Motorboard(rclcpp::Publisher<snappy_cpp::msg::ThrusterCommand>::SharedPtr motor_publisher)
+Motorboard::Motorboard(rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher)
     : motor_publisher_(motor_publisher) {}
 
 void Motorboard::forward(int8_t speed) {
@@ -73,7 +73,7 @@ void Motorboard::stop() {
 }
 
 void Motorboard::sendCmd(uint8_t mask, const int8_t speeds[8]) {
-    snappy_cpp::msg::ThrusterCommand msg{};
+    snappy_interfaces::msg::ThrusterCommand msg{};
     msg.thruster_mask = mask;
     for (size_t i = 0; i < msg.thrust_pct.size(); ++i) {
         msg.thrust_pct[i] = speeds[i];
