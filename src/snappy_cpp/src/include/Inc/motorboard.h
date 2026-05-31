@@ -13,18 +13,18 @@ namespace MotorCalls {
 
     // Individual motors
     // POINTED UP AND DOWN
-    constexpr uint8_t FRONT_LEFT   = 1;    // 00000001
-    constexpr uint8_t FRONT_RIGHT  = 4;    // 00000010
-    constexpr uint8_t BACK_RIGHT = 16; //00010000
-    constexpr uint8_t BACK_LEFT = 64; //01000000
+    constexpr uint8_t FRONT_LEFT   = 128;    // 00000001
+    constexpr uint8_t FRONT_RIGHT  = 2;    // 00000010
+    constexpr uint8_t BACK_RIGHT = 8; //00010000
+    constexpr uint8_t BACK_LEFT = 32; //01000000
 
     // POINTED LEFT AND RIGHT
-    constexpr uint8_t FRONT_YAW = 2; //00000010
-    constexpr uint8_t BACK_YAW = 32; //00100000
+    constexpr uint8_t FRONT_YAW = 1; //00000010
+    constexpr uint8_t BACK_YAW = 16; //00100000
 
     // POINTED FORWARD AND BACK
-    constexpr uint8_t FORWARD_RIGHT = 8; //00001000
-    constexpr uint8_t FORWARD_LEFT = 128; //10000000
+    constexpr uint8_t FORWARD_RIGHT = 4; //00001000
+    constexpr uint8_t FORWARD_LEFT = 64; //10000000
 
     constexpr uint8_t VERTICAL = FRONT_LEFT | FRONT_RIGHT | BACK_RIGHT  | BACK_LEFT;   // 85
     constexpr uint8_t FORWARD = FORWARD_RIGHT | FORWARD_LEFT;        // 136
