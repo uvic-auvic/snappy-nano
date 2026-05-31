@@ -74,6 +74,20 @@ class Controller : public rclcpp::Node {
                 100ms, std::bind(&Controller::trajectory_callback, this));
         }
 
+        void hold_depth_and_move_forward_for(double duration_seconds, int8_t forward_speed = 20) {
+           if (duration_seconds <= 0.0) {
+               RCLCPP_WARN(this->get_logger(), "duration_seconds must be > 0.");
+               return;
+           }
+
+           pid_z_.set_target(1.2f);
+           timed_forward_speed_ = clampThrust(static_cast<float>(forward_speed));
+           timed_forward_end_ = std::chrono::steady_clock::now()
+               + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                   std::chrono::duration<double>(duration_seconds));
+           timed_forward_active_ = true;
+        }
+
     private:
         // Publish state to planner
         void status_callback() {
@@ -175,6 +189,15 @@ class Controller : public rclcpp::Node {
             } else if (thrust < 0) {
                 motorboard_->down(15);
                 RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
+            }
+
+            if (timed_forward_active_) {
+                if (std::chrono::steady_clock::now() >= timed_forward_end_) {
+                    motorboard_->forward(0);
+                    timed_forward_active_ = false;
+                } else {
+                    motorboard_->forward(timed_forward_speed_);
+                }
             }
         }
 
@@ -294,6 +317,9 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
         int flag_;
+        bool timed_forward_active_ = false;
+        int8_t timed_forward_speed_ = 0;
+        std::chrono::steady_clock::time_point timed_forward_end_{};
 };
 
 
