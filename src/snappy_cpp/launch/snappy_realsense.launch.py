@@ -11,7 +11,12 @@ from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import (
+    DeclareLaunchArgument,
+    ExecuteProcess,
+    IncludeLaunchDescription,
+    TimerAction,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -19,6 +24,26 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+    serial_dev_arg = DeclareLaunchArgument(
+        "serial_dev",
+        default_value="/dev/ttyUSB1",
+        description="Serial device for micro-ROS agent",
+    )
+
+    micro_ros_agent = ExecuteProcess(
+        cmd=[
+            "ros2",
+            "run",
+            "micro_ros_agent",
+            "micro_ros_agent",
+            "serial",
+            "--dev",
+            LaunchConfiguration("serial_dev"),
+            "-b",
+            "115200",
+        ],
+        output="screen",
+    )
     # Launch arguments for serial numbers (with defaults)
     # Serial numbers must be wrapped in single quotes for RealSense parameter type handling
     serial_no_d455_arg = DeclareLaunchArgument(
@@ -198,6 +223,8 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            serial_dev_arg,
+            micro_ros_agent,
             serial_no_d455_arg,
             serial_no_d405_arg,
             d455_launch,
