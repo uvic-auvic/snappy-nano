@@ -11,6 +11,7 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -74,17 +75,19 @@ class Controller : public rclcpp::Node {
                 100ms, std::bind(&Controller::trajectory_callback, this));
         }
 
-        void hold_depth_and_move_forward_for(double duration_seconds, int8_t forward_speed = 20) {
+        void hold_depth_and_move_forward_for(
+           double duration_seconds, int8_t forward_speed = 20, float target_depth_m = 1.2f) {
            if (duration_seconds <= 0.0) {
                RCLCPP_WARN(this->get_logger(), "duration_seconds must be > 0.");
                return;
            }
 
-           pid_z_.set_target(1.2f);
+           pid_z_.set_target(target_depth_m);
+           std::lock_guard<std::mutex> lock(timed_forward_mutex_);
            timed_forward_speed_ = clampThrust(static_cast<float>(forward_speed));
            timed_forward_end_ = std::chrono::steady_clock::now()
                + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                   std::chrono::duration<double>(duration_seconds));
+                     std::chrono::duration<double>(duration_seconds));
            timed_forward_active_ = true;
         }
 
@@ -191,13 +194,26 @@ class Controller : public rclcpp::Node {
                 RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
             }
 
-            if (timed_forward_active_) {
-                if (std::chrono::steady_clock::now() >= timed_forward_end_) {
-                    motorboard_->forward(0);
-                    timed_forward_active_ = false;
-                } else {
-                    motorboard_->forward(timed_forward_speed_);
+            bool should_send_forward = false;
+            int8_t forward_speed = 0;
+            {
+                std::lock_guard<std::mutex> lock(timed_forward_mutex_);
+                if (timed_forward_active_) {
+                    if (std::chrono::steady_clock::now() >= timed_forward_end_) {
+                        timed_forward_active_ = false;
+                        forward_speed = 0;
+                        should_send_forward = true;
+                    } else if (!last_forward_cmd_active_ || last_forward_speed_ != timed_forward_speed_) {
+                        forward_speed = timed_forward_speed_;
+                        should_send_forward = true;
+                    }
                 }
+            }
+
+            if (should_send_forward) {
+                motorboard_->forward(forward_speed);
+                last_forward_cmd_active_ = forward_speed != 0;
+                last_forward_speed_ = forward_speed;
             }
         }
 
@@ -320,6 +336,9 @@ class Controller : public rclcpp::Node {
         bool timed_forward_active_ = false;
         int8_t timed_forward_speed_ = 0;
         std::chrono::steady_clock::time_point timed_forward_end_{};
+        std::mutex timed_forward_mutex_;
+        bool last_forward_cmd_active_ = false;
+        int8_t last_forward_speed_ = 0;
 };
 
 
