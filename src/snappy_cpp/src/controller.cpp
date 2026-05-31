@@ -35,12 +35,14 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.5f, 0.0f, 0.1f),
             pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(4.0f, 0.0f, 0.1f),
+            pid_z_(15.0f, 0.0f, 0.1f),
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.5f, 0.0f, 0.1f)
          {
+            // count_ = 0;
             flag_ = 0;
+            pid_z_.set_target(1.1);
 
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
@@ -72,6 +74,11 @@ class Controller : public rclcpp::Node {
                 100ms, std::bind(&Controller::status_callback, this));
             trajectory_timer_ = this->create_wall_timer(
                 100ms, std::bind(&Controller::trajectory_callback, this));
+
+
+            timer_ = this->create_wall_timer(10ms, std::bind(&Controller::timer_callback, this));
+            RCLCPP_INFO(this->get_logger(), "Timer Node started");
+
         }
 
     private:
@@ -100,6 +107,27 @@ class Controller : public rclcpp::Node {
             status_publisher_->publish(status_message);
             //uncomment for debugging
             // RCLCPP_INFO(this->get_logger(), "Publishing status: '%s'", status_message.data.c_str());
+        }
+
+        void timer_callback() {
+            count_++;
+            RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
+
+
+            float current_depth = depthMaster;
+            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", current_depth);
+            // Update the Z-axis PID with current depth
+            float z_thrust = pid_z_.update(current_depth);
+
+            // Apply the thrust to the vertical motors
+            const int8_t thrust = clampThrust(z_thrust);
+            if (thrust > 0) {
+                motorboard_->up(thrust);
+                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
+            } else if (thrust < 0) {
+                motorboard_->down(thrust);
+                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
+            }
         }
 
         // Publish trajectory to state estimator
@@ -162,20 +190,7 @@ class Controller : public rclcpp::Node {
         }
 
         void depth_callback(const std_msgs::msg::Float32 & msg) {
-            float current_depth = msg.data;
-            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", current_depth);
-            // Update the Z-axis PID with current depth
-            float z_thrust = pid_z_.update(current_depth);
-
-            // Apply the thrust to the vertical motors
-            const int8_t thrust = clampThrust(z_thrust);
-            if (thrust > 0) {
-                motorboard_->up(-15);
-                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
-            } else if (thrust < 0) {
-                motorboard_->down(15);
-                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
-            }
+            float depthMaster = msg.data;
         }
 
         // Compute difference between current and target
@@ -270,8 +285,8 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr trajectory_publisher_;
         rclcpp::Subscription<snappy_cpp::msg::Task>::SharedPtr task_subscription_;
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
-	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
-	rclcpp::TimerBase::SharedPtr status_timer_;
+    	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
+    	rclcpp::TimerBase::SharedPtr status_timer_;
         rclcpp::TimerBase::SharedPtr trajectory_timer_;
 
         PID pid_x_;
@@ -293,7 +308,10 @@ class Controller : public rclcpp::Node {
 
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
+
         int flag_;
+        int count_;
+        float depthMaster;
 };
 
 
