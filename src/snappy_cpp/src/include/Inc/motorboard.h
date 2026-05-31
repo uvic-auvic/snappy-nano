@@ -1,56 +1,76 @@
 #ifndef MOTORBOARD_HPP
-#define QUEUE_HPP
+#define MOTORBOARD_HPP
 
-namespace motor{
-    template <class T>
-    class motorboard {
+#include <array>
+#include <cstdint>
+
+#include "rclcpp/rclcpp.hpp"
+#include "snappy_cpp/msg/thruster_command.hpp"
+
+namespace MotorCalls {
+    constexpr uint8_t ALL          = 255;  // 11111111
+    constexpr uint8_t NONE         = 0;
+
+    // Individual motors
+    // POINTED UP AND DOWN
+    constexpr uint8_t FRONT_LEFT   = 1;    // 00000001
+    constexpr uint8_t FRONT_RIGHT  = 4;    // 00000010
+    constexpr uint8_t BACK_RIGHT = 16; //00010000
+    constexpr uint8_t BACK_LEFT = 64; //01000000
+
+    // POINTED LEFT AND RIGHT
+    constexpr uint8_t FRONT_YAW = 2; //00000010
+    constexpr uint8_t BACK_YAW = 32; //00100000
+
+    // POINTED FORWARD AND BACK
+    constexpr uint8_t FORWARD_RIGHT = 8; //00001000
+    constexpr uint8_t FORWARD_LEFT = 128; //10000000
+
+    constexpr uint8_t VERTICAL = FRONT_LEFT | FRONT_RIGHT | BACK_RIGHT  | BACK_LEFT;   // 85
+    constexpr uint8_t FORWARD = FORWARD_RIGHT | FORWARD_LEFT;        // 136
+    constexpr uint8_t LATERAL = FRONT_YAW | BACK_YAW;                // 34
+}
+
+namespace Motor {
+    class Motorboard {
         public:
 
-            using value_type = T;
+            Motorboard() = delete;
 
-            using size_type = std::size_t;
-
-            enum class turbine {
-                front = 0,
-                back = 1,
-                left = 2,
-                right = 3,
-                front_left = 4,
-                front_right = 5,
-                back_left = 6,
-                back_right = 7,
-            };
-
-            motorboard() = delete;
-
-            motorboard(const size_type& baudrate, const std::string& port);
+            explicit Motorboard(rclcpp::Publisher<snappy_cpp::msg::ThrusterCommand>::SharedPtr motor_publisher);
 
             // Initialize the motorboard
             void on();
-            
+
             // Uninitialize the motorboard
             void off();
 
             // Set all motor speeds to 0
             void stop();
 
-            void forward(const int8_t& speed);
+            void forward(int8_t speed);
 
-            void backward(const int8_t& speed);
+            void backward(int8_t speed);
 
-            void right(const int8_t& speed);
+            void right(int8_t speed);
 
-            void left(const int8_t& speed);
+            void left(int8_t speed);
 
-            void up(const int8_t& speed);
+            void up(int8_t speed);
 
-            void down(const int8_t& speed);
+            void down(int8_t speed);
 
-            void yaw(const int8_t& speed);
+            void yaw_cw(int8_t speed);
 
-            void roll(const int8_t& speed);
+            void yaw_ccw(int8_t speed);
 
-            void pitch(const int8_t& speed);
+            void roll_left(int8_t speed);
+
+            void roll_right(int8_t speed);
+
+            void pitch_up(int8_t speed);
+
+            void pitch_down(int8_t speed);
 
             /*
             8 integers:
@@ -63,9 +83,13 @@ namespace motor{
             6: Back left
             7: Back right
             */
-            void set_motors(const int8_t* speeds);
+            void sendCmd(uint8_t mask, const int8_t speeds[8]);
+            void sendCmd(uint8_t mask, int8_t speed);
 
             void set_leds(const int& led, const int& mode); // Which LED and blink mode
+
+        private:
+            rclcpp::Publisher<snappy_cpp::msg::ThrusterCommand>::SharedPtr motor_publisher_;
     };
 }
 

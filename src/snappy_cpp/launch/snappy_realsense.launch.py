@@ -206,5 +206,6 @@ def generate_launch_description():
             camera_inference,
             pressure_sensor_node,
             planner_node,
+            controller_node,
         ]
     )

@@ -15,7 +15,7 @@ public:
         // Publishes a plain float — your state estimator reads this directly
         publisher_ = this->create_publisher<std_msgs::msg::Float32>("depth_data", 10);
 
-        serial_fd_ = open("/dev/ttyUSB0", O_RDONLY | O_NOCTTY);
+        serial_fd_ = open("/dev/ttyUSB0", O_RDONLY | O_NOCTTY | O_NONBLOCK);
         if (serial_fd_ < 0) {
             RCLCPP_ERROR(this->get_logger(), "Failed to open /dev/ttyUSB0");
             return;
@@ -25,8 +25,8 @@ public:
         tcgetattr(serial_fd_, &tty);
 
         // Arduino sketch uses 9600 baud — must match
-        cfsetispeed(&tty, B9600);
-        cfsetospeed(&tty, B9600);
+        cfsetispeed(&tty, B115200);
+        cfsetospeed(&tty, B115200);
 
         // this enables the reciever and ignores the control lines
         tty.c_cflag |= (CLOCAL | CREAD);
@@ -59,7 +59,8 @@ public:
             std::chrono::milliseconds(100),
             std::bind(&DepthSensorNode::read_and_publish, this));
 
-        RCLCPP_INFO(this->get_logger(), "Depth sensor node started on /dev/ttyUSB0 at 9600 baud");
+        RCLCPP_INFO(this->get_logger(), "Depth sensor node started on /dev/ttyUSB0 at  baud");
+        // RCLCPP_INFO(this->get_logger(), "HIT");
     }
 
     ~DepthSensorNode()
@@ -70,43 +71,48 @@ public:
     }
 
 private:
-    // Parses "Depth: 1.23 m\n" → 1.23, returns false if format doesn't match
+    // Parses "D 1.23\n" → 1.23, returns false if format doesn't match
     bool parse_depth_line(const std::string & line, double & depth_out)
     {
-        // Expected format from Arduino: "Depth: <value> m"
-        const std::string prefix = "Depth: ";
-        const std::string suffix = " m";
+        // Expected format from Arduino: "D <value>"
+        const std::string prefix = "D ";
 
+        // RCLCPP_INFO(this->get_logger(), "HIT1");
         if (line.rfind(prefix, 0) != 0) {
-            return false;  // Line doesn't start with "Depth: "
+            // RCLCPP_INFO(this->get_logger(), "HIT2");
+            return false;  // Line doesn't start with "D "
         }
 
         std::string trimmed = line;
         // Strip trailing whitespace / \r
         while (!trimmed.empty() && (trimmed.back() == '\r' || trimmed.back() == '\n' || trimmed.back() == ' ')) {
             trimmed.pop_back();
+            // RCLCPP_INFO(this->get_logger(), "HIT3");
         }
 
-        if (trimmed.size() <= prefix.size() + suffix.size()) {
+        if (trimmed.size() <= prefix.size()) {
+            // RCLCPP_INFO(this->get_logger(), "HIT4");
             return false;
         }
 
-        // Extract the numeric part between prefix and suffix
-        std::string num_str = trimmed.substr(
-            prefix.size(),
-            trimmed.size() - prefix.size() - suffix.size()
-        );
+        // Extract the numeric part
+        std::string num_str = trimmed.substr(prefix.size());
+            // RCLCPP_INFO(this->get_logger(), "HIT5");
 
         try {
             depth_out = std::stod(num_str);
+            // RCLCPP_INFO(this->get_logger(), "HIT6");
             return true;
         } catch (...) {
+            // RCLCPP_INFO(this->get_logger(), "HIT7");
             return false;
         }
     }
 
     void read_and_publish()
     {
+
+        //RCLCPP_INFO(this->get_logger(), "serial_fd_: %d", serial_fd_);
         if (serial_fd_ < 0) return;
 
         char buffer[256];
@@ -114,7 +120,19 @@ private:
         // and returns exactly that line — no partial read issues
         int bytes_read = read(serial_fd_, buffer, sizeof(buffer) - 1);
 
-        if (bytes_read <= 0) {
+        if (bytes_read < 0) {
+            if(errno == EAGAIN || errno == EWOULDBLOCK) {
+                // No data available right now, not an error
+                RCLCPP_DEBUG(this->get_logger(), "No data available to read");
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "Error reading from serial: %s", strerror(errno));
+            }
+            // RCLCPP_INFO(this->get_logger(), "HITABORT");
+            return;
+        }
+        if(bytes_read == 0) {
+            RCLCPP_DEBUG(this->get_logger(), "End of file reached on serial");
+            // RCLCPP_INFO(this->get_logger(), "HITEOF");
             return;
         }
 
@@ -122,7 +140,9 @@ private:
         std::string line(buffer);
 
         double depth = 0.0;
+        RCLCPP_INFO(this->get_logger(), "Read line: %s", line.c_str());
         if (parse_depth_line(line, depth)) {
+            RCLCPP_INFO(this->get_logger(), "HIT8");
             auto message = std_msgs::msg::Float32();
             message.data = depth;
             publisher_->publish(message);
@@ -130,6 +150,7 @@ private:
         } else {
             // Silently ignore non-depth lines (e.g. "Starting" on boot)
             RCLCPP_DEBUG(this->get_logger(), "Ignored line: %s", line.c_str());
+            // RCLCPP_INFO(this->get_logger(), "HIT9");
         }
     }
 

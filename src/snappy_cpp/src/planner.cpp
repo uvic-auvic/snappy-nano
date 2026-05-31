@@ -1,5 +1,5 @@
-//this will be the planner/FSM for what step of competition the submarine is on at competion, 
-// it will have all the high level instructions on what it is supposed to do 
+//this will be the planner/FSM for what step of competition the submarine is on at competion,
+// it will have all the high level instructions on what it is supposed to do
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -16,14 +16,14 @@ public:
     Planner() : Node("planner")
     {
 
-        RCLCPP_INFO(this->get_logger(), "Planner node started");        
+        RCLCPP_INFO(this->get_logger(), "Planner node started");
         // Subscribe to detection messages
         detection_sub_ = this->create_subscription<snappy_cpp::msg::DetectionArray>(
             "/cuda_node/detections",
             rclcpp::SensorDataQoS(),
             std::bind(&Planner::detection_callback, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "Subscribed to /cuda_node/detections");
-        
+
 
         timer_ = this->create_wall_timer(
             1s, std::bind(&Planner::timer_callback, this));
@@ -33,8 +33,9 @@ public:
 
 private:
     void timer_callback()
-    {  
-        RCLCPP_INFO(this->get_logger(), "Planner running...");
+    {
+        // uncomment for debug
+        // RCLCPP_INFO(this->get_logger(), "Planner running...");
     }
 
     void detection_callback(const snappy_cpp::msg::DetectionArray::SharedPtr msg)
@@ -58,7 +59,7 @@ private:
                 detection.bounding_box.height);
         }
     }
-    
+
     void starter_task(){
         auto task_msg = snappy_cpp::msg::Task();
 
@@ -70,7 +71,7 @@ private:
 
     }
 
-    rclcpp::Publisher<snappy_cpp::msg::Task>::SharedPtr task_publisher_; 
+    rclcpp::Publisher<snappy_cpp::msg::Task>::SharedPtr task_publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Subscription<snappy_cpp::msg::DetectionArray>::SharedPtr detection_sub_;
 };

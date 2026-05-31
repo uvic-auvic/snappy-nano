@@ -35,6 +35,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BoundingBox2D.msg"
   "msg/ObjectDetection.msg"
   "msg/DetectionArray.msg"
+  "msg/ThrusterCommand.msg"
   DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -138,7 +139,7 @@ install(FILES
 )
 
 
-add_executable(controller 
+add_executable(controller
   src/controller.cpp
   src/include/src/pid.cpp
   src/include/src/motorboard.cpp
