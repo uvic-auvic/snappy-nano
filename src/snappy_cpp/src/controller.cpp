@@ -35,7 +35,7 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.5f, 0.0f, 0.1f),
             pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(0.5f, 0.0f, 0.1f),
+            pid_z_(4.0f, 0.0f, 0.1f),
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.5f, 0.0f, 0.1f)
@@ -170,10 +170,10 @@ class Controller : public rclcpp::Node {
             // Apply the thrust to the vertical motors
             const int8_t thrust = clampThrust(z_thrust);
             if (thrust > 0) {
-                motorboard_->up(thrust);
+                motorboard_->up(-15);
                 RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
             } else if (thrust < 0) {
-                motorboard_->down(static_cast<int8_t>(-thrust));
+                motorboard_->down(15);
                 RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
             }
         }
@@ -261,7 +261,7 @@ class Controller : public rclcpp::Node {
 
 
         static int8_t clampThrust(float value) {
-            return static_cast<int8_t>(std::clamp(value, -100.0f, 100.0f));
+            return static_cast<int8_t>(std::lround(std::clamp(value, -100.0f, 100.0f)));
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;
