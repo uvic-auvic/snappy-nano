@@ -47,4 +47,6 @@ jobs:
       - name: Build with colcon
         run: |
           source /opt/ros/humble/setup.bash
-          colcon build --packages-select snappy_cpp --cmake-args -DWITH_CUDA=OFF
+          colcon build \
+            --packages-select snappy_interfaces snappy_cpp \
+            --cmake-args -DWITH_CUDA=OFF
