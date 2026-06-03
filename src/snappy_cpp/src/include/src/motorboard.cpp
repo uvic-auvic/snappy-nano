@@ -11,15 +11,15 @@ void Motorboard::forward(int8_t speed) {
 }
 
 void Motorboard::backward(int8_t speed) {
-    sendCmd(MotorCalls::FORWARD, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::FORWARD, -speed);
 }
 
 void Motorboard::down(int8_t speed) {
-    sendCmd(MotorCalls::VERTICAL, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::VERTICAL, speed);
 }
 
 void Motorboard::up(int8_t speed) {
-    sendCmd(MotorCalls::VERTICAL, speed);
+    sendCmd(MotorCalls::VERTICAL, -speed);
 }
 
 void Motorboard::right(int8_t speed) {
@@ -27,49 +27,49 @@ void Motorboard::right(int8_t speed) {
 }
 
 void Motorboard::left(int8_t speed) {
-    sendCmd(MotorCalls::LATERAL, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::LATERAL, -speed);
 }
 
 void Motorboard::yaw_cw(int8_t speed) {
     sendCmd(MotorCalls::BACK_YAW, speed);
-    sendCmd(MotorCalls::FRONT_YAW, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::FRONT_YAW, -speed);
 }
 
 void Motorboard::yaw_ccw(int8_t speed) {
-    sendCmd(MotorCalls::BACK_YAW, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::BACK_YAW, -speed);
     sendCmd(MotorCalls::FRONT_YAW, speed);
 }
 
 void Motorboard::roll_left(int8_t speed) {
     sendCmd(MotorCalls::BACK_LEFT, speed);
-    sendCmd(MotorCalls::BACK_RIGHT, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::BACK_RIGHT, -speed);
     sendCmd(MotorCalls::FRONT_LEFT, speed);
-    sendCmd(MotorCalls::FRONT_RIGHT, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::FRONT_RIGHT, -speed);
 }
 
 void Motorboard::roll_right(int8_t speed) {
-    sendCmd(MotorCalls::BACK_LEFT, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::BACK_LEFT, -speed);
     sendCmd(MotorCalls::BACK_RIGHT, speed);
-    sendCmd(MotorCalls::FRONT_LEFT, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::FRONT_LEFT, -speed);
     sendCmd(MotorCalls::FRONT_RIGHT, speed);
 }
 
 void Motorboard::pitch_up(int8_t speed) {
     sendCmd(MotorCalls::BACK_LEFT, speed);
     sendCmd(MotorCalls::BACK_RIGHT, speed);
-    sendCmd(MotorCalls::FRONT_LEFT, static_cast<int8_t>(-speed));
-    sendCmd(MotorCalls::FRONT_RIGHT, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::FRONT_LEFT, -speed);
+    sendCmd(MotorCalls::FRONT_RIGHT,-speed);
 }
 
 void Motorboard::pitch_down(int8_t speed) {
-    sendCmd(MotorCalls::BACK_LEFT, static_cast<int8_t>(-speed));
-    sendCmd(MotorCalls::BACK_RIGHT, static_cast<int8_t>(-speed));
+    sendCmd(MotorCalls::BACK_LEFT, -speed);
+    sendCmd(MotorCalls::BACK_RIGHT,-speed);
     sendCmd(MotorCalls::FRONT_LEFT, speed);
     sendCmd(MotorCalls::FRONT_RIGHT, speed);
 }
 
 void Motorboard::stop() {
-    sendCmd(MotorCalls::ALL, static_cast<int8_t>(0));
+    sendCmd(MotorCalls::ALL, 0);
 }
 
 void Motorboard::sendCmd(uint8_t mask, const int8_t speeds[8]) {
@@ -84,7 +84,7 @@ void Motorboard::sendCmd(uint8_t mask, const int8_t speeds[8]) {
 void Motorboard::sendCmd(uint8_t mask, int8_t speed) {
     int8_t speeds[8] = {};
     for (size_t i = 0; i < 8; ++i) {
-        const auto bit = static_cast<uint8_t>(1u << i);
+        const auto bit = 1u << i);
         if (mask & bit) {
             speeds[i] = speed;
         }

@@ -111,7 +111,7 @@ class Controller : public rclcpp::Node {
 
         void timer_callback() {
             count_++;
-            RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
+            // RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
 
 
             float current_depth = depthMaster;
