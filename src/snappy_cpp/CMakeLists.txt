@@ -27,6 +27,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+# ThrusterCommand now lives in the shared snappy_interfaces package so the
+# Jetson publisher and the STM32 micro-ROS subscriber register the SAME type.
+find_package(snappy_interfaces REQUIRED)
 
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -35,7 +38,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BoundingBox2D.msg"
   "msg/ObjectDetection.msg"
   "msg/DetectionArray.msg"
-  "msg/ThrusterCommand.msg"
   DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -150,6 +152,7 @@ ament_target_dependencies(controller
   geometry_msgs
   tf2
   tf2_geometry_msgs
+  snappy_interfaces
 )
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")

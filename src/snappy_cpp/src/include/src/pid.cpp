@@ -8,8 +8,8 @@ PID::PID(float Kp, float Ki, float Kd) {
     this->integral_ = 0.0f;
     this->prev_err_ = 0.0f;
     this->prev_time_ = std::chrono::steady_clock::now();
-    this->MIN = -10.0f;
-    this->MAX = 10.0f;
+    this->MIN = -100.0f;
+    this->MAX = 100.0f;
 }
 
 void PID::set_target(float target) {
@@ -21,7 +21,7 @@ float PID::update(float current) {
     // Get error
     float err = target_ - current;
 
-    // Get time 
+    // Get time
     auto cur_time = std::chrono::steady_clock::now();
     float dt = std::chrono::duration<float>(cur_time - prev_time_).count();
     if (dt < 0.001f) { // Protect against division by 0 on first call

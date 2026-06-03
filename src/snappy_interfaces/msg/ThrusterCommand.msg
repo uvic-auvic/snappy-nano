@@ -4,7 +4,7 @@
 # frame_id should generally be "base_link" or empty for raw hardware commands.
 std_msgs/Header header
 
-# Bitmask indicating which thrusters to update.
+# Bitmask indicating which thrusters to update. 
 # Bit 0 (1) = Thruster 1 ... Bit 7 (128) = Thruster 8
 # This saves bandwidth over UART by allowing partial updates.
 uint8 thruster_mask
