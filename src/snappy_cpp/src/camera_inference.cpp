@@ -113,9 +113,14 @@ public:
         // fill the batch. 0 => opportunistic (batch only what is already queued,
         // adding zero latency).
 
+        this->declare_parameter<bool>("save_images", false);
+        this->declare_parameter<std::string>("save_dir", "/tmp/yolo_training");
+
         camera_namespaces_ = this->get_parameter("camera_namespaces").as_string_array();
         inference_hz_ = this->get_parameter("inference_hz").as_double();
         display_ = this->get_parameter("display").as_bool();
+        save_images_ = this->get_parameter("save_images").as_bool();
+        save_dir_ = this->get_parameter("save_dir").as_string();
         distance_samples_ = std::max(1, static_cast<int>(this->get_parameter("distance_samples").as_int()));
         distance_grid_ = std::max(1, static_cast<int>(std::ceil(std::sqrt(static_cast<double>(distance_samples_)))));
 
@@ -642,6 +647,23 @@ private:
 
     // --- Subscription side (runs on executor threads) ---------------------
     // Kept deliberately light: rate-gate, wrap the frames, enqueue, return.
+    void save_training_image(const std::string& cam_name, const cv::Mat& image, const rclcpp::Time& timestamp)
+    {
+        if (!save_images_) return;
+        
+        static std::mutex save_mutex;
+        std::lock_guard<std::mutex> lock(save_mutex);
+
+        std::string dir = save_dir_ + "/" + cam_name;
+        if (!std::filesystem::exists(dir)) {
+            std::filesystem::create_directories(dir);
+        }
+        
+        std::stringstream filename;
+        filename << dir << "/" << std::to_string(timestamp.nanoseconds()) << ".jpg";
+        cv::imwrite(filename.str(), image);
+    }
+
     void sync_callback(size_t cam_index,
                        const sensor_msgs::msg::Image::ConstSharedPtr& color_msg,
                        const sensor_msgs::msg::Image::ConstSharedPtr& depth_msg)
@@ -671,6 +693,9 @@ private:
             job.color_ptr = cv_bridge::toCvShare(color_msg, "bgr8");
             job.depth_ptr = cv_bridge::toCvShare(depth_msg, "16UC1");
             job.timestamp = rclcpp::Time(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
+            
+            save_training_image(cam.ns, job.color_ptr->image, job.timestamp);
+            
             enqueue_job(std::move(job));
         } catch (const cv_bridge::Exception& e) {
             RCLCPP_ERROR(get_logger(), "cv_bridge exception: %s", e.what());
@@ -1079,6 +1104,8 @@ private:
     std::vector<std::string> camera_namespaces_;
     double inference_hz_ = 10.0;
     bool display_ = false;
+    bool save_images_ = false;
+    std::string save_dir_ = "/tmp/yolo_training";
     int distance_samples_ = 100;
     int distance_grid_ = 10;
     int max_queue_depth_ = 2;
