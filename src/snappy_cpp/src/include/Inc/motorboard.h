@@ -84,7 +84,6 @@ namespace Motor {
             7: Back right
             */
             void sendCmd(uint8_t mask, const int8_t speeds[8]);
-            void sendCmd(uint8_t mask, int8_t speed);
 
             void set_leds(const int& led, const int& mode); // Which LED and blink mode
 
