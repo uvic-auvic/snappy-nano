@@ -650,7 +650,7 @@ private:
     void save_training_image(const std::string& cam_name, const cv::Mat& image, const rclcpp::Time& timestamp)
     {
         if (!save_images_) return;
-        
+
         static std::mutex save_mutex;
         std::lock_guard<std::mutex> lock(save_mutex);
 
@@ -658,7 +658,7 @@ private:
         if (!std::filesystem::exists(dir)) {
             std::filesystem::create_directories(dir);
         }
-        
+
         std::stringstream filename;
         filename << dir << "/" << std::to_string(timestamp.nanoseconds()) << ".jpg";
         cv::imwrite(filename.str(), image);
@@ -693,9 +693,9 @@ private:
             job.color_ptr = cv_bridge::toCvShare(color_msg, "bgr8");
             job.depth_ptr = cv_bridge::toCvShare(depth_msg, "16UC1");
             job.timestamp = rclcpp::Time(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
-            
+
             save_training_image(cam.ns, job.color_ptr->image, job.timestamp);
-            
+
             enqueue_job(std::move(job));
         } catch (const cv_bridge::Exception& e) {
             RCLCPP_ERROR(get_logger(), "cv_bridge exception: %s", e.what());
@@ -1104,7 +1104,7 @@ private:
     std::vector<std::string> camera_namespaces_;
     double inference_hz_ = 10.0;
     bool display_ = false;
-    bool save_images_ = false;
+    bool save_images_ = true;
     std::string save_dir_ = "/tmp/yolo_training";
     int distance_samples_ = 100;
     int distance_grid_ = 10;
