@@ -44,6 +44,13 @@ jobs:
         with:
           required-ros-distributions: humble
 
+      - name: Install RealSense ROS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ros-humble-realsense2-camera \
+            ros-humble-realsense2-camera-msgs
+
       - name: Build with colcon
         run: |
           source /opt/ros/humble/setup.bash
