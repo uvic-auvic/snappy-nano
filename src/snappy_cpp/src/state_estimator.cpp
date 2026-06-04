@@ -113,9 +113,14 @@ private:
             imu_received_ = true;
         }
         imu_count_++;
-        pose.position.x = msg->linear_acceleration.x;
-        pose.position.y = msg->linear_acceleration.y;
-        pose.position.z = msg->linear_acceleration.z;
+        pose.position.x = msg->orientation.x;
+        pose.position.y = msg->orientation.y;
+        pose.position.z = msg->orientation.z;
+
+        pose.orientation.x = msg->orientation.x;
+        pose.orientation.y = msg->orientation.y;
+        pose.orientation.z = msg->orientation.z;
+        pose.orientation.w = msg->orientation.w;
         // Print combined IMU data every 20 messages
         if (imu_count_ % 20 == 0) {
             RCLCPP_INFO(this->get_logger(), 

@@ -30,6 +30,7 @@ def generate_launch_description():
     bridge_topics = [
         '/clock@rosgraph_msgs/msg/Clock@ignition.msgs.Clock',
         '/model/auv/pose@geometry_msgs/msg/PoseStamped@ignition.msgs.Pose',
+        '/altimeter@std_msgs/msg/Float32@ignition.msgs.Double',
         '/model/auv/joint/thruster_vertical_port_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
         '/model/auv/joint/thruster_vertical_starboard_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
         '/model/auv/joint/thruster_vertical_port_aft_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',

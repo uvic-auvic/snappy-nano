@@ -58,10 +58,12 @@ class Controller : public rclcpp::Node {
             // Receive states from state estimator
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
                 "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
+            
+            
 
             // Receive dpeth value from pressure node
             depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-                "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+                "/altimeter", 10, std::bind(&Controller::depth_callback, this, _1));
 
             //currently state estimator does not publish state. maybe parse through IMU..
 
@@ -76,8 +78,8 @@ class Controller : public rclcpp::Node {
         // Publish state to planner
         void status_callback() {
             auto static_task_ = snappy_cpp::msg::Task();
-            static_task_.type = "hold";
-            static_task_.direction = "on";
+            static_task_.type = "move";
+            static_task_.direction = "z";
             static_task_.magnitude = 1;
             static_task_.absolute= false;
             static_task_.overwrite = false;
@@ -97,7 +99,7 @@ class Controller : public rclcpp::Node {
 
             status_publisher_->publish(status_message);
             //uncomment for debugging
-            // RCLCPP_INFO(this->get_logger(), "Publishing status: '%s'", status_message.data.c_str());
+            RCLCPP_INFO(this->get_logger(), "Publishing status: '%s'", status_message.data.c_str());
         }
 
         // Publish trajectory to state estimator
@@ -110,8 +112,8 @@ class Controller : public rclcpp::Node {
 
                 trajectory_publisher_->publish(trajectory_msg);
                 //uncomment for debugging
-                // RCLCPP_INFO(this->get_logger(), "Publishing trajectory: (%.2f, %.2f, %.2f)",
-                // position_target_->x, position_target_->y, position_target_->z);
+                RCLCPP_INFO(this->get_logger(), "Publishing trajectory: (%.2f, %.2f, %.2f)",
+                position_target_->x, position_target_->y, position_target_->z);
             }
         }
 
