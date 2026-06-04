@@ -627,8 +627,11 @@ private:
             rclcpp::SubscriptionOptions sub_opts;
             sub_opts.callback_group = cam->cb_group;
 
-            const std::string color_topic = "/" + cam->ns + "/" + cam->ns + "/color/image_raw";
-            const std::string depth_topic = "/" + cam->ns + "/" + cam->ns + "/aligned_depth_to_color/image_raw";
+            std::string color_topic = "/" + cam->ns + "/color/image_raw";
+            if (cam->ns == "d405") {
+                color_topic = "/" + cam->ns + "/color/image_rect_raw";
+            }
+            const std::string depth_topic = "/" + cam->ns + "/aligned_depth_to_color/image_raw";
             const std::string detection_topic = "/" + cam->ns + "/detections";
 
             cam->pub = this->create_publisher<snappy_cpp::msg::DetectionArray>(
