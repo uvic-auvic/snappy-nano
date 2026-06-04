@@ -59,6 +59,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <iomanip>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -67,6 +68,7 @@
 #include <thread>
 #include <vector>
 #include <cmath>
+#include <sstream>
 
 #include "snappy_cpp/msg/detection_array.hpp"
 #include "snappy_cpp/msg/object_detection.hpp"
@@ -113,9 +115,15 @@ public:
         // fill the batch. 0 => opportunistic (batch only what is already queued,
         // adding zero latency).
 
+        this->declare_parameter<bool>("save_images", true);
+        this->declare_parameter<std::string>("save_dir", std::string(getenv("HOME")) + "/Desktop/snappy_inference");
+
+
         camera_namespaces_ = this->get_parameter("camera_namespaces").as_string_array();
         inference_hz_ = this->get_parameter("inference_hz").as_double();
         display_ = this->get_parameter("display").as_bool();
+        save_images_ = this->get_parameter("save_images").as_bool();
+        save_dir_ = this->get_parameter("save_dir").as_string();
         distance_samples_ = std::max(1, static_cast<int>(this->get_parameter("distance_samples").as_int()));
         distance_grid_ = std::max(1, static_cast<int>(std::ceil(std::sqrt(static_cast<double>(distance_samples_)))));
 
@@ -137,6 +145,15 @@ public:
             "max_batch(requested)=%d, batch_collect_ms=%.1f",
             inference_hz_, display_ ? "true" : "false", distance_samples_, max_queue_depth_,
             requested_max_batch_, batch_collect_.count());
+
+        if (!save_images_) {
+            RCLCPP_WARN(get_logger(), "Image saving disabled (set save_images=true to enable)");
+        } else {
+            const std::string base = save_dir_.empty()
+                ? (std::filesystem::current_path().string() + "/../<camera>")
+                : (save_dir_ + "/<camera>");
+            RCLCPP_INFO(get_logger(), "Saving images under: %s", base.c_str());
+        }
 
         checkCUDA();
         build_engine_from_onnx();
@@ -639,9 +656,58 @@ private:
             cameras_.push_back(std::move(cam));
         }
     }
+    // Generate a unique image filename based on the current time.
+    static std::string name_image(const std::string& base_dir,
+                                  const std::string& type,
+                                  const std::string& ext = "jpg")
+    {
+        using namespace std::chrono;
+        auto now = system_clock::now();
+        time_t tt = system_clock::to_time_t(now);
+
+        // Milliseconds for extra uniqueness
+        auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+
+        // Thread-safe localtime
+        tm tm{};
+        #ifdef _WIN32
+            localtime_s(&tm, &tt);
+        #else
+            localtime_r(&tt, &tm);
+        #endif
+
+        const std::string dir = base_dir.empty() ? (std::string(getenv("HOME")) + "/Desktop/snappy_inference/" + type) : (base_dir + "/" + type);
+        std::filesystem::create_directories(dir);
+
+        std::ostringstream oss;
+        oss << dir << "/"
+            << std::put_time(&tm, "%Y%m%d_%H%M%S")
+            << '_' << std::setw(3) << std::setfill('0') << ms.count()
+            << '.' << ext;
+        return oss.str();
+    }
 
     // --- Subscription side (runs on executor threads) ---------------------
     // Kept deliberately light: rate-gate, wrap the frames, enqueue, return.
+    void save_training_image(const std::string& cam_name, const cv::Mat& image, const rclcpp::Time& timestamp)
+    {
+        if (!save_images_) return;
+        (void)timestamp;
+        if (image.empty()) {
+            RCLCPP_WARN(get_logger(), "Skipping save for %s (empty image)", cam_name.c_str());
+            return;
+        }
+        const std::string filename = name_image(save_dir_, cam_name, "jpg");
+        if (!cv::imwrite(filename, image)) {
+            RCLCPP_ERROR(get_logger(), "Failed to save image to %s", filename.c_str());
+            return;
+        }
+        const uint64_t saved = saved_images_.fetch_add(1) + 1;
+        if (saved == 1) {
+            RCLCPP_INFO(get_logger(), "First image saved: %s", filename.c_str());
+        }
+    }
+
     void sync_callback(size_t cam_index,
                        const sensor_msgs::msg::Image::ConstSharedPtr& color_msg,
                        const sensor_msgs::msg::Image::ConstSharedPtr& depth_msg)
@@ -671,6 +737,9 @@ private:
             job.color_ptr = cv_bridge::toCvShare(color_msg, "bgr8");
             job.depth_ptr = cv_bridge::toCvShare(depth_msg, "16UC1");
             job.timestamp = rclcpp::Time(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
+
+            save_training_image(cam.ns, job.color_ptr->image, job.timestamp);
+
             enqueue_job(std::move(job));
         } catch (const cv_bridge::Exception& e) {
             RCLCPP_ERROR(get_logger(), "cv_bridge exception: %s", e.what());
@@ -1079,6 +1148,8 @@ private:
     std::vector<std::string> camera_namespaces_;
     double inference_hz_ = 10.0;
     bool display_ = false;
+    bool save_images_ = true;
+    std::string save_dir_;
     int distance_samples_ = 100;
     int distance_grid_ = 10;
     int max_queue_depth_ = 2;
@@ -1094,6 +1165,7 @@ private:
     std::thread worker_thread_;
     std::atomic<bool> stop_{false};
     std::atomic<uint64_t> dropped_jobs_{0};
+    std::atomic<uint64_t> saved_images_{0};
 
     // --- Shared TensorRT / CUDA pipeline ---------------------------------
     TRTLogger trt_logger_;
