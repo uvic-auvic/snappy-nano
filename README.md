@@ -8,7 +8,9 @@
 
 This branch combines the updated state estimator, PID controller node, and gazebo to allow work with data in the gazebo simulator.
 
-This build assumes Gazebo Ignition is installed on version 6.17.1
+This build assumes Gazebo Ignition Fortress is installed on version 6.17.1
+
+You must also have the ros_gz_interfaces package installed for the sim controller to use the altimeter for depth.
 
 ### Details
 

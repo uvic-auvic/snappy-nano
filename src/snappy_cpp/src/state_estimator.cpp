@@ -45,6 +45,7 @@ public:
             "/imu", //"/imu/data"
             qos,
             std::bind(&StateEstimator::imu2_callback, this, std::placeholders::_1));
+    
         /*
         // Alternative: separate gyro topic
         gyro_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(

@@ -27,6 +27,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(ros_gz_interfaces) 
 
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -144,6 +145,8 @@ add_executable(controller
   src/include/src/pid.cpp
   src/include/src/motorboard.cpp
 )
+
+
 ament_target_dependencies(controller
   rclcpp
   std_msgs
@@ -152,8 +155,23 @@ ament_target_dependencies(controller
   tf2_geometry_msgs
 )
 
+add_executable(sim_controller
+  src/sim_controller.cpp
+  src/include/src/pid.cpp
+  src/include/src/motorboard.cpp
+)
+ament_target_dependencies(sim_controller
+  rclcpp
+  std_msgs
+  geometry_msgs
+  tf2
+  tf2_geometry_msgs
+  ros_gz_interfaces
+)
+
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(controller "${cpp_typesupport_target}")
+target_link_libraries(sim_controller "${cpp_typesupport_target}")
 target_link_libraries(state_estimator "${cpp_typesupport_target}")
 target_link_libraries(planner "${cpp_typesupport_target}")
 #target_link_libraries(helloWorld "${cpp_typesupport_target}")
@@ -169,6 +187,7 @@ install(TARGETS
   computer_vision_cpu
   image_capture
   controller
+  sim_controller
   state_estimator
   planner
   counter_publisher

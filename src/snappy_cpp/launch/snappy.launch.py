@@ -73,8 +73,8 @@ def generate_launch_description():
 
     controller_node = Node(
         package='snappy_cpp',
-        executable='controller',
-        name='controller',
+        executable='sim_controller',
+        name='sim_controller',
         output='screen',
         condition=IfCondition(start_controller),
     )
