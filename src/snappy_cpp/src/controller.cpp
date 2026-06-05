@@ -64,9 +64,12 @@ class Controller : public rclcpp::Node {
                 "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
 
             // Receive dpeth value from pressure node
-            depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-                "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+            //depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+            //   "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
 
+            //get yaw info from the imu
+            imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
+                "/filter/euler", 10, std::bind(&Controller::imu_callback, this, _1));
             //currently state estimator does not publish state. maybe parse through IMU..
 
             // Publish every 100ms ??
@@ -112,22 +115,6 @@ class Controller : public rclcpp::Node {
         void timer_callback() {
             count_++;
             // RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
-
-
-            float current_depth = depthMaster;
-            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", current_depth);
-            // Update the Z-axis PID with current depth
-            float z_thrust = pid_z_.update(current_depth);
-
-            // Apply the thrust to the vertical motors
-            const int8_t thrust = clampThrust(z_thrust);
-            if (thrust > 0) {
-                motorboard_->up(thrust);
-                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
-            } else if (thrust < 0) {
-                motorboard_->down(thrust);
-                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
-            }
         }
 
         // Publish trajectory to state estimator
@@ -190,7 +177,42 @@ class Controller : public rclcpp::Node {
         }
 
         void depth_callback(const std_msgs::msg::Float32 & msg) {
-            float depthMaster = msg.data;
+            float current_depth = msg.data;
+            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", current_depth);
+            // Update the Z-axis PID with current depth
+            float z_thrust = pid_z_.update(current_depth);
+
+            // Apply the thrust to the vertical motors
+            const int8_t thrust = clampThrust(z_thrust);
+            if (thrust > 0) {
+                motorboard_->up(thrust);
+                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
+            } else if (thrust < 0) {
+                motorboard_->down(thrust);
+                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
+            }
+        }
+
+        void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
+            //RCLCPP_INFO(this->get_logger(), "Received IMU data: roll=%.2f, pitch=%.2f, yaw=%.2f", msg.vector.x, msg.vector.y, msg.vector.z);
+            //roll
+            float roll = msg.vector.x;
+            //pitch
+            float pitch = msg.vector.y;
+            //yaw
+            float yaw = msg.vector.z;
+
+            //yaw correction
+            RCLCPP_INFO(this->get_logger(), "Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll, pitch, yaw);
+            float yaw_thrust = pid_yaw_.update(yaw);
+            const int8_t yaw_thrust_clamped = clampThrust(yaw_thrust);
+            if (yaw_thrust_clamped > 0) {
+                motorboard_->yaw_cw(yaw_thrust_clamped);
+                RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
+            } else if (yaw_thrust_clamped < 0) {
+                motorboard_->yaw_ccw(-yaw_thrust_clamped);
+                RCLCPP_INFO(this->get_logger(), "Yaw CCW called: thrust=%d", -yaw_thrust_clamped);
+            }
         }
 
         // Compute difference between current and target
@@ -286,6 +308,7 @@ class Controller : public rclcpp::Node {
         rclcpp::Subscription<snappy_cpp::msg::Task>::SharedPtr task_subscription_;
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
     	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
+        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr imu_subscription_;
     	rclcpp::TimerBase::SharedPtr status_timer_;
         rclcpp::TimerBase::SharedPtr trajectory_timer_;
 
@@ -311,7 +334,6 @@ class Controller : public rclcpp::Node {
 
         int flag_;
         int count_;
-        float depthMaster;
 };
 
 
