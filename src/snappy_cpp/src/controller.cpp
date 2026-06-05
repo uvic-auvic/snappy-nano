@@ -64,8 +64,8 @@ class Controller : public rclcpp::Node {
                 "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
 
             // Receive dpeth value from pressure node
-            //depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-            //   "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+            depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+              "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
 
             //get yaw info from the imu
             imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -298,7 +298,7 @@ class Controller : public rclcpp::Node {
 
 
         static int8_t clampThrust(float value) {
-            return static_cast<int8_t>(std::lround(std::clamp(value, -100.0f, 100.0f)));
+            return static_cast<int8_t>(std::lround(std::clamp(value, -5.0f, 5.0f)));
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;
