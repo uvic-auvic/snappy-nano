@@ -15,6 +15,10 @@ option(BUILD_TESTING "Build tests" OFF)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
+install(DIRECTORY config/
+	DESTINATION share/${PROJECT_NAME}/config
+)
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -44,7 +48,8 @@ rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typ
 
 # Find and require ONNX Runtime
 find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
-find_library(ONNXRUNTIME_LIB onnxruntime PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQUIRED)
+find_library(ONNXRUNTIME_LIB onnxruntime PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQU
+	IRED)
 
 message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
 message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
