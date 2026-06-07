@@ -34,6 +34,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 # ThrusterCommand now lives in the shared snappy_interfaces package so the
 # Jetson publisher and the STM32 micro-ROS subscriber register the SAME type.
 find_package(snappy_interfaces REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
 
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -83,13 +84,19 @@ target_link_libraries(image_capture ${OpenCV_LIBS})
 add_executable(state_estimator src/state_estimator.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
 
-add_executable(planner src/planner.cpp)
-ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
-add_dependencies(planner ${PROJECT_NAME})
-target_link_libraries(planner
-  ${PROJECT_NAME}__rosidl_typesupport_cpp
-  ${PROJECT_NAME}__rosidl_typesupport_c
+add_executable(planner
+  src/planner.cpp
+  src/bt/simple_nodes.cpp
+  src/bt/go_to_depth.cpp
+  src/bt/timed_surge.cpp
+  src/bt/turned_heading.cpp
 )
+
+target_include_directories(planner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+ament_target_dependencies(planner rclcpp std_msgs geometry_msgs behaviortree_cpp ament_index_cpp)
+add_dependencies(planner ${PROJECT_NAME})
+# Typesupport is linked once, below, alongside controller/state_estimator
+# via ${cpp_typesupport_target}.
 
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
@@ -192,6 +199,10 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY worlds
+  DESTINATION share/${PROJECT_NAME})
+
+# BehaviorTree XML files the planner loads at runtime.
+install(DIRECTORY bt_trees
   DESTINATION share/${PROJECT_NAME})
 
 option(BUILD_TESTING "Build tests" OFF)

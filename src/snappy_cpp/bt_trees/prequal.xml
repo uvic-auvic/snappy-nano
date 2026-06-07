@@ -1,0 +1,41 @@
+<!-- Goal (RoboSub 2026 pre-qual): fully autonomous — submerge (hold 1m - 1.3m) & start 3 m behind the Gate → pass
+through the Gate → circle the Marker (10 m beyond) → pass back through the Gate, without breaching,
+recorded continuously, nothing floating.
+
+DEAD-RECKONED. Heading + depth hold run continuously in the controller; this tree only sets targets,
+toggles open-loop surge, and times transitions. EVERY number below is a port calibrate the run
+pool-side by editing this file, no rebuild:
+  surge_thrust: open-loop forward thrust pct (distance ~= thrust x duration)
+  duration_s: seconds of surge for each leg (gate / marker / box leg / back)
+  depth: hold depth in metres (+down)
+  relative_yaw_deg + timeout_s: the four box corners (~90 deg each) -->
+
+<root BTCPP_format="4" main_tree_to_execute="PreQualRun">
+    <BehaviorTree ID="PreQualRun">
+        <Sequence name="PreQualRun">
+            <!-- Submerge and confirm we have settled before driving forward. -->
+            <Submerge depth="1.2" />
+            <HoldDepthStable target_depth="1.2" tolerance="0.1" timeout_s="10.0" />
+
+            <!-- Clear the 3 m run-up + the 2 m gate. -->
+            <Surge name="SurgeThroughGate" surge_thrust="40" duration_s="6.0" />
+
+            <!-- Drive the ~10 m out to the marker. -->
+            <Surge name="SurgeToMarker" surge_thrust="40" duration_s="12.0" />
+
+            <!-- Box around the marker: 4 x (turn 90 deg, then drive one leg). -->
+            <Repeat num_cycles="4">
+                <Sequence name="BoxLeg">
+                    <Turn relative_yaw_deg="90" heading_tolerance_deg="8.0" timeout_s="8.0" />
+                    <Surge name="SurgeLeg" surge_thrust="40" duration_s="4.0" />
+                </Sequence>
+            </Repeat>
+
+            <!-- Back through the gate. -->
+            <Surge name="SurgeBackThroughGate" surge_thrust="40" duration_s="6.0" />
+
+            <!-- Surface: depth target 0, surge off. -->
+            <Surface />
+        </Sequence>
+    </BehaviorTree>
+</root>
