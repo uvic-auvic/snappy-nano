@@ -27,6 +27,14 @@ __pycache__/
 .DS_STORE
 .DS_Store
 .vscode/
+.claude/
+.devcontainer/
+
+# === Runtime IMU log dumps ===
+# state_estimator opens these in append mode in the working directory, so they
+# are generated output, not source. Don't track them.
+imu1.csv
+imu2.csv
 
 # === Large mesh / hydrodynamics artifacts ===
 src/snappy_cpp/worlds/2025-2026_Full_ASSEMBLY.dae
