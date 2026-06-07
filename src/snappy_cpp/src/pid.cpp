@@ -1,4 +1,4 @@
-#include "Inc/pid.h"
+#include "snappy_cpp/pid.h"
 
 PID::PID(float Kp, float Ki, float Kd) {
     this->Kp_ = Kp;

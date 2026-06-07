@@ -1,4 +1,4 @@
-#include "../Inc/serial.h"
+#include "snappy_cpp/serial.h"
 
 using namespace std;
 using namespace boost;

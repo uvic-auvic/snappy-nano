@@ -22,8 +22,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <queue>
 
-#include "include/Inc/pid.h"
-#include "include/Inc/motorboard.h"
+#include "snappy_cpp/pid.h"
+#include "snappy_cpp/motorboard.h"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;

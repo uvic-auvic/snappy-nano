@@ -55,7 +55,7 @@ message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
 message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
 include_directories(
   ${ONNXRUNTIME_INCLUDE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 link_directories(/usr/local/lib)
 
@@ -63,7 +63,7 @@ link_directories(/usr/local/lib)
 set(BOOST_ROOT "/usr")
 find_package(Boost REQUIRED)
 
-add_library(serial_lib src/include/src/serial.cpp)
+add_library(serial_lib src/serial.cpp)
 ament_target_dependencies(serial_lib rclcpp std_msgs)
 
 add_executable(pressureSensor src/pressure_sensor.cpp)
@@ -148,8 +148,8 @@ install(FILES
 
 add_executable(controller
   src/controller.cpp
-  src/include/src/pid.cpp
-  src/include/src/motorboard.cpp
+  src/pid.cpp
+  src/motorboard.cpp
 )
 ament_target_dependencies(controller
   rclcpp

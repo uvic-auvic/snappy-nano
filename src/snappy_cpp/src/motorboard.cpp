@@ -1,5 +1,5 @@
 //cpp file for the embeded code that runs on the motorboard
-#include "Inc/motorboard.h"
+#include "snappy_cpp/motorboard.h"
 #include <cstdint>
 
 namespace Motor {
