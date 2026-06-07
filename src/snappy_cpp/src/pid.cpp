@@ -1,5 +1,7 @@
 #include "snappy_cpp/pid.h"
 
+#include <cmath>
+
 PID::PID(float Kp, float Ki, float Kd) {
     this->Kp_ = Kp;
     this->Ki_ = Ki;
@@ -17,9 +19,17 @@ void PID::set_target(float target) {
     integral_ = 0; // Reset integral
 }
 
+void PID::set_angular(bool angular) {
+    angular_ = angular;
+}
+
 float PID::update(float current) {
     // Get error
     float err = target_ - current;
+    if (angular_) {
+        // Wrap into (-pi, pi] so the controller turns the short way (B8).
+        err = std::atan2(std::sin(err), std::cos(err));
+    }
 
     // Get time
     auto cur_time = std::chrono::steady_clock::now();
