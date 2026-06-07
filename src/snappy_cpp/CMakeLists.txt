@@ -167,16 +167,10 @@ ament_target_dependencies(controller
   snappy_interfaces
 )
 
-rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# cpp_typesupport_target was already resolved once after rosidl_generate_interfaces.
 target_link_libraries(controller "${cpp_typesupport_target}")
 target_link_libraries(state_estimator "${cpp_typesupport_target}")
 target_link_libraries(planner "${cpp_typesupport_target}")
-#target_link_libraries(helloWorld "${cpp_typesupport_target}")
-# install(TARGETS
-#   helloWorld
-#   controller
-#   DESTINATION lib/${PROJECT_NAME})
-
 
 # Install all executables
 install(TARGETS
