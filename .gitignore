@@ -29,10 +29,13 @@ __pycache__/
 .vscode/
 .claude/
 .devcontainer/
+.clangd
 
-# === Runtime IMU log dumps ===
-# state_estimator opens these in append mode in the working directory, so they
-# are generated output, not source. Don't track them.
+# === Runtime logs ===
+# state_estimator writes imu*.csv into logs/ (see its "log_dir" param).
+# Generated output, not source. The bare imu*.csv patterns also cover any
+# legacy dumps still sitting at the repo/src root.
+logs/
 imu1.csv
 imu2.csv
 

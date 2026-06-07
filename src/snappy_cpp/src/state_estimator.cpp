@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
+#include <system_error>
 #include "snappy_cpp/msg/pose.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
@@ -25,8 +27,24 @@ public:
         // imu1_file: accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
         // imu2_file: accel_x, accel_y, accel_z, quat_x, quat_y, quat_z, quat_w
         
-        imu1_file.open("imu1.csv", std::fstream::app);
-        imu2_file.open("imu2.csv", std::fstream::app);
+        // Write IMU CSV logs into a (gitignored) logs/ directory so they don't
+        // clutter the working directory. The directory is configurable via the
+        // "log_dir" parameter and created if it doesn't exist.
+        const std::string log_dir = this->declare_parameter<std::string>("log_dir", "logs");
+        std::error_code ec;
+        std::filesystem::create_directories(log_dir, ec);
+        const std::filesystem::path dir = ec ? std::filesystem::path(".")
+                                             : std::filesystem::path(log_dir);
+        if (ec) {
+            RCLCPP_WARN(this->get_logger(),
+                "Could not create log dir '%s' (%s); writing to working directory.",
+                log_dir.c_str(), ec.message().c_str());
+        }
+
+        imu1_file.open((dir / "imu1.csv").string(), std::fstream::app);
+        imu2_file.open((dir / "imu2.csv").string(), std::fstream::app);
+        RCLCPP_INFO(this->get_logger(), "Logging IMU data to %s/{imu1,imu2}.csv",
+            dir.string().c_str());
         
         // Create QoS profile matching RealSense camera publisher
         // RealSense uses: Best Effort reliability + Volatile durability
