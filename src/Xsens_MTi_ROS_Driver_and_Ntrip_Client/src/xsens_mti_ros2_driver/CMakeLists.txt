@@ -22,7 +22,10 @@ find_package(mavros_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
-link_directories(lib/xspublic/xscontroller lib/xspublic/xscommon lib/xspublic/xstypes)
+# NOTE: the bundled xspublic static libraries are built from source below
+# (see "Build the bundled Xsens xspublic SDK"). We deliberately do NOT
+# link_directories() against the committed prebuilt .a files because those
+# are aarch64-only and break on x86_64.
 
 # Check ROS distro
 if(DEFINED ENV{ROS_DISTRO})
@@ -54,19 +57,55 @@ ament_export_dependencies(rosidl_default_runtime)
 ###########
 
 
-# Include ExternalProject module
-include(ExternalProject)
+# === Build the bundled Xsens xspublic SDK from source ================
+# Compile the xspublic sources directly with CMake instead of the old
+# ExternalProject (which ran `make` against Makefiles that are never
+# committed -- .gitignore ignores every file named "Makefile") or linking
+# the committed prebuilt .a files (which are aarch64-only). This builds on
+# any architecture: x86_64 dev box and aarch64 Jetson alike.
+#
+# Two xspublic quirks handled below:
+#   * Its ".c" files must be compiled as C and ".cpp" as C++ (the default,
+#     by extension). The SDK headers present each type as a plain struct to
+#     C but as a class with "protected" members to C++; the C sources poke
+#     those members directly, so compiling them as C++ would fail.
+#   * Each library force-includes its config header (the SDK's MSVC /FI
+#     option) which defines XS*_DLL_API used throughout the SDK headers.
+set(XSPUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/xspublic)
 
-# Define the external project which is make the xspublic
-ExternalProject_Add(
-  xspublic
-  PREFIX ${CMAKE_BINARY_DIR}/xspublic
-  SOURCE_DIR ${CMAKE_SOURCE_DIR}/lib/xspublic
-  CONFIGURE_COMMAND ""  # No configure step
-  BUILD_COMMAND make
-  BUILD_IN_SOURCE 1  # Build in the source directory
-  INSTALL_COMMAND ""  # No install step
-)
+# Force-include the lib's config header (config_header) plus any extra headers
+# passed as additional arguments, mirroring the SDK Makefiles' /FI flags. The
+# xscommon sources additionally require xstypes/xsens_compat.h to be force-
+# included: it maps Windows CRT names (e.g. _unlink -> unlink) and pulls in
+# <string.h> (for strlen). The committed .dpp dependency files show the
+# original build did this for xscommon only, so we replicate that exactly.
+function(add_xspublic_lib name config_header)
+  file(GLOB _srcs CONFIGURE_DEPENDS
+    ${XSPUBLIC_DIR}/${name}/*.c
+    ${XSPUBLIC_DIR}/${name}/*.cpp
+  )
+  add_library(${name} STATIC ${_srcs})
+  target_include_directories(${name} PUBLIC
+    ${XSPUBLIC_DIR}
+    ${XSPUBLIC_DIR}/${name}
+  )
+  # Use "SHELL:" so CMake keeps each "-include <hdr>" pair intact; without it
+  # CMake de-duplicates the repeated -include flag and the header gets treated
+  # as a second input file ("cannot specify -o ... with multiple files").
+  target_compile_options(${name} PRIVATE "SHELL:-include ${config_header}")
+  foreach(_extra IN LISTS ARGN)
+    target_compile_options(${name} PRIVATE "SHELL:-include ${_extra}")
+  endforeach()
+  set_target_properties(${name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endfunction()
+
+add_xspublic_lib(xstypes      xstypesconfig.h)
+add_xspublic_lib(xscommon     xscommon_config.h xstypes/xsens_compat.h)
+add_xspublic_lib(xscontroller xscontrollerconfig.h)
+
+# Inter-library dependencies: xscontroller -> xscommon -> xstypes.
+target_link_libraries(xscommon     PUBLIC xstypes)
+target_link_libraries(xscontroller PUBLIC xscommon xstypes)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -89,8 +128,9 @@ add_executable(
   src/high_rate_interpolator.cpp
 )
 
-# Make sure xsens_mti_node depends on the xspublic build
-add_dependencies(xsens_mti_node xspublic ${PROJECT_NAME})
+# Make sure xsens_mti_node depends on message generation (xspublic libs are
+# linked as normal CMake targets below, so they don't need add_dependencies).
+add_dependencies(xsens_mti_node ${PROJECT_NAME})
 
 
 # target_include_directories(xsens_mti_node PUBLIC
