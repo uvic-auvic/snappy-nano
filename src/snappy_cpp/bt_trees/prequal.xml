@@ -23,7 +23,10 @@ pool-side by editing this file, no rebuild:
             <!-- Drive the ~10 m out to the marker. -->
             <Surge name="SurgeToMarker" surge_thrust="40" duration_s="12.0" />
 
-            <!-- Box around the marker: 4 x (turn 90 deg, then drive one leg). -->
+            <!-- Box around the marker: 4 x (turn 90 deg, then drive one leg).
+                 4 x 90 = 360, so we exit the box at the SAME heading we entered
+                 it with (still pointing away from the gate) and roughly back at
+                 the marker. -->
             <Repeat num_cycles="4">
                 <Sequence name="BoxLeg">
                     <Turn relative_yaw_deg="90" heading_tolerance_deg="8.0" timeout_s="8.0" />
@@ -31,8 +34,17 @@ pool-side by editing this file, no rebuild:
                 </Sequence>
             </Repeat>
 
-            <!-- Back through the gate. -->
-            <Surge name="SurgeBackThroughGate" surge_thrust="40" duration_s="6.0" />
+            <!-- Turn around to FACE the gate before driving back. Without this,
+                 "surge forward" below would drive further away from the gate
+                 (the box left us pointing marker-ward). 180 in one go sits on the
+                 +-180 wrap seam; if it picks the turn direction unreliably, split
+                 into two relative_yaw_deg="90" Turns. -->
+            <Turn name="TurnAround" relative_yaw_deg="180" heading_tolerance_deg="8.0" timeout_s="10.0" />
+
+            <!-- Back through the gate. This starts at the MARKER now, so it must
+                 cover the full marker -> gate distance (~10 m) plus clearance,
+                 not just a short hop. Calibrate >= SurgeToMarker. -->
+            <Surge name="SurgeBackThroughGate" surge_thrust="40" duration_s="14.0" />
 
             <!-- Surface: depth target 0, surge off. -->
             <Surface />
