@@ -151,11 +151,11 @@ class Controller : public rclcpp::Node {
             RCLCPP_INFO(this->get_logger(), "Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll_master, pitch_master, yaw_master);
             float yaw_thrust = pid_yaw_.update(yaw_master);
             const int8_t yaw_thrust_clamped = clampThrust(yaw_thrust);
-            if (yaw_thrust_clamped > 0) {
+            if (yaw_thrust_clamped < 0) {
                 motorboard_->yaw_cw(yaw_thrust_clamped);
                 RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
-            } else if (yaw_thrust_clamped < 0) {
-                motorboard_->yaw_ccw(-yaw_thrust_clamped);
+            } else if (yaw_thrust_clamped > 0) {
+                motorboard_->yaw_ccw(yaw_thrust_clamped);
                 RCLCPP_INFO(this->get_logger(), "Yaw CCW called: thrust=%d", -yaw_thrust_clamped);
             }
 
@@ -222,7 +222,7 @@ class Controller : public rclcpp::Node {
         }
 
         void depth_callback(const std_msgs::msg::Float32 & msg) {
-	    current_depth = msg.data;
+	        current_depth = msg.data;
         }
 
         void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
