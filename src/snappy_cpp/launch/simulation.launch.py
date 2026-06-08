@@ -30,6 +30,7 @@ def generate_launch_description():
     bridge_topics = [
         '/clock@rosgraph_msgs/msg/Clock@ignition.msgs.Clock',
         '/model/auv/pose@geometry_msgs/msg/PoseStamped@ignition.msgs.Pose',
+        '/altimeter@ros_gz_interfaces/msg/Altimeter@ignition.msgs.Altimeter',
         '/model/auv/joint/thruster_vertical_port_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
         '/model/auv/joint/thruster_vertical_starboard_fore_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
         '/model/auv/joint/thruster_vertical_port_aft_joint/cmd_thrust@std_msgs/msg/Float64@ignition.msgs.Double',
@@ -49,7 +50,7 @@ def generate_launch_description():
     ]
 
     parameter_bridge_cmd = [
-        'ros2', 'run', 'ros_ign_bridge', 'parameter_bridge',
+        'ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
     ] + bridge_topics
 
     set_headless_env = SetEnvironmentVariable(

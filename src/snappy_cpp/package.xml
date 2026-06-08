@@ -24,6 +24,7 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>snappy_interfaces</depend>
   <depend>behaviortree_cpp</depend>
+  <depend>ros_gz_interfaces</depend>
 
   <member_of_group>rosidl_interface_packages</member_of_group>
 
