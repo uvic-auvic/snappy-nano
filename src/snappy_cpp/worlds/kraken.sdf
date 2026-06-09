@@ -497,7 +497,7 @@
         <joint_name>thruster_vertical_port_fore_joint</joint_name>
         <!-- <command_topic>/thrusters/forward_port/cmd</command_topic> -->  <!--command_topic is deprecated-->>
         <thrust_direction>0 0 1</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient>
+        <thrust_coefficient>0.153</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
 
@@ -506,7 +506,7 @@
         <joint_name>thruster_vertical_starboard_fore_joint</joint_name>
         <!-- <command_topic>/thrusters/forward_starboard/cmd</command_topic> -->
         <thrust_direction>0 0 1</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient> 
+        <thrust_coefficient>0.153</thrust_coefficient> 
         <propeller_diameter>0.076</propeller_diameter> <!--T200 diameter-->
       </plugin>
 
@@ -515,7 +515,7 @@
         <joint_name>thruster_vertical_port_aft_joint</joint_name>
         <!-- <command_topic>/thrusters/forward_port/cmd</command_topic> -->  <!--command_topic is deprecated-->>
         <thrust_direction>0 0 1</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient>
+        <thrust_coefficient>0.153</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
 
@@ -524,7 +524,7 @@
         <joint_name>thruster_vertical_starboard_aft_joint</joint_name>
         <!-- <command_topic>/thrusters/forward_starboard/cmd</command_topic> -->
         <thrust_direction>0 0 1</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient> 
+        <thrust_coefficient>0.153</thrust_coefficient> 
         <propeller_diameter>0.076</propeller_diameter> <!--T200 diameter-->
       </plugin>
 
@@ -533,7 +533,7 @@
         <joint_name>thruster_forward_port_joint</joint_name>
         <!-- <command_topic>/thrusters/lateral_port/cmd</command_topic> -->
         <thrust_direction>1 0 0</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient>
+        <thrust_coefficient>0.153</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
@@ -541,7 +541,7 @@
         <joint_name>thruster_forward_starboard_joint</joint_name>
         <!-- <command_topic>/thrusters/lateral_starboard/cmd</command_topic> -->
         <thrust_direction>1 0 0</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient>
+        <thrust_coefficient>0.153</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
@@ -549,7 +549,7 @@
         <joint_name>thruster_lateral_fore_joint</joint_name>
         <!-- <command_topic>/thrusters/vertical_fore/cmd</command_topic> -->
         <thrust_direction>0 1 0</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient>
+        <thrust_coefficient>0.153</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
       <plugin filename="ignition-gazebo6-thruster-system" name="ignition::gazebo::systems::Thruster">
@@ -557,7 +557,7 @@
         <joint_name>thruster_lateral_aft_joint</joint_name>
         <!-- <command_topic>/thrusters/vertical_aft/cmd</command_topic> -->
         <thrust_direction>0 -1 0</thrust_direction>
-        <thrust_coefficient>1</thrust_coefficient>
+        <thrust_coefficient>0.153</thrust_coefficient>
         <propeller_diameter>0.076</propeller_diameter>
       </plugin>
     </model>

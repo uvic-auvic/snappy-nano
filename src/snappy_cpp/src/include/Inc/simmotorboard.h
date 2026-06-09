@@ -113,17 +113,34 @@ namespace Motor {
                 }
             };
 
-            // void forward(Float64 speed);
+            void forward(double speed){
+                std_msgs::msg::Float64 msg;
+                msg.data = speed;
+                for(size_t i = 0; i < FORWARD.size(); ++i){
+                    FORWARD[i]->publish(msg);
+                }
 
-            // void backward(int8_t speed);
+            };
 
-            // void right(int8_t speed);
+            void backward(double speed){
+                forward(-speed);
+            };
 
-            // void left(int8_t speed);
+            void right(double speed){
+                std_msgs::msg::Float64 msg;
+                msg.data = speed;
+                for (size_t i = 0; i< LATERAL.size(); ++i){
+                    LATERAL[i]->publish(msg);
+                }
+            };
+
+            void left(double speed){
+                right(-speed);
+            };
 
             void up(double speed){
                 std_msgs::msg::Float64 msg;
-                msg .data = speed;
+                msg.data = speed;
                 for (size_t i = 0; i< VERTICAL.size(); ++i){
                     VERTICAL[i]->publish(msg);
                 }
@@ -133,17 +150,50 @@ namespace Motor {
                 up(-speed);
             };
 
-            // void yaw_cw(int8_t speed);
+            void yaw_cw(double speed){
+                std_msgs::msg::Float64 msg;
+                msg.data = -speed;
+                FRONT_YAW->publish(msg);
+                BACK_YAW->publish(msg);
+                FORWARD_LEFT->publish(msg);
+                msg.data = -msg.data;
+                FORWARD_RIGHT->publish(msg);
+                
+            };
 
-            // void yaw_ccw(int8_t speed);
+            void yaw_ccw(double speed){
+                yaw_cw(speed);
+            };
 
-            // void roll_left(int8_t speed);
+            void roll_left(double speed){
+                std_msgs::msg::Float64 msg;
+                msg.data = speed;
 
-            // void roll_right(int8_t speed);
+                FRONT_RIGHT->publish(msg);
+                BACK_RIGHT->publish(msg);
+                msg.data = -msg.data;
+                FRONT_LEFT->publish(msg);
+                BACK_LEFT->publish(msg);
+            };
 
-            // void pitch_up(int8_t speed);
+            void roll_right(double speed){
+                roll_left(-speed);
+            };
 
-            // void pitch_down(int8_t speed);
+            void pitch_up(double speed){
+                std_msgs::msg::Float64 msg;
+                msg.data = speed;
+
+                FRONT_RIGHT->publish(msg);
+                FRONT_LEFT->publish(msg);
+                msg.data = -msg.data;
+                BACK_RIGHT->publish(msg);
+                BACK_LEFT->publish(msg);
+            };
+
+            void pitch_down(double speed){
+                pitch_up(-speed);
+            };
     };
 };
 

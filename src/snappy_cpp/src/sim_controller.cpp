@@ -151,12 +151,64 @@ class Controller : public rclcpp::Node {
             tf2::fromMsg(orientation_current_, q_current);
             double roll, pitch, yaw;
             tf2::Matrix3x3(q_current).getRPY(roll, pitch, yaw);
-            float thrust_x = pid_x_.update(position_current_.x);
-            float thrust_y = pid_y_.update(position_current_.y);
-            //float thrust_z = pid_z_.update(position_current_.z);
-            float thrust_roll = pid_roll_.update(roll);
-            float thrust_pitch = pid_pitch_.update(pitch);
-            float thrust_yaw = pid_yaw_.update(yaw);
+
+            //apply thrust to forward motors
+            float thrust_x = clampThrust(pid_x_.update(position_current_.x));
+            if(thrust_x >0){
+                motorboard_->forward(thrust_x);
+                RCLCPP_INFO(this->get_logger(), "Forward called: thrust=%f", thrust_x);
+            }else if(thrust_x <0){
+                motorboard_->backward(thrust_x);
+                RCLCPP_INFO(this->get_logger(), "Backward called: thrust=%f", thrust_x);
+            }
+
+
+            //apply thrust to lateral motors
+            float thrust_y = clampThrust(pid_y_.update(position_current_.y));
+            if(thrust_y > 0){
+                motorboard_->right(thrust_y);
+                RCLCPP_INFO(this->get_logger(), "right called: thrust=%f", thrust_y);
+            }else if(thrust_y < 0){ 
+                motorboard_->left(thrust_y);
+                RCLCPP_INFO(this->get_logger(), "left called: thrust=%f", thrust_y);
+
+            }
+
+
+            //apply thrust to roll motors
+            float thrust_roll = clampThrust(pid_roll_.update(roll));
+            if(thrust_roll >0){
+                motorboard_->roll_right(thrust_roll);
+                RCLCPP_INFO(this->get_logger(), "roll called: thrust=%f", thrust_roll);
+            }else if(thrust_roll <0){
+                motorboard_->backward(thrust_roll);
+                RCLCPP_INFO(this->get_logger(), "roll called: thrust=%f", thrust_roll);
+
+            }
+
+
+            //apply thrust to pitch motors
+            float thrust_pitch = clampThrust(pid_pitch_.update(pitch));
+            if(thrust_pitch > 0){
+                motorboard_->pitch_up(thrust_pitch);
+                RCLCPP_INFO(this->get_logger(), "pitch called: thrust=%f", thrust_pitch);
+
+            }else if(thrust_pitch < 0){
+                motorboard_->pitch_down(thrust_pitch);
+                RCLCPP_INFO(this->get_logger(), "pitch called: thrust=%f", thrust_pitch);
+
+            }
+            //apply thrust to yaw motors
+            float thrust_yaw = clampThrust(pid_yaw_.update(yaw));
+            if(thrust_yaw > 0){
+                motorboard_->yaw_cw(thrust_yaw);
+                RCLCPP_INFO(this->get_logger(), "yaw called: thrust=%f", thrust_yaw);
+
+            }else if(thrust_yaw < 0){
+                motorboard_->yaw_ccw(thrust_yaw);
+                RCLCPP_INFO(this->get_logger(), "yaw called: thrust=%f", thrust_yaw);
+
+            }
         }
         void depth_callback(const ros_gz_interfaces::msg::Altimeter & msg ) {
             float current_depth = msg.vertical_position;
