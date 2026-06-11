@@ -118,38 +118,38 @@ private:
         char buffer[256];
         // In canonical mode, read() blocks until a full line (\n) is ready
         // and returns exactly that line — no partial read issues
-        int bytes_read = read(serial_fd_, buffer, sizeof(buffer) - 1);
+	std::string latest_line;
+	bool got_line = false;
+	while(true) {
+		int bytes_read = read(serial_fd_, buffer, sizeof(buffer) - 1);
+		if(bytes_read > 0) {
+		buffer[bytes_read] = '\0';
+		latest_line = buffer;
+		got_line = true;
+		continue;
+		}
 
-        if (bytes_read < 0) {
-            if(errno == EAGAIN || errno == EWOULDBLOCK) {
-                // No data available right now, not an error
-                RCLCPP_DEBUG(this->get_logger(), "No data available to read");
-            } else {
-                RCLCPP_ERROR(this->get_logger(), "Error reading from serial: %s", strerror(errno));
-            }
-            // RCLCPP_INFO(this->get_logger(), "HITABORT");
-            return;
-        }
-        if(bytes_read == 0) {
-            RCLCPP_DEBUG(this->get_logger(), "End of file reached on serial");
-            // RCLCPP_INFO(this->get_logger(), "HITEOF");
-            return;
-        }
+		if (bytes_read < 0) {
+		    if(errno == EAGAIN || errno == EWOULDBLOCK)break; 
+			// No data available right now, not an error
+		    RCLCPP_DEBUG(this->get_logger(), "No data available to read");
+		    return;
+		}
+		break;
+	}
 
-        buffer[bytes_read] = '\0';
-        std::string line(buffer);
+	if (!got_line) return;
 
         double depth = 0.0;
-        RCLCPP_INFO(this->get_logger(), "Read line: %s", line.c_str());
-        if (parse_depth_line(line, depth)) {
-            RCLCPP_INFO(this->get_logger(), "HIT8");
+        if (parse_depth_line(latest_line, depth)) {
+//            RCLCPP_INFO(this->get_logger(), "HIT8");
             auto message = std_msgs::msg::Float32();
             message.data = depth;
             publisher_->publish(message);
             RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth);
         } else {
             // Silently ignore non-depth lines (e.g. "Starting" on boot)
-            RCLCPP_DEBUG(this->get_logger(), "Ignored line: %s", line.c_str());
+            RCLCPP_DEBUG(this->get_logger(), "Ignored line: %s", latest_line.c_str());
             // RCLCPP_INFO(this->get_logger(), "HIT9");
         }
     }

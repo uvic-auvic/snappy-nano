@@ -23,7 +23,7 @@
         "aux-param-disparityshift": "10",
         "controls-autoexposure-auto": "False",
         "controls-autoexposure-manual": "30000",
-        "controls-color-autoexposure-auto": "True",
+        "controls-color-autoexposure-auto": "False",
         "controls-color-autoexposure-manual": "25000",
         "controls-color-backlight-compensation": "0",
         "controls-color-brightness": "0",
