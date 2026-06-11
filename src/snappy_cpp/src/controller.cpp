@@ -35,14 +35,14 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.5f, 0.0f, 0.1f),
             pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(15.0f, 0.0f, 0.1f),
+            pid_z_(45.0f, 0.5f, 1.2f),
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.5f, 0.0f, 0.1f)
+            pid_yaw_(0.1f, 0.0f, 0.5f)
          {
             // count_ = 0;
             flag_ = 0;
-            pid_z_.set_target(0);
+            pid_z_.set_target(1);
 
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
@@ -118,6 +118,7 @@ class Controller : public rclcpp::Node {
 	    //Depth STUFF
             float depth_master = current_depth;
             RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth_master);
+            RCLCPP_INFO(this->get_logger(), "CURRENT Depth: %.4f m", current_depth);
             // Update the Z-axis PID with current depth
             float z_thrust = pid_z_.update(depth_master);
 
@@ -145,12 +146,14 @@ class Controller : public rclcpp::Node {
             float yaw_thrust = pid_yaw_.update(yaw_master);
             const int8_t yaw_thrust_clamped = clampThrust(yaw_thrust);
             if (yaw_thrust_clamped > 0) {
-                motorboard_->yaw_cw(yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
-            } else if (yaw_thrust_clamped < 0) {
-                motorboard_->yaw_ccw(-yaw_thrust_clamped);
+                motorboard_->yaw_ccw(yaw_thrust_clamped);
                 RCLCPP_INFO(this->get_logger(), "Yaw CCW called: thrust=%d", -yaw_thrust_clamped);
+            } else if (yaw_thrust_clamped < 0) {
+                motorboard_->yaw_cw(-yaw_thrust_clamped);
+                RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
             }
+
+
         }
 
 
@@ -220,16 +223,16 @@ class Controller : public rclcpp::Node {
         void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
             //RCLCPP_INFO(this->get_logger(), "Received IMU data: roll=%.2f, pitch=%.2f, yaw=%.2f", msg.vector.x, msg.vector.y, msg.vector.z);
             //rollroll
-	    roll = msg.vector.x;
+    	    roll = msg.vector.x;
             //pitch
             pitch = msg.vector.y;
             //yaw
             yaw = msg.vector.z;
-	    if (flag_ == 0) {
-		flag_ = 1;
-		// first reference of yaw
-		pid_yaw_.set_target(yaw);
-	    }
+    	    if (flag_ == 0) {
+    		flag_ = 1;
+    		// first reference of yaw
+    		pid_yaw_.set_target(yaw);
+    	    }
         }
 
         // Compute difference between current and target
@@ -315,7 +318,7 @@ class Controller : public rclcpp::Node {
 
 
         static int8_t clampThrust(float value) {
-            return static_cast<int8_t>(std::lround(std::clamp(value, -5.0f, 5.0f)));
+            return static_cast<int8_t>(std::lround(std::clamp(value, -100.0f, 100.0f)));
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;

@@ -21,7 +21,7 @@
         "aux-param-depthclampmax": "2000",
         "aux-param-depthclampmin": "50",
         "aux-param-disparityshift": "25",
-        "controls-autoexposure-auto": "False",
+        "controls-autoexposure-auto": "True",
         "controls-autoexposure-manual": "30000",
         "controls-depth-gain": "32",
         "controls-depth-white-balance-auto": "True",
