@@ -72,12 +72,12 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'pid_yaw_p',
-            default_value='15.0',
+            default_value='25.0',
             description='Yaw PID proportional gain (thrust pct per radian).',
         ),
         DeclareLaunchArgument(
             'pid_yaw_d',
-            default_value='0.1',
+            default_value='2.0',
             description='Yaw PID derivative gain.',
         ),
         DeclareLaunchArgument(
