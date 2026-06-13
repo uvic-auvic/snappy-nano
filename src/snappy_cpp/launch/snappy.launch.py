@@ -5,6 +5,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -61,6 +62,44 @@ def generate_launch_description():
             default_value='false',
             description='Launch the pressure sensor serial node (requires hardware).',
         ),
+        # Sim-tuned PID gains, overridable per run without rebuilding
+        # (e.g. pid_yaw_p:=20). The C++ defaults are NOT changed by these;
+        # pool gains still live in controller.cpp.
+        DeclareLaunchArgument(
+            'pid_z_p',
+            default_value='15.0',
+            description='Depth PID proportional gain (thrust pct per metre).',
+        ),
+        DeclareLaunchArgument(
+            'pid_yaw_p',
+            default_value='15.0',
+            description='Yaw PID proportional gain (thrust pct per radian).',
+        ),
+        DeclareLaunchArgument(
+            'pid_yaw_d',
+            default_value='0.1',
+            description='Yaw PID derivative gain.',
+        ),
+        DeclareLaunchArgument(
+            'pid_pitch_p',
+            default_value='60.0',
+            description='Pitch PID proportional gain (counters surge nose-down).',
+        ),
+        DeclareLaunchArgument(
+            'pid_pitch_d',
+            default_value='5.0',
+            description='Pitch PID derivative gain.',
+        ),
+        DeclareLaunchArgument(
+            'pid_roll_p',
+            default_value='40.0',
+            description='Roll PID proportional gain.',
+        ),
+        DeclareLaunchArgument(
+            'pid_roll_d',
+            default_value='2.0',
+            description='Roll PID derivative gain.',
+        ),
     ]
 
     ignition_simulation = IncludeLaunchDescription(
@@ -71,12 +110,31 @@ def generate_launch_description():
         }.items(),
     )
 
+    # The one controller binary, same as on the vehicle. sim_shim adapts it to
+    # Gazebo: /motor_cmd -> gz cmd_thrust topics, gz altimeter/imu ->
+    # depth_data + /filter/euler.
     controller_node = Node(
         package='snappy_cpp',
-        executable='sim_controller',
-        name='sim_controller',
+        executable='controller',
+        name='controller',
         output='screen',
         condition=IfCondition(start_controller),
+        parameters=[{
+            'pid_z.p': ParameterValue(LaunchConfiguration('pid_z_p'), value_type=float),
+            'pid_yaw.p': ParameterValue(LaunchConfiguration('pid_yaw_p'), value_type=float),
+            'pid_yaw.d': ParameterValue(LaunchConfiguration('pid_yaw_d'), value_type=float),
+            'pid_pitch.p': ParameterValue(LaunchConfiguration('pid_pitch_p'), value_type=float),
+            'pid_pitch.d': ParameterValue(LaunchConfiguration('pid_pitch_d'), value_type=float),
+            'pid_roll.p': ParameterValue(LaunchConfiguration('pid_roll_p'), value_type=float),
+            'pid_roll.d': ParameterValue(LaunchConfiguration('pid_roll_d'), value_type=float),
+        }],
+    )
+
+    sim_shim_node = Node(
+        package='snappy_cpp',
+        executable='sim_shim',
+        name='sim_shim',
+        output='screen',
     )
 
     state_estimator_node = Node(
@@ -115,6 +173,7 @@ def generate_launch_description():
         arguments
         + [
             ignition_simulation,
+            sim_shim_node,
             controller_node,
             state_estimator_node,
             planner_node,

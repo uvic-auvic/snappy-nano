@@ -35,8 +35,6 @@ find_package(tf2_geometry_msgs REQUIRED)
 # Jetson publisher and the STM32 micro-ROS subscriber register the SAME type.
 find_package(snappy_interfaces REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
-# Gazebo bridge message types (Altimeter) used by the simulation-only sim_controller.
-find_package(ros_gz_interfaces REQUIRED)
 
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -169,24 +167,8 @@ ament_target_dependencies(controller
   snappy_interfaces
 )
 
-# Simulation-only controller: drives Gazebo thrusters (SimMotorboard publishes
-# Float64 to the gz cmd_thrust topics) and reads depth from the gz Altimeter.
-add_executable(sim_controller
-  src/sim_controller.cpp
-  src/pid.cpp
-)
-ament_target_dependencies(sim_controller
-  rclcpp
-  std_msgs
-  geometry_msgs
-  tf2
-  tf2_geometry_msgs
-  ros_gz_interfaces
-)
-
 # cpp_typesupport_target was already resolved once after rosidl_generate_interfaces.
 target_link_libraries(controller "${cpp_typesupport_target}")
-target_link_libraries(sim_controller "${cpp_typesupport_target}")
 target_link_libraries(state_estimator "${cpp_typesupport_target}")
 target_link_libraries(planner "${cpp_typesupport_target}")
 
@@ -196,11 +178,16 @@ install(TARGETS
   computer_vision_cpu
   image_capture
   controller
-  sim_controller
   state_estimator
   planner
   counter_publisher
   DESTINATION lib/${PROJECT_NAME})
+
+# Simulation shim: translates /motor_cmd into gz thruster commands and gz
+# sensors into the topics the (single, sim-agnostic) controller expects.
+install(PROGRAMS scripts/sim_shim.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME sim_shim)
 
 if(WITH_CUDA)
   install(TARGETS camera_inference
