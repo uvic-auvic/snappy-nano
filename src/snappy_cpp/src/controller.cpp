@@ -47,6 +47,23 @@ class Controller : public rclcpp::Node {
             // Heading is an angle: wrap its error into (-pi, pi]. Everything
             // fed to pid_yaw_ is in radians (see imu_callback / parseTask).
             pid_yaw_.set_angular(true);
+            pid_pitch_.set_angular(true);
+            pid_roll_.set_angular(true);
+
+            // Gains for the two active loops are ROS parameters so they can be
+            // tuned per run (--ros-args -p pid_z.p:=20.0, or a params file)
+            // without rebuilding. Defaults match the previous hard-coded gains.
+            auto gain = [this](const std::string & name, double def) {
+                return static_cast<float>(declare_parameter(name, def));
+            };
+            pid_z_.set_gains(gain("pid_z.p", 15.0), gain("pid_z.i", 0.0), gain("pid_z.d", 0.1));
+            pid_yaw_.set_gains(gain("pid_yaw.p", 0.5), gain("pid_yaw.i", 0.0), gain("pid_yaw.d", 0.1));
+            pid_pitch_.set_gains(gain("pid_pitch.p", 0.5), gain("pid_pitch.i", 0.0), gain("pid_pitch.d", 0.1));
+            pid_roll_.set_gains(gain("pid_roll.p", 0.5), gain("pid_roll.i", 0.0), gain("pid_roll.d", 0.1));
+
+            // Never command shallower than this while a submerged target is
+            // active (anti-breach guard in timer_callback).
+            min_depth_ = static_cast<float>(declare_parameter("min_depth", 0.3));
 
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
@@ -121,42 +138,56 @@ class Controller : public rclcpp::Node {
             // RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
 	    //Depth STUFF
             float depth_master = current_depth;
-            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth_master);
-            // Update the Z-axis PID with current depth
-            float z_thrust = pid_z_.update(depth_master);
-
-            // Apply the thrust to the vertical motors.
-            // Depth convention: current_depth grows as the sub descends, so a
-            // target deeper than current gives err>0 -> z_thrust>0 -> descend.
-            // down()/up() take a positive magnitude; up() was previously handed
-            // the raw negative thrust, which made it descend instead of ascend
-            const int8_t thrust = clampThrust(z_thrust);
-            if (thrust > 0) {
-                motorboard_->down(thrust);          // descend
-                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
-            } else if (thrust < 0) {
-                motorboard_->up(-thrust);           // ascend (positive magnitude)
-                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", -thrust);
-            }
-
-
-	    // YAW stuff
             float roll_master = roll;
-            //pitch
             float pitch_master = pitch;
-            //yaw
             float yaw_master = yaw;
 
-            //yaw correction - this could be wrong
-            RCLCPP_INFO(this->get_logger(), "Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll_master, pitch_master, yaw_master);
+            // Update the Z-axis PID with current depth.
+            // Depth convention: current_depth grows as the sub descends, so a
+            // target deeper than current gives err>0 -> z_thrust>0 -> descend.
+            float z_thrust = pid_z_.update(depth_master);
+
+            // Anti-breach guard: if we are shallower than min_depth_ while the
+            // mission wants us submerged, force at least a firm descend. When
+            // the target itself is shallower (the final Surface), stand down.
+            if (depth_master < min_depth_ && pid_z_.target() >= min_depth_) {
+                z_thrust = std::max(z_thrust, 20.0f);
+                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                    "Breach guard: depth %.2f < %.2f m, forcing descend", depth_master, min_depth_);
+            }
+
+            // Depth, pitch and roll all actuate the SAME four vertical
+            // thrusters, so mix them per corner in one command — sequential
+            // group calls (down() then pitch_up()) would overwrite each other.
+            // Surge thrust is applied above the CoG and pitches the nose down;
+            // the pitch term counters it (B: front/back differential), the
+            // roll term damps the lean induced by yawing (left/right diff).
+            const int8_t z_pct     = clampThrust(z_thrust);
+            const int8_t pitch_pct = clampThrust(pid_pitch_.update(pitch_master));
+            const int8_t roll_pct  = clampThrust(pid_roll_.update(roll_master));
+            // +pct = down. front = z + pitch, back = z - pitch (pitch_pct < 0
+            // when the nose is down, lifting the front); right = +roll,
+            // left = -roll (roll_pct < 0 when rolled right, lifting the right
+            // side). Index layout per docs/THRUSTER_MAP.md.
+            int8_t vertical_cmd[8] = {
+                0,
+                clampThrust(static_cast<float>(z_pct + pitch_pct + roll_pct)),  // 1 front-right
+                0,
+                clampThrust(static_cast<float>(z_pct - pitch_pct + roll_pct)),  // 3 back-right
+                0,
+                clampThrust(static_cast<float>(z_pct - pitch_pct - roll_pct)),  // 5 back-left
+                0,
+                clampThrust(static_cast<float>(z_pct + pitch_pct - roll_pct)),  // 7 front-left
+            };
+            motorboard_->sendCmd(MotorCalls::VERTICAL, vertical_cmd);
+
+	    // YAW stuff
             float yaw_thrust = pid_yaw_.update(yaw_master);
             const int8_t yaw_thrust_clamped = clampThrust(yaw_thrust);
             if (yaw_thrust_clamped < 0) {
-                motorboard_->yaw_cw(yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
+                motorboard_->yaw_cw(-yaw_thrust_clamped);
             } else if (yaw_thrust_clamped > 0) {
                 motorboard_->yaw_ccw(yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CCW called: thrust=%d", -yaw_thrust_clamped);
             }
 
             // The forward thrusters (mask FORWARD) are a
@@ -168,6 +199,19 @@ class Controller : public rclcpp::Node {
             } else {
                 motorboard_->backward(static_cast<int8_t>(-surge_thrust_));
             }
+
+            // One throttled current->target status line (instead of per-tick
+            // spam) with the thrust commands, for tuning and debugging.
+            constexpr float RAD2DEG = static_cast<float>(180.0 / M_PI);
+            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 500,
+                "depth %.3f -> %.3f m (z%+d) | yaw %.1f -> %.1f deg (yaw%+d) | "
+                "roll %.1f (r%+d) pitch %.1f (p%+d) deg | surge%+d",
+                depth_master, pid_z_.target(), static_cast<int>(z_pct),
+                yaw_master * RAD2DEG, pid_yaw_.target() * RAD2DEG,
+                static_cast<int>(yaw_thrust_clamped),
+                roll_master * RAD2DEG, static_cast<int>(roll_pct),
+                pitch_master * RAD2DEG, static_cast<int>(pitch_pct),
+                static_cast<int>(surge_thrust_));
         }
 
 
@@ -393,6 +437,7 @@ class Controller : public rclcpp::Node {
         float yaw = 0.0f;
         float roll = 0.0f;
         float current_depth = 0.0f;
+        float min_depth_ = 0.3f;
 
         // Open-loop surge thrust (1.1), signed pct applied every tick. Latches
         // until a Task sets it back to 0.

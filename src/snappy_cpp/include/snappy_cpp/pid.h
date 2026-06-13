@@ -19,6 +19,10 @@ class PID {
     public:
         PID(float Kp, float Ki, float Kd); // Constructor
         void set_target(float target);
+        float target() const { return target_; }
+        // Replace the gains (e.g. from ROS parameters at startup) and reset
+        // the accumulated state so old gains don't leak into the new ones.
+        void set_gains(float Kp, float Ki, float Kd);
         // Treat the controlled variable as an angle in radians: the error is
         // wrapped into (-pi, pi] so the controller always takes the short way
         // around the +-pi seam (e.g. heading hold while circling a marker).

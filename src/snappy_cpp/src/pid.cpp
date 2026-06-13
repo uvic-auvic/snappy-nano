@@ -23,6 +23,14 @@ void PID::set_angular(bool angular) {
     angular_ = angular;
 }
 
+void PID::set_gains(float Kp, float Ki, float Kd) {
+    Kp_ = Kp;
+    Ki_ = Ki;
+    Kd_ = Kd;
+    integral_ = 0;
+    prev_err_ = 0;
+}
+
 float PID::update(float current) {
     // Get error
     float err = target_ - current;
