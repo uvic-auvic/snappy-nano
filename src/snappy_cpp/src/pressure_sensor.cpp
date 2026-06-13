@@ -1,3 +1,9 @@
+// Depth sensor node. Reads newline-delimited "D <metres>" lines from an Arduino
+// (Bar02 pressure sensor) over a USB serial port and republishes the latest
+// reading as a Float32 on depth_data, which the controller and planner consume.
+// The serial port is opened in canonical, non-blocking mode so each read()
+// returns one complete line; the timer drains the buffer and keeps only the
+// freshest sample.
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <fcntl.h>
@@ -11,6 +17,8 @@
 class DepthSensorNode : public rclcpp::Node
 {
 public:
+    // Open and configure /dev/ttyUSB0 (115200 8N1, canonical) and start the
+    // 10 Hz read timer. If the port can't be opened the node stays up but idle.
     DepthSensorNode() : Node("depth_sensor_node"), serial_fd_(-1)
     {
         // Publishes a plain float — your state estimator reads this directly
@@ -63,6 +71,7 @@ public:
         RCLCPP_INFO(this->get_logger(), "Depth sensor node started on /dev/ttyUSB0 at 115200 baud");
     }
 
+    // Close the serial port if it was opened.
     ~DepthSensorNode()
     {
         if (serial_fd_ >= 0) {
@@ -102,6 +111,8 @@ private:
         }
     }
 
+    // Timer callback: drain the serial buffer, parse the newest complete line,
+    // and publish it on depth_data. Drops stale lines so we never lag behind.
     void read_and_publish()
     {
       if (serial_fd_ < 0) return;
