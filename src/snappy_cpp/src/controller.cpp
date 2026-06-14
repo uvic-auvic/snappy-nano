@@ -35,14 +35,14 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.5f, 0.0f, 0.1f),
             pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(15.0f, 0.0f, 0.1f),
+            pid_z_(45.0f, 0.5f, 1.2f),
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.5f, 0.0f, 0.1f)
+            pid_yaw_(0.1f, 0.0f, 0.5f)
          {
             // count_ = 0;
             flag_ = 0;
-            pid_z_.set_target(0);
+            pid_z_.set_target(1);
 
             // Heading is an angle: wrap its error into (-pi, pi]. Everything
             // fed to pid_yaw_ is in radians (see imu_callback / parseTask).

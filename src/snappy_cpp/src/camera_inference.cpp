@@ -741,12 +741,15 @@ private:
             job.depth_ptr = cv_bridge::toCvShare(depth_msg, "16UC1");
             job.timestamp = rclcpp::Time(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
 
-            save_training_image(cam.ns, job.color_ptr->image, job.timestamp);
+            if(count_ % 30 == 0) {
+                save_training_image(cam.ns, job.color_ptr->image, job.timestamp);
+            }
 
             enqueue_job(std::move(job));
         } catch (const cv_bridge::Exception& e) {
             RCLCPP_ERROR(get_logger(), "cv_bridge exception: %s", e.what());
         }
+        count_++;
     }
 
     void enqueue_job(InferenceJob&& job)
@@ -1157,6 +1160,7 @@ private:
     int distance_grid_ = 10;
     int max_queue_depth_ = 2;
     int requested_max_batch_ = 1;
+    int count_ = 0;
     std::chrono::duration<double, std::milli> batch_collect_{0.0};
 
     std::vector<std::unique_ptr<CameraContext>> cameras_;

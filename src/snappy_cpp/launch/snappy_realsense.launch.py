@@ -76,6 +76,7 @@ def generate_launch_description():
             "camera_name": "d455",
             "serial_no": serial_no_d455,
             "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "d455_underwater.json"]),
+            #"json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test455.json"]),
             "enable_gyro": "true",
             "enable_accel": "true",
             "unite_imu_method": "2",
@@ -98,6 +99,7 @@ def generate_launch_description():
             "camera_name": "d405",
             "serial_no": serial_no_d405,
             "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "d405_underwater.json"]),
+            #"json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test405.json"]),
             "enable_gyro": "false",  # D405 does not include IMU
             "enable_accel": "false",
             "unite_imu_method": "0",
