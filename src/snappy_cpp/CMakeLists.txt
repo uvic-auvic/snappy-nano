@@ -34,6 +34,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 # ThrusterCommand now lives in the shared snappy_interfaces package so the
 # Jetson publisher and the STM32 micro-ROS subscriber register the SAME type.
 find_package(snappy_interfaces REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
 
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -55,7 +56,7 @@ message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
 message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
 include_directories(
   ${ONNXRUNTIME_INCLUDE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 link_directories(/usr/local/lib)
 
@@ -63,7 +64,7 @@ link_directories(/usr/local/lib)
 set(BOOST_ROOT "/usr")
 find_package(Boost REQUIRED)
 
-add_library(serial_lib src/include/src/serial.cpp)
+add_library(serial_lib src/serial.cpp)
 ament_target_dependencies(serial_lib rclcpp std_msgs)
 
 add_executable(pressureSensor src/pressure_sensor.cpp)
@@ -83,13 +84,19 @@ target_link_libraries(image_capture ${OpenCV_LIBS})
 add_executable(state_estimator src/state_estimator.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
 
-add_executable(planner src/planner.cpp)
-ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
-add_dependencies(planner ${PROJECT_NAME})
-target_link_libraries(planner
-  ${PROJECT_NAME}__rosidl_typesupport_cpp
-  ${PROJECT_NAME}__rosidl_typesupport_c
+add_executable(planner
+  src/planner.cpp
+  src/bt/simple_nodes.cpp
+  src/bt/go_to_depth.cpp
+  src/bt/timed_surge.cpp
+  src/bt/turned_heading.cpp
 )
+
+target_include_directories(planner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+ament_target_dependencies(planner rclcpp std_msgs geometry_msgs behaviortree_cpp ament_index_cpp)
+add_dependencies(planner ${PROJECT_NAME})
+# Typesupport is linked once, below, alongside controller/state_estimator
+# via ${cpp_typesupport_target}.
 
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
@@ -148,8 +155,8 @@ install(FILES
 
 add_executable(controller
   src/controller.cpp
-  src/include/src/pid.cpp
-  src/include/src/motorboard.cpp
+  src/pid.cpp
+  src/motorboard.cpp
 )
 ament_target_dependencies(controller
   rclcpp
@@ -160,16 +167,10 @@ ament_target_dependencies(controller
   snappy_interfaces
 )
 
-rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# cpp_typesupport_target was already resolved once after rosidl_generate_interfaces.
 target_link_libraries(controller "${cpp_typesupport_target}")
 target_link_libraries(state_estimator "${cpp_typesupport_target}")
 target_link_libraries(planner "${cpp_typesupport_target}")
-#target_link_libraries(helloWorld "${cpp_typesupport_target}")
-# install(TARGETS
-#   helloWorld
-#   controller
-#   DESTINATION lib/${PROJECT_NAME})
-
 
 # Install all executables
 install(TARGETS
@@ -182,6 +183,12 @@ install(TARGETS
   counter_publisher
   DESTINATION lib/${PROJECT_NAME})
 
+# Simulation shim: translates /motor_cmd into gz thruster commands and gz
+# sensors into the topics the (single, sim-agnostic) controller expects.
+install(PROGRAMS scripts/sim_shim.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME sim_shim)
+
 if(WITH_CUDA)
   install(TARGETS camera_inference
     DESTINATION lib/${PROJECT_NAME})
@@ -192,6 +199,10 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY worlds
+  DESTINATION share/${PROJECT_NAME})
+
+# BehaviorTree XML files the planner loads at runtime.
+install(DIRECTORY bt_trees
   DESTINATION share/${PROJECT_NAME})
 
 option(BUILD_TESTING "Build tests" OFF)

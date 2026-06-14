@@ -1,5 +1,5 @@
 // Bring in my package's API, which is what I'm testing
-#include "../src/include/Inc/serial.h"
+#include "snappy_cpp/serial.h"
 // Bring in gtest
 #include <gtest/gtest.h>
 #include "rclcpp/rclcpp.hpp"

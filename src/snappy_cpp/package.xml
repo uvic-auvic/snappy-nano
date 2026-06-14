@@ -20,6 +20,13 @@
   <depend>cv_bridge</depend>
   <depend>realsense2_camera</depend>
   <depend>builtin_interfaces</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>snappy_interfaces</depend>
+  <depend>behaviortree_cpp</depend>
+  <!-- Runtime deps of the python sim_shim (no build-time use). -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>ros_gz_interfaces</exec_depend>
 
   <member_of_group>rosidl_interface_packages</member_of_group>
 
@@ -27,13 +34,6 @@
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_cmake_gmock</test_depend>
-
-  <depend>tf2</depend>
-  <depend>tf2_geometry_msgs</depend>
-  <depend>snappy_interfaces</depend>
-
-  
-  <member_of_group>rosidl_interface_packages</member_of_group>
 
   <export>
     <build_type>ament_cmake</build_type>
