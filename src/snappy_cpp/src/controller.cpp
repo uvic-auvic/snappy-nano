@@ -22,8 +22,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <queue>
 
-#include "include/Inc/pid.h"
-#include "include/Inc/motorboard.h"
+#include "snappy_cpp/pid.h"
+#include "snappy_cpp/motorboard.h"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -35,14 +35,35 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.5f, 0.0f, 0.1f),
             pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(15.0f, 0.0f, 0.1f),
+            pid_z_(45.0f, 0.5f, 1.2f),
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.5f, 0.0f, 0.1f)
+            pid_yaw_(0.1f, 0.0f, 0.5f)
          {
             // count_ = 0;
             flag_ = 0;
-            pid_z_.set_target(0);
+            pid_z_.set_target(1);
+
+            // Heading is an angle: wrap its error into (-pi, pi]. Everything
+            // fed to pid_yaw_ is in radians (see imu_callback / parseTask).
+            pid_yaw_.set_angular(true);
+            pid_pitch_.set_angular(true);
+            pid_roll_.set_angular(true);
+
+            // Gains for the two active loops are ROS parameters so they can be
+            // tuned per run (--ros-args -p pid_z.p:=20.0, or a params file)
+            // without rebuilding. Defaults match the previous hard-coded gains.
+            auto gain = [this](const std::string & name, double def) {
+                return static_cast<float>(declare_parameter(name, def));
+            };
+            pid_z_.set_gains(gain("pid_z.p", 15.0), gain("pid_z.i", 0.0), gain("pid_z.d", 0.1));
+            pid_yaw_.set_gains(gain("pid_yaw.p", 0.5), gain("pid_yaw.i", 0.0), gain("pid_yaw.d", 0.1));
+            pid_pitch_.set_gains(gain("pid_pitch.p", 0.5), gain("pid_pitch.i", 0.0), gain("pid_pitch.d", 0.1));
+            pid_roll_.set_gains(gain("pid_roll.p", 0.5), gain("pid_roll.i", 0.0), gain("pid_roll.d", 0.1));
+
+            // Never command shallower than this while a submerged target is
+            // active (anti-breach guard in timer_callback).
+            min_depth_ = static_cast<float>(declare_parameter("min_depth", 0.3));
 
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
@@ -117,40 +138,80 @@ class Controller : public rclcpp::Node {
             // RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
 	    //Depth STUFF
             float depth_master = current_depth;
-            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth_master);
-            // Update the Z-axis PID with current depth
-            float z_thrust = pid_z_.update(depth_master);
-
-            // Apply the thrust to the vertical motors
-            const int8_t thrust = clampThrust(z_thrust);
-            if (thrust > 0) {
-                motorboard_->down(thrust);
-                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
-            } else if (thrust < 0) {
-                motorboard_->up(thrust);
-                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
-            }
-
-
-
-	    // YAW stuff
             float roll_master = roll;
-            //pitch
             float pitch_master = pitch;
-            //yaw
             float yaw_master = yaw;
 
-            //yaw correction
-            RCLCPP_INFO(this->get_logger(), "Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll_master, pitch_master, yaw_master);
+            // Update the Z-axis PID with current depth.
+            // Depth convention: current_depth grows as the sub descends, so a
+            // target deeper than current gives err>0 -> z_thrust>0 -> descend.
+            float z_thrust = pid_z_.update(depth_master);
+
+            // Anti-breach guard: if we are shallower than min_depth_ while the
+            // mission wants us submerged, force at least a firm descend. When
+            // the target itself is shallower (the final Surface), stand down.
+            if (depth_master < min_depth_ && pid_z_.target() >= min_depth_) {
+                z_thrust = std::max(z_thrust, 20.0f);
+                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                    "Breach guard: depth %.2f < %.2f m, forcing descend", depth_master, min_depth_);
+            }
+
+            // Depth, pitch and roll all actuate the SAME four vertical
+            // thrusters, so mix them per corner in one command — sequential
+            // group calls (down() then pitch_up()) would overwrite each other.
+            // Surge thrust is applied above the CoG and pitches the nose down;
+            // the pitch term counters it (B: front/back differential), the
+            // roll term damps the lean induced by yawing (left/right diff).
+            const int8_t z_pct     = clampThrust(z_thrust);
+            const int8_t pitch_pct = clampThrust(pid_pitch_.update(pitch_master));
+            const int8_t roll_pct  = clampThrust(pid_roll_.update(roll_master));
+            // +pct = down. front = z + pitch, back = z - pitch (pitch_pct < 0
+            // when the nose is down, lifting the front); right = +roll,
+            // left = -roll (roll_pct < 0 when rolled right, lifting the right
+            // side). Index layout per docs/THRUSTER_MAP.md.
+            int8_t vertical_cmd[8] = {
+                0,
+                clampThrust(static_cast<float>(z_pct + pitch_pct + roll_pct)),  // 1 front-right
+                0,
+                clampThrust(static_cast<float>(z_pct - pitch_pct + roll_pct)),  // 3 back-right
+                0,
+                clampThrust(static_cast<float>(z_pct - pitch_pct - roll_pct)),  // 5 back-left
+                0,
+                clampThrust(static_cast<float>(z_pct + pitch_pct - roll_pct)),  // 7 front-left
+            };
+            motorboard_->sendCmd(MotorCalls::VERTICAL, vertical_cmd);
+
+	    // YAW stuff
             float yaw_thrust = pid_yaw_.update(yaw_master);
             const int8_t yaw_thrust_clamped = clampThrust(yaw_thrust);
-            if (yaw_thrust_clamped > 0) {
-                motorboard_->yaw_cw(yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
-            } else if (yaw_thrust_clamped < 0) {
-                motorboard_->yaw_ccw(-yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CCW called: thrust=%d", -yaw_thrust_clamped);
+            if (yaw_thrust_clamped < 0) {
+                motorboard_->yaw_cw(-yaw_thrust_clamped);
+            } else if (yaw_thrust_clamped > 0) {
+                motorboard_->yaw_ccw(yaw_thrust_clamped);
             }
+
+            // The forward thrusters (mask FORWARD) are a
+            // disjoint motor group from VERTICAL (depth) and LATERAL (yaw), and
+            // the firmware leaves unmasked motors untouched, so this stacks with
+            // depth + yaw on the same tick instead of overwriting them.
+            if (surge_thrust_ >= 0) {
+                motorboard_->forward(surge_thrust_);
+            } else {
+                motorboard_->backward(static_cast<int8_t>(-surge_thrust_));
+            }
+
+            // One throttled current->target status line (instead of per-tick
+            // spam) with the thrust commands, for tuning and debugging.
+            constexpr float RAD2DEG = static_cast<float>(180.0 / M_PI);
+            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 500,
+                "depth %.3f -> %.3f m (z%+d) | yaw %.1f -> %.1f deg (yaw%+d) | "
+                "roll %.1f (r%+d) pitch %.1f (p%+d) deg | surge%+d",
+                depth_master, pid_z_.target(), static_cast<int>(z_pct),
+                yaw_master * RAD2DEG, pid_yaw_.target() * RAD2DEG,
+                static_cast<int>(yaw_thrust_clamped),
+                roll_master * RAD2DEG, static_cast<int>(roll_pct),
+                pitch_master * RAD2DEG, static_cast<int>(pitch_pct),
+                static_cast<int>(surge_thrust_));
         }
 
 
@@ -192,44 +253,35 @@ class Controller : public rclcpp::Node {
             }
         }
 
-        // Receive states from state estimator nodes, update PID values
+        // Receive states from state estimator nodes; just cache the latest pose.
         void state_callback(const snappy_cpp::msg::Pose & msg) {
             // RCLCPP_INFO(this->get_logger(), "Received current position: (%.2f, %.2f, %.2f)",
             // msg.position.x, msg.position.y, msg.position.z);
 
+            // timer_callback is the single owner of the PID loops; updating them 
+            // from this callback too (the results were also unused) corrupted their integral / prev_err /
+            // prev_time state. We only cache the pose for computeError().
             position_current_ = msg.position;
             orientation_current_ = msg.orientation;
-
-            // Update PID values
-            tf2::Quaternion q_current;
-            tf2::fromMsg(orientation_current_, q_current);
-            double roll, pitch, yaw;
-            tf2::Matrix3x3(q_current).getRPY(roll, pitch, yaw);
-            float thrust_x = pid_x_.update(position_current_.x);
-            float thrust_y = pid_y_.update(position_current_.y);
-            //float thrust_z = pid_z_.update(position_current_.z);
-            float thrust_roll = pid_roll_.update(roll);
-            float thrust_pitch = pid_pitch_.update(pitch);
-            float thrust_yaw = pid_yaw_.update(yaw);
         }
 
         void depth_callback(const std_msgs::msg::Float32 & msg) {
-	    current_depth = msg.data;
+	        current_depth = msg.data;
         }
 
         void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
             //RCLCPP_INFO(this->get_logger(), "Received IMU data: roll=%.2f, pitch=%.2f, yaw=%.2f", msg.vector.x, msg.vector.y, msg.vector.z);
-            //rollroll
-	    roll = msg.vector.x;
-            //pitch
-            pitch = msg.vector.y;
-            //yaw
-            yaw = msg.vector.z;
-	    if (flag_ == 0) {
-		flag_ = 1;
-		// first reference of yaw
-		pid_yaw_.set_target(yaw);
-	    }
+            // (parseTask uses tf2). Convert to radians here so the whole control
+            // loop speaks one unit and pid_yaw_'s gain means one thing.
+            constexpr float DEG2RAD = static_cast<float>(M_PI / 180.0);
+            roll  = msg.vector.x * DEG2RAD;
+            pitch = msg.vector.y * DEG2RAD;
+            yaw   = msg.vector.z * DEG2RAD;
+            if (flag_ == 0) {
+                flag_ = 1;
+                // first reference of yaw (radians)
+                pid_yaw_.set_target(yaw);
+            }
         }
 
         // Compute difference between current and target
@@ -255,6 +307,15 @@ class Controller : public rclcpp::Node {
         }
 
         void parseTask(const snappy_cpp::msg::Task & msg) {
+            // set the latching forward/back thrust applied
+            // every tick in timer_callback. magnitude is the signed thrust pct
+            // (+forward / -back); magnitude 0 stops the surge. Open-loop, so it is
+            // not tied to the position/orientation convergence logic below.
+            if (msg.type == "surge") {
+                surge_thrust_ = clampSurge(msg.magnitude);
+                return;
+            }
+
             // If there is no current target:
             if (!position_target_.has_value()) {
                 position_target_ = position_current_;
@@ -296,11 +357,21 @@ class Controller : public rclcpp::Node {
                     }
                     orientation_target_ = tf2::toMsg(msg.absolute ? q_temp : q_current * q_temp);
 
-                    double roll, pitch, yaw;
-                    tf2::Matrix3x3(q_temp).getRPY(roll, pitch, yaw);
-                    pid_roll_.set_target(roll);
-                    pid_pitch_.set_target(pitch);
-                    pid_yaw_.set_target(yaw);
+                    // PID feedback for these loops is the IMU euler angle (radians,
+                    // members roll/pitch/yaw), NOT the state-estimator quaternion
+                    // above. So a RELATIVE command is "current IMU angle + delta"
+                    // (we snapshot the controller's own live heading here); an
+                    // ABSOLUTE command takes the magnitude as the target directly.
+                    // Set only the commanded axis so a yaw turn doesn't reset the
+                    // roll/pitch setpoints. The angular PID wraps the error; we wrap
+                    // the setpoint too so repeated relative turns stay bounded.
+                    if (msg.direction == "yaw") {
+                        pid_yaw_.set_target(wrapToPi(msg.absolute ? msg.magnitude : yaw + msg.magnitude));
+                    } else if (msg.direction == "roll") {
+                        pid_roll_.set_target(wrapToPi(msg.absolute ? msg.magnitude : roll + msg.magnitude));
+                    } else if (msg.direction == "pitch") {
+                        pid_pitch_.set_target(wrapToPi(msg.absolute ? msg.magnitude : pitch + msg.magnitude));
+                    }
                 }
             } else {
                 // type = dropper/grabber/torpedo ??
@@ -315,7 +386,17 @@ class Controller : public rclcpp::Node {
 
 
         static int8_t clampThrust(float value) {
-            return static_cast<int8_t>(std::lround(std::clamp(value, -5.0f, 5.0f)));
+            return static_cast<int8_t>(std::lround(std::clamp(value, -50.0f, 50.0f)));
+        }
+
+        // Open-loop surge command, clamped to the full motor range [-100, 100].
+        static int8_t clampSurge(float value) {
+            return static_cast<int8_t>(std::lround(std::clamp(value, -100.0f, 100.0f)));
+        }
+
+        // Wrap an angle into (-pi, pi].
+        static double wrapToPi(double a) {
+            return std::atan2(std::sin(a), std::cos(a));
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;
@@ -349,12 +430,18 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 
-        int flag_;
-        int count_;
-	float pitch;
-	float yaw;
-	float roll;
-	float current_depth;
+        int flag_ = 0;
+        int count_ = 0;
+        // the first sensor message (zero error -> zero thrust at startup).
+        float pitch = 0.0f;
+        float yaw = 0.0f;
+        float roll = 0.0f;
+        float current_depth = 0.0f;
+        float min_depth_ = 0.3f;
+
+        // Open-loop surge thrust (1.1), signed pct applied every tick. Latches
+        // until a Task sets it back to 0.
+        int8_t surge_thrust_ = 0;
 };
 
 

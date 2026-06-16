@@ -1,3 +1,7 @@
 {
-    "cmake.sourceDirectory": "/home/isaac/AUVIC/snappy-nano/src/snappy_cpp"
+    "cmake.sourceDirectory": "${workspaceFolder}/src/snappy_cpp",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build/snappy_cpp"
+    ]
 }

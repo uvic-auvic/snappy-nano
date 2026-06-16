@@ -1,0 +1,64 @@
+<!-- Goal (RoboSub 2026 pre-qual): fully autonomous — submerge (hold 1m - 1.3m) & start 3 m behind the Gate → pass
+through the Gate → circle the Marker (10 m beyond) → pass back through the Gate, without breaching,
+recorded continuously, nothing floating.
+
+DEAD-RECKONED. Heading + depth hold run continuously in the controller; this tree only sets targets,
+toggles open-loop surge, and times transitions. EVERY number below is a port calibrate the run
+pool-side by editing this file, no rebuild:
+  surge_thrust: open-loop forward thrust pct (distance ~= thrust x duration)
+  duration_s: seconds of surge for each leg (gate / marker / box leg / back)
+  depth: hold depth in metres (+down)
+  relative_yaw_deg + timeout_s: the box corners (~90 deg each)
+  LockHeading/absolute_yaw_deg: the return turn targets gate_heading+180
+  absolutely, so corner slop never steers the way home -->
+
+<root BTCPP_format="4" main_tree_to_execute="PreQualRun">
+    <BehaviorTree ID="PreQualRun">
+        <Sequence name="PreQualRun">
+            <!-- Submerge and confirm we have settled before driving forward. -->
+            <Submerge depth="1.2" />
+            <HoldDepthStable target_depth="1.2" tolerance="0.1" timeout_s="10.0" />
+
+            <!-- We are still aligned with the gate here: capture the box-corner
+                 and return courses as ABSOLUTE headings in the gate frame.
+                 Every Turn below targets one of these, so corner slop
+                 (tolerance + timeout shortfall) never accumulates - with
+                 relative turns the sub exited the box up to ~90 deg off and
+                 returned ~4 m beside the gate instead of through it. -->
+            <LockHeading offset_deg="90"  heading_deg="{corner_left}" />
+            <LockHeading offset_deg="180" heading_deg="{return_heading}" />
+            <LockHeading offset_deg="-90" heading_deg="{corner_back}" />
+
+            <!-- Clear the 3 m run-up + the 2 m gate. -->
+            <Surge name="SurgeThroughGate" surge_thrust="40" duration_s="6.0" />
+
+            <!-- Drive the ~10 m out to the marker. -->
+            <Surge name="SurgeToMarker" surge_thrust="40" duration_s="12.0" />
+
+            <!-- Box around the marker: three legs at absolute gate-frame
+                 headings (+90, 180, -90), so each corner squares itself up
+                 regardless of how the previous one ended. The return surge is
+                 the fourth side. -->
+            <Turn absolute_yaw_deg="{corner_left}" heading_tolerance_deg="8.0" timeout_s="8.0" />
+            <Surge name="SurgeLegLeft" surge_thrust="40" duration_s="4.0" />
+            <Turn absolute_yaw_deg="{return_heading}" heading_tolerance_deg="8.0" timeout_s="8.0" />
+            <Surge name="SurgeLegBack" surge_thrust="40" duration_s="4.0" />
+            <Turn absolute_yaw_deg="{corner_back}" heading_tolerance_deg="8.0" timeout_s="8.0" />
+            <Surge name="SurgeLegRight" surge_thrust="40" duration_s="4.0" />
+
+            <!-- Turn to FACE the gate before driving back: ABSOLUTE target from
+                 LockHeading (gate heading + 180), so box-corner slop does not
+                 carry into the return course. Generous timeout - depending on
+                 where the box left us this can be up to a ~180 deg turn. -->
+            <Turn name="TurnAround" absolute_yaw_deg="{return_heading}" heading_tolerance_deg="8.0" timeout_s="20.0" />
+
+            <!-- Back through the gate. This starts at the MARKER now, so it must
+                 cover the full marker -> gate distance (~10 m) plus clearance,
+                 not just a short hop. Calibrate >= SurgeToMarker. -->
+            <Surge name="SurgeBackThroughGate" surge_thrust="40" duration_s="14.0" />
+
+            <!-- Surface: depth target 0, surge off. -->
+            <Surface />
+        </Sequence>
+    </BehaviorTree>
+</root>
