@@ -2,9 +2,7 @@ name: C/C++ CI
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: [main]
+    branches: ["*"]
 
 jobs:
   build:
@@ -46,13 +44,12 @@ jobs:
         with:
           required-ros-distributions: humble
 
-      - name: Install ROS package dependencies
+      - name: Install RealSense ROS dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             ros-humble-realsense2-camera \
-            ros-humble-realsense2-camera-msgs \
-            ros-humble-behaviortree-cpp
+            ros-humble-realsense2-camera-msgs
 
       - name: Build with colcon
         run: |

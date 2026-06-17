@@ -13,14 +13,6 @@ This build assumes Gazebo Ignition is installed on version 6.17.1
 ### Details
 
 ##Build Project
-
-The planner uses BehaviorTree.CPP v4. `rosdep` should pull it from `package.xml`,
-but if the build fails with `find_package(behaviortree_cpp)` not found, install it
-explicitly first:
-```bash
-sudo apt install ros-humble-behaviortree-cpp
-```
-
 ```bash
 cd ~/snappy-nano
 source /opt/ros/humble/setup.bash

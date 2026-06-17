@@ -1,7 +1,7 @@
 // Fused letterbox + BGR->RGB + normalize + HWC->CHW preprocessing kernel.
-// See snappy_cpp/preprocess_cuda.h for the contract.
+// See preprocess_cuda.h for the contract.
 
-#include "snappy_cpp/preprocess_cuda.h"
+#include "preprocess_cuda.h"
 
 namespace {
 

@@ -74,7 +74,7 @@
 #include "snappy_cpp/msg/object_detection.hpp"
 #include "snappy_cpp/msg/bounding_box2_d.hpp"
 
-#include "snappy_cpp/preprocess_cuda.h"
+#include "preprocess_cuda.h"
 
 using namespace std::chrono_literals;
 
