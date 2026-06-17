@@ -1,25 +1,16 @@
-// Depth sensor node. Reads newline-delimited "D <metres>" lines from an Arduino
-// (Bar02 pressure sensor) over a USB serial port and republishes the latest
-// reading as a Float32 on depth_data, which the controller and planner consume.
-// The serial port is opened in canonical, non-blocking mode so each read()
-// returns one complete line; the timer drains the buffer and keeps only the
-// freshest sample.
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <fcntl.h>
 #include <unistd.h>
 #include <termios.h>
 #include <string>
+#include <sstream>
 #include <chrono>
-#include <cerrno>
-#include <cstring>
 
 class DepthSensorNode : public rclcpp::Node
 {
 public:
-    // Open and configure /dev/ttyUSB0 (115200 8N1, canonical) and start the
-    // 10 Hz read timer. If the port can't be opened the node stays up but idle.
-    DepthSensorNode() : Node("depth_sensor_node"), serial_fd_(-1)
+    DepthSensorNode() : Node("depth_sensor_node"), serial_fd_(-1), read_buffer_("")
     {
         // Publishes a plain float — your state estimator reads this directly
         publisher_ = this->create_publisher<std_msgs::msg::Float32>("depth_data", 10);
@@ -33,7 +24,7 @@ public:
         struct termios tty;
         tcgetattr(serial_fd_, &tty);
 
-        // Arduino sketch uses 115200 baud — must match
+        // Arduino sketch uses 9600 baud — must match
         cfsetispeed(&tty, B115200);
         cfsetospeed(&tty, B115200);
 
@@ -68,10 +59,10 @@ public:
             std::chrono::milliseconds(100),
             std::bind(&DepthSensorNode::read_and_publish, this));
 
-        RCLCPP_INFO(this->get_logger(), "Depth sensor node started on /dev/ttyUSB0 at 115200 baud");
+        RCLCPP_INFO(this->get_logger(), "Depth sensor node started on /dev/ttyUSB0 at  baud");
+        // RCLCPP_INFO(this->get_logger(), "HIT");
     }
 
-    // Close the serial port if it was opened.
     ~DepthSensorNode()
     {
         if (serial_fd_ >= 0) {
@@ -86,7 +77,9 @@ private:
         // Expected format from Arduino: "D <value>"
         const std::string prefix = "D ";
 
+        // RCLCPP_INFO(this->get_logger(), "HIT1");
         if (line.rfind(prefix, 0) != 0) {
+            // RCLCPP_INFO(this->get_logger(), "HIT2");
             return false;  // Line doesn't start with "D "
         }
 
@@ -94,64 +87,77 @@ private:
         // Strip trailing whitespace / \r
         while (!trimmed.empty() && (trimmed.back() == '\r' || trimmed.back() == '\n' || trimmed.back() == ' ')) {
             trimmed.pop_back();
+            // RCLCPP_INFO(this->get_logger(), "HIT3");
         }
 
         if (trimmed.size() <= prefix.size()) {
+            // RCLCPP_INFO(this->get_logger(), "HIT4");
             return false;
         }
 
         // Extract the numeric part
         std::string num_str = trimmed.substr(prefix.size());
+            // RCLCPP_INFO(this->get_logger(), "HIT5");
 
         try {
             depth_out = std::stod(num_str);
+            // RCLCPP_INFO(this->get_logger(), "HIT6");
             return true;
         } catch (...) {
+            // RCLCPP_INFO(this->get_logger(), "HIT7");
             return false;
         }
     }
 
-    // Timer callback: drain the serial buffer, parse the newest complete line,
-    // and publish it on depth_data. Drops stale lines so we never lag behind.
     void read_and_publish()
     {
-      if (serial_fd_ < 0) return;
 
-      char buffer[256];
-      std::string latest_line;
-      bool got_line = false;
+        //RCLCPP_INFO(this->get_logger(), "serial_fd_: %d", serial_fd_);
+        if (serial_fd_ < 0) return;
 
-      // Drain everything queued; keep only the freshest complete line.
-      while (true) {
-          int bytes_read = read(serial_fd_, buffer, sizeof(buffer) - 1);
-          if (bytes_read > 0) {
-              buffer[bytes_read] = '\0';
-              latest_line = buffer;     // one canonical line per read
-              got_line = true;
-              continue;                 // keep draining
-          }
-          if (bytes_read < 0) {
-              if (errno == EAGAIN || errno == EWOULDBLOCK) break;  // buffer empty
-              RCLCPP_ERROR(this->get_logger(), "Error reading from serial: %s", strerror(errno));
-              return;
-          }
-          break;  // bytes_read == 0, EOF
-      }
+        char buffer[256];
+        // In canonical mode, read() blocks until a full line (\n) is ready
+        // and returns exactly that line — no partial read issues
+	std::string latest_line;
+	bool got_line = false;
+	while(true) {
+		int bytes_read = read(serial_fd_, buffer, sizeof(buffer) - 1);
+		if(bytes_read > 0) {
+		buffer[bytes_read] = '\0';
+		latest_line = buffer;
+		got_line = true;
+		continue;
+		}
 
-      if (!got_line) return;
+		if (bytes_read < 0) {
+		    if(errno == EAGAIN || errno == EWOULDBLOCK)break; 
+			// No data available right now, not an error
+		    RCLCPP_DEBUG(this->get_logger(), "No data available to read");
+		    return;
+		}
+		break;
+	}
 
-      double depth = 0.0;
-      if (parse_depth_line(latest_line, depth)) {
-          auto message = std_msgs::msg::Float32();
-          message.data = depth;
-          publisher_->publish(message);
-          RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth);
-      }
+	if (!got_line) return;
+
+        double depth = 0.0;
+        if (parse_depth_line(latest_line, depth)) {
+//            RCLCPP_INFO(this->get_logger(), "HIT8");
+            auto message = std_msgs::msg::Float32();
+            message.data = depth;
+            publisher_->publish(message);
+            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth);
+        } else {
+            // Silently ignore non-depth lines (e.g. "Starting" on boot)
+            RCLCPP_DEBUG(this->get_logger(), "Ignored line: %s", latest_line.c_str());
+            // RCLCPP_INFO(this->get_logger(), "HIT9");
+        }
     }
 
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
     int serial_fd_;
+    std::string read_buffer_;
 };
 
 int main(int argc, char ** argv)
