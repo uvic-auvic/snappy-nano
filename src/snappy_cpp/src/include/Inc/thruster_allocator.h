@@ -2,6 +2,7 @@
 #define THRUSTER_ALLOCATOR_H
 
 #include <Eigen/Dense>
+#include <Eigen/src/Core/Matrix.h>
 
 /*
  * ThrusterAllocator class for allocating thruster forces based on a desired wrench (force and torque).
@@ -13,6 +14,8 @@ class ThrusterAllocator {
         Eigen::MatrixXd configuration_; // Configuration matrix mapping thruster forces to wrench
         Eigen::VectorXd min_thrust_; // Minimum thrust limits for each thruster
         Eigen::VectorXd max_thrust_; // Maximum thrust limits for each thruster
+
+
 
         /*
          * Calculates the thrusts for each thruster based on the desired wrench.
@@ -34,10 +37,11 @@ class ThrusterAllocator {
          * @param min_thrust The minimum thrust limits for each thruster, either a vector matching the number of thrusters or a scalar.
          * @param max_thrust The maximum thrust limits for each thruster, either a vector matching the number of thrusters or a scalar.
          */
-        explicit ThrusterAllocator(const Eigen::MatrixXd &configuration,
+        ThrusterAllocator();
+        ThrusterAllocator(const Eigen::MatrixXd &configuration,
                                    const Eigen::VectorXd &min_thrust = Eigen::VectorXd(),
                                    const Eigen::VectorXd &max_thrust = Eigen::VectorXd());
-        explicit ThrusterAllocator(const Eigen::MatrixXd &configuration,
+        ThrusterAllocator(const Eigen::MatrixXd &configuration,
                                    const float min_thrust,
                                    const float max_thrust);
 
@@ -47,6 +51,16 @@ class ThrusterAllocator {
          * @return The allocated thruster forces.
          */
         Eigen::VectorXd allocate(const Eigen::VectorXd &wrench) const;
+        Eigen::MatrixXd get_configuration() const;
+        Eigen::VectorXd get_min_thrust() const;
+        Eigen::VectorXd get_max_thrust() const;
+
+        void set_configuration(const Eigen::MatrixXd &configuration);
+        void set_min_thrust(const Eigen::VectorXd &min_thrust);
+        void set_max_thrust(const Eigen::VectorXd &max_thrust);
+        void set_min_thrust(const float min_thrust);
+        void set_max_thrust(const float max_thrust);
+
 };
 
 #endif

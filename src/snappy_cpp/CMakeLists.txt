@@ -30,6 +30,7 @@ find_package(builtin_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 # ThrusterCommand now lives in the shared snappy_interfaces package so the
 # Jetson publisher and the STM32 micro-ROS subscriber register the SAME type.
@@ -149,12 +150,14 @@ install(FILES
 add_executable(controller
   src/controller.cpp
   src/include/src/pid.cpp
+  src/thruster_allocator.cpp
   src/include/src/motorboard.cpp
 )
 ament_target_dependencies(controller
   rclcpp
   std_msgs
   geometry_msgs
+  Eigen3
   tf2
   tf2_geometry_msgs
   snappy_interfaces

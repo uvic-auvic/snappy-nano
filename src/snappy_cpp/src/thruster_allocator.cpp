@@ -1,4 +1,8 @@
-#include "thruster_allocator.h"
+#include "include/Inc/thruster_allocator.h"
+
+
+ThrusterAllocator::ThrusterAllocator()
+    : configuration_(Eigen::MatrixXd()), min_thrust_(Eigen::VectorXd()), max_thrust_(Eigen::VectorXd()) {}
 
 ThrusterAllocator::ThrusterAllocator(const Eigen::MatrixXd &configuration,
                                        const Eigen::VectorXd &min_thrust,
@@ -62,4 +66,36 @@ Eigen::VectorXd ThrusterAllocator::allocate(const Eigen::VectorXd &wrench) const
         thrusts /= max_saturation_ratio; // Scale down the thrusts to fit within the limits
     }
     return thrusts;
+}
+
+Eigen::MatrixXd ThrusterAllocator::get_configuration() const {
+    return configuration_;
+}
+
+Eigen::VectorXd ThrusterAllocator::get_min_thrust() const {
+    return min_thrust_;
+}
+
+Eigen::VectorXd ThrusterAllocator::get_max_thrust() const {
+    return max_thrust_;
+}
+
+void ThrusterAllocator::set_configuration(const Eigen::MatrixXd &configuration) {
+    configuration_ = configuration;
+}
+
+void ThrusterAllocator::set_min_thrust(const Eigen::VectorXd &min_thrust) {
+    min_thrust_ = min_thrust;
+}
+
+void ThrusterAllocator::set_max_thrust(const Eigen::VectorXd &max_thrust) {
+    max_thrust_ = max_thrust;
+}
+
+void ThrusterAllocator::set_min_thrust(const float min_thrust) {
+    min_thrust_ = Eigen::VectorXd::Constant(configuration_.rows(), min_thrust);
+}
+
+void ThrusterAllocator::set_max_thrust(const float max_thrust) {
+    max_thrust_ = Eigen::VectorXd::Constant(configuration_.rows(), max_thrust);
 }

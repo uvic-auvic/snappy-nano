@@ -20,10 +20,12 @@
 #include "snappy_interfaces/msg/thruster_command.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <Eigen/Dense>
 #include <queue>
 
 #include "include/Inc/pid.h"
 #include "include/Inc/motorboard.h"
+#include "include/Inc/thruster_allocator.h"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -43,6 +45,21 @@ class Controller : public rclcpp::Node {
             // count_ = 0;
             flag_ = 0;
             pid_z_.set_target(1);
+
+            // Configuration of motors on the AUV
+            // Rows: Fx, Fy, Fz, Tx, Ty, Tz
+            // Columns: Thrusters
+            configuration = Eigen::MatrixXd(6, 8);
+            configuration << 0, 0, 1, 0, 0, 0, 1, 0,
+                             -1, 0, 0, 0, -1, 0, 0, 0,
+                             0, 1, 0, 1, 0, 1, 0, 1,
+                             0.1302, 0.1654, 0, 0.1654, 0.1302, -0.1648, 0, -0.1648,
+                             0, 0.3125, -0.0159, -0.2878, 0, -0.2878, -0.0159, 0.3125,
+                             -0.3142, 0, -0.2739, 0, 0.3022, 0, 0.2734, 0;
+
+            // Allocate thrusters based on the configuration matrix
+            // Blue Robotics T200 thrusters can achieve ~5.0 kgf backwards and 5.0 kgf forwards
+            thruster_allocator = ThrusterAllocator(configuration, -4.0, 5.0);
 
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
@@ -114,46 +131,53 @@ class Controller : public rclcpp::Node {
 
         void timer_callback() {
             count_++;
-            // RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
 	    //Depth STUFF
             float depth_master = current_depth;
-            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth_master);
-            RCLCPP_INFO(this->get_logger(), "CURRENT Depth: %.4f m", current_depth);
-            // Update the Z-axis PID with current depth
-            float z_thrust = pid_z_.update(depth_master);
-
-            // Apply the thrust to the vertical motors
-            const int8_t thrust = clampThrust(z_thrust);
-            if (thrust > 0) {
-                motorboard_->down(thrust);
-                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
-            } else if (thrust < 0) {
-                motorboard_->up(thrust);
-                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
-            }
-
-
-
-	    // YAW stuff
             float roll_master = roll;
-            //pitch
             float pitch_master = pitch;
-            //yaw
             float yaw_master = yaw;
 
-            //yaw correction
-            RCLCPP_INFO(this->get_logger(), "Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll_master, pitch_master, yaw_master);
+            RCLCPP_INFO(this->get_logger(), "Position [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", 0.0, 0.0, depth_master, roll_master, pitch_master, yaw_master);
+            // Update the Z-axis PID with current depth
+            float z_thrust = pid_z_.update(depth_master);
             float yaw_thrust = pid_yaw_.update(yaw_master);
-            const int8_t yaw_thrust_clamped = clampThrust(yaw_thrust);
-            if (yaw_thrust_clamped > 0) {
-                motorboard_->yaw_ccw(yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CCW called: thrust=%d", -yaw_thrust_clamped);
-            } else if (yaw_thrust_clamped < 0) {
-                motorboard_->yaw_cw(-yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
+
+            RCLCPP_INFO(this->get_logger(), "Wrench   [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", 0.0, 0.0, z_thrust, 0.0, 0.0, yaw_thrust);
+
+            // Create a wrench vector representing the desired force and torque
+            Eigen::VectorXd wrench(6);
+            wrench << 0, 0, z_thrust / 5, 0, 0, yaw_thrust / 5;
+
+            // Allocate thrust to motors based on the wrench
+            Eigen::VectorXd allocation = thruster_allocator.allocate(wrench);
+
+            RCLCPP_INFO(this->get_logger(), "Allocation: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+                allocation[0], allocation[1], allocation[2], allocation[3],
+                allocation[4], allocation[5], allocation[6], allocation[7]);
+
+            int8_t allocation_array[8];
+
+            // Turn the allocation vector into an array of int8_t for the motorboard
+            double* allocation_data = allocation.data();
+            for (int i = 0; i < allocation.size(); i++) {
+                double force = allocation_data[i];
+                if (force > 0) {
+                    allocation_array[i] = static_cast<int8_t>(round(force) * 20); // Convert max = 5 (kgf) to max = 100 (speed)
+                } else {
+                    allocation_array[i] = static_cast<int8_t>(round(force) * 25); // Convert max = -4 (kgf) to max = -100 (speed)
+                }
             }
 
 
+
+            // Send the allocation array to the motorboard
+            motorboard_->sendCmd(255, allocation_array);
+
+
+
+            RCLCPP_INFO(this->get_logger(), "Speeds: %d, %d, %d, %d, %d, %d, %d, %d",
+                allocation_array[0], allocation_array[1], allocation_array[2], allocation_array[3],
+                allocation_array[4], allocation_array[5], allocation_array[6], allocation_array[7]);
         }
 
 
@@ -358,6 +382,9 @@ class Controller : public rclcpp::Node {
 	float yaw;
 	float roll;
 	float current_depth;
+
+	Eigen::MatrixXd configuration;
+	ThrusterAllocator thruster_allocator;
 };
 
 
