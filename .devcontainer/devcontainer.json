@@ -1,0 +1,44 @@
+{
+  "name": "snappy-nano (ROS 2 Humble)",
+  // Use the locally-built image (from the git-excluded ./Dockerfile, base
+  // snappy/humble-gz). To rebuild from the Dockerfile instead of reusing the
+  // image, replace the "image" line with:
+  //   "build": { "dockerfile": "../Dockerfile" }
+  "image": "snappy-nano:humble",
+  // Mount the repo at the SAME path the in-container compile_commands.json
+  // expects (/workspace/snappy-nano). This is what makes clangd's include
+  // paths resolve — they were generated against this path inside the container.
+  "workspaceFolder": "/workspace/snappy-nano",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/snappy-nano,type=bind",
+  // Container runs as root (HOME=/root), matching the Dockerfile.
+  "remoteUser": "root",
+  // ROS 2 DDS discovery + the existing setup use host networking.
+  "runArgs": [
+    "--network=host"
+  ],
+  // X11 passthrough for Gazebo/RViz GUIs (DISPLAY=:1 as in the running container).
+  "containerEnv": {
+    "DISPLAY": ":1"
+  },
+  "mounts": [
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
+  ],
+  "customizations": {
+    "vscode": {
+      // clangd in
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd"
+      ],
+      "settings": {
+        "C_Cpp.intelliSenseEngine": "disabled",
+        "clangd.arguments": [
+          "--compile-commands-dir=/workspace/snappy-nano/build/snappy_cpp",
+          "--background-index",
+          "--header-insertion=never"
+        ]
+      }
+    }
+  },
+  // Source ROS + the workspace overlay so integrated terminals are ready to go.
+  "postAttachCommand": "source /opt/ros/humble/setup.bash 2>/dev/null; [ -f install/setup.bash ] && source install/setup.bash; true"
+}

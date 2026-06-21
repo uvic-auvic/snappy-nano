@@ -489,10 +489,27 @@ private:
         file.read(engine_data.data(), static_cast<std::streamsize>(size));
         file.close();
 
+        // Ultralytics `yolo export format=engine` prepends a metadata blob:
+        //   [int32 little-endian length][metadata JSON]["...serialized TRT plan"]
+        // Skip it so deserialize sees the plan's magic tag. Plain trtexec engines
+        // have no header (length byte won't look like a JSON-prefixed blob).
+        size_t offset = 0;
+        if (size > 4) {
+            int32_t meta_len;
+            std::memcpy(&meta_len, engine_data.data(), sizeof(meta_len));
+            if (meta_len > 0 && static_cast<size_t>(meta_len) < size - 4 &&
+                engine_data[4] == '{') {
+                offset = 4 + static_cast<size_t>(meta_len);
+                RCLCPP_INFO(get_logger(),
+                            "Stripping %d-byte Ultralytics engine metadata header",
+                            meta_len);
+            }
+        }
+
         runtime_ = nvinfer1::createInferRuntime(trt_logger_);
         if (!runtime_) throw std::runtime_error("Failed to create TRT runtime");
 
-        engine_ = runtime_->deserializeCudaEngine(engine_data.data(), size);
+        engine_ = runtime_->deserializeCudaEngine(engine_data.data() + offset, size - offset);
         if (!engine_) throw std::runtime_error("Failed to deserialize TRT engine");
 
         context_ = engine_->createExecutionContext();

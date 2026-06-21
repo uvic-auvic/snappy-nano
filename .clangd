@@ -1,0 +1,7 @@
+CompileFlags:
+  Add:
+    - -xc++
+    - -std=c++17
+  # Makes clang-18 query gcc-13 for its libstdc++ include paths.
+  # Without this, clang doesn't auto-find /usr/include/c++/13 -> "'chrono' file not found"
+  Compiler: /usr/bin/g++
