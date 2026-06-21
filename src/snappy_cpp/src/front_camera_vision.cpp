@@ -24,8 +24,14 @@
 #include "snappy_cpp/msg/detection_array.hpp"
 #include "snappy_cpp/msg/object_detection.hpp"
 #include "snappy_cpp/msg/bounding_box2_d.hpp"
+#include "snappy_cpp/msg/polygon2_d.hpp"
+#include <geometry_msgs/msg/point32.hpp>
+#include "include/detection_classes.hpp"
+
 
 using namespace std::chrono_literals;
+
+std::vector<std::string> class_names_ = snappy_cpp::kFrontDetectionClasses;
 
 class FrontCameraVision : public rclcpp::Node
 {
@@ -37,8 +43,8 @@ public:
         inference_hz_ = this->declare_parameter<double>("inference_hz", 10.0);
         conf_threshold_ = this->declare_parameter<double>("conf_threshold", 0.5);
         engine_path_ = this->declare_parameter<std::string>(
-            "engine_path", "/path/to/yolov26n-seg.engine");
-        num_classes_ = this->declare_parameter<int>("num_classes", 80);
+            "engine_path", "/home/kraken/Desktop/ffc_rs_26.engine");
+        num_classes_ = this->declare_parameter<int>("num_classes", 8);
 
         RCLCPP_INFO(get_logger(), "Front Camera Vision (YOLOv26 Seg) initializing...");
         RCLCPP_INFO(get_logger(), "  inference_hz: %.1f", inference_hz_);
@@ -96,6 +102,7 @@ private:
         float x1, y1, x2, y2;
         float confidence;
         int class_id;
+        std::vector<cv::Point2f> mask_polygon;
     };
 
     struct Anchor {
@@ -238,14 +245,11 @@ private:
     // ---- YOLOv26 segmentation post-processing ------------------------------
 
     std::vector<Detection> parse_segmentation_output(
-        const float * output0, const float * /*output1*/,
+        const float * output0, const float * output1,
         int orig_w, int orig_h, float scale, int pad_x, int pad_y)
     {
-        std::vector<Detection> detections;
-
         // YOLOv26 seg output0 layout: [1, (4 + num_classes + 32), 8400]
-        // Note: output1 (proto masks) is available for full mask decoding.
-        // For bounding-box-only publishing we only need output0 here.
+        // output1 (proto masks) layout: [1, 32, mask_h_, mask_w_]
         const int num_anchors = 8400;
         const int num_mask_coeffs = 32;
         const int values_per_anchor = 4 + num_classes_ + num_mask_coeffs;
@@ -275,6 +279,11 @@ private:
             a.h = output0[offset + 3];
             a.confidence = max_conf;
             a.class_id = best_class;
+
+            a.mask_coeffs.resize(num_mask_coeffs);
+            for (int k = 0; k < num_mask_coeffs; ++k) {
+                a.mask_coeffs[k] = output0[offset + 4 + num_classes_ + k];
+            }
             anchors.push_back(a);
         }
 
@@ -298,7 +307,11 @@ private:
             }
         }
 
-        // Convert surviving anchors to original-image-space detections
+        // Convert surviving anchors to original-image-space detections,
+        // decoding the per-instance mask from the proto tensor along the way.
+        std::vector<Detection> detections;
+        constexpr float mask_threshold = 0.5f;
+
         for (size_t i = 0; i < anchors.size(); ++i) {
             if (suppressed[i]) continue;
             const auto & a = anchors[i];
@@ -310,10 +323,89 @@ private:
             det.y2 = std::clamp((a.y + a.h / 2.0f - pad_y) / scale, 0.0f, static_cast<float>(orig_h));
             det.confidence = a.confidence;
             det.class_id = a.class_id;
-            detections.push_back(det);
+            det.mask_polygon = decode_mask_polygon(a.mask_coeffs, output1, det,
+                                                    orig_w, orig_h, pad_x, pad_y,
+                                                    mask_threshold);
+
+            detections.push_back(std::move(det));
         }
 
         return detections;
+    }
+
+    // ---- Mask decoding: proto matmul -> sigmoid -> threshold -> contour ----
+
+    std::vector<cv::Point2f> decode_mask_polygon(
+        const std::vector<float> & mask_coeffs,
+        const float * proto,
+        const Detection & det,
+        int orig_w, int orig_h,
+        int pad_x, int pad_y,
+        float mask_threshold)
+    {
+        const int num_mask_coeffs = static_cast<int>(mask_coeffs.size());
+
+        // coeffs . proto -> low-res mask, then sigmoid
+        cv::Mat mask_low(mask_h_, mask_w_, CV_32F, cv::Scalar(0.0f));
+        for (int my = 0; my < mask_h_; ++my) {
+            for (int mx = 0; mx < mask_w_; ++mx) {
+                float sum = 0.0f;
+                for (int k = 0; k < num_mask_coeffs; ++k) {
+                    sum += mask_coeffs[k] * proto[k * mask_h_ * mask_w_ + my * mask_w_ + mx];
+                }
+                mask_low.at<float>(my, mx) = 1.0f / (1.0f + std::exp(-sum));
+            }
+        }
+
+        // Upscale proto mask to letterboxed input size
+        cv::Mat mask_input;
+        cv::resize(mask_low, mask_input, cv::Size(input_w_, input_h_), 0, 0, cv::INTER_LINEAR);
+
+        // Crop out the letterbox padding, leaving only the real-image region
+        cv::Rect crop_roi(pad_x, pad_y, input_w_ - 2 * pad_x, input_h_ - 2 * pad_y);
+        crop_roi &= cv::Rect(0, 0, mask_input.cols, mask_input.rows);
+        if (crop_roi.width <= 0 || crop_roi.height <= 0) {
+            return {};
+        }
+        cv::Mat mask_cropped = mask_input(crop_roi);
+
+        // Resize to original image dimensions
+        cv::Mat mask_full;
+        cv::resize(mask_cropped, mask_full, cv::Size(orig_w, orig_h), 0, 0, cv::INTER_LINEAR);
+
+        // Threshold to binary
+        cv::Mat mask_bin;
+        cv::threshold(mask_full, mask_bin, mask_threshold, 255, cv::THRESH_BINARY);
+        mask_bin.convertTo(mask_bin, CV_8U);
+
+        // Gate by the detection's own box (proto masks are class-agnostic;
+        // the box tells us which instance this mask belongs to)
+        cv::Rect box(static_cast<int>(det.x1), static_cast<int>(det.y1),
+                    static_cast<int>(det.x2 - det.x1), static_cast<int>(det.y2 - det.y1));
+        box &= cv::Rect(0, 0, orig_w, orig_h);
+
+        cv::Mat box_mask = cv::Mat::zeros(mask_bin.size(), CV_8U);
+        if (box.width > 0 && box.height > 0) {
+            mask_bin(box).copyTo(box_mask(box));
+        }
+
+        // Extract the largest external contour as the polygon
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(box_mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+        if (contours.empty()) {
+            return {};
+        }
+
+        auto largest = std::max_element(contours.begin(), contours.end(),
+            [](const auto & a, const auto & b) { return a.size() < b.size(); });
+
+        std::vector<cv::Point2f> polygon;
+        polygon.reserve(largest->size());
+        for (const auto & pt : *largest) {
+            polygon.emplace_back(static_cast<float>(pt.x), static_cast<float>(pt.y));
+        }
+        return polygon;
     }
 
     static float compute_iou(const Anchor & a, const Anchor & b)
@@ -341,19 +433,42 @@ private:
         for (const auto & det : detections) {
             snappy_cpp::msg::ObjectDetection obj;
             obj.confidence = det.confidence;
-            obj.class_id = det.class_id;
+            obj.object_class = class_name_for(det.class_id);
+            obj.distance_m = -1.0f;  // not computed in this node
+            obj.timestamp = timestamp;
 
             snappy_cpp::msg::BoundingBox2D bbox;
-            bbox.x_min = det.x1;
-            bbox.y_min = det.y1;
-            bbox.x_max = det.x2;
-            bbox.y_max = det.y2;
-            obj.bbox = bbox;
+            bbox.x = det.x1;
+            bbox.y = det.y1;
+            bbox.width = det.x2 - det.x1;
+            bbox.height = det.y2 - det.y1;
+            obj.bounding_box = bbox;
 
-            msg.detections.push_back(obj);
+            snappy_cpp::msg::Polygon2D poly;
+            poly.points.reserve(det.mask_polygon.size());
+            for (const auto & pt : det.mask_polygon) {
+                geometry_msgs::msg::Point32 p;
+                p.x = pt.x;
+                p.y = pt.y;
+                p.z = 0.0f;
+                poly.points.push_back(p);
+            }
+            obj.mask_polygons.push_back(std::move(poly));
+
+            msg.detections.push_back(std::move(obj));
         }
 
         detection_pub_->publish(msg);
+    }
+
+    // ---- Class label lookup -------------------------------------------------
+
+    std::string class_name_for(int class_id) const
+    {
+        if (class_id >= 0 && static_cast<size_t>(class_id) < class_names_.size()) {
+            return class_names_[class_id];
+        }
+        return "unknown";
     }
 
     // ---- TensorRT initialization -------------------------------------------
@@ -398,6 +513,8 @@ private:
         auto out1_dims = engine_->getTensorShape(output1_name_.c_str());
         output1_size_ = 1;
         for (int i = 0; i < out1_dims.nbDims; ++i) output1_size_ *= out1_dims.d[i];
+        mask_h_ = out1_dims.d[2];
+        mask_w_ = out1_dims.d[3];
 
         // Allocate device buffers
         cudaStreamCreate(&stream_);
@@ -461,6 +578,15 @@ private:
     int         num_classes_     = 80;
     std::string engine_path_;
     std::optional<rclcpp::Time> last_inference_time_;
+
+    int mask_h_ = 0, mask_w_ = 0;
+
+    // TODO: fill in with your own class labels, indexed by class_id.
+    // Must have num_classes_ entries (or class_name_for() will return "unknown"
+    // for any id past the end of this vector).
+    std::vector<std::string> class_names_ = {
+        // "class_0_name", "class_1_name", ...
+    };
 };
 
 int main(int argc, char * argv[])

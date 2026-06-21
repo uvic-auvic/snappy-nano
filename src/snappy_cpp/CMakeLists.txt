@@ -154,6 +154,25 @@ if(WITH_CUDA)
     ${OpenCV_LIBS}
     /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
   )
+
+  add_executable(displayFeed
+    src/displayFeed.cpp)
+  target_include_directories(displayFeed PRIVATE
+    src /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+  set_target_properties(displayFeed PROPERTIES
+    CUDA_STANDARD 17
+    CUDA_STANDARD_REQUIRED ON)
+  ament_target_dependencies(displayFeed rclcpp sensor_msgs cv_bridge message_filters OpenCV)
+  add_dependencies(displayFeed ${PROJECT_NAME})
+target_link_libraries(displayFeed
+    ${PROJECT_NAME}__rosidl_typesupport_cpp
+    ${PROJECT_NAME}__rosidl_typesupport_c
+    ${NVINFER}
+    ${NVONNXPARSER}
+    ${CUDA_LIBRARIES}
+    ${OpenCV_LIBS}
+    /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
+  )
 endif()
 
 install(FILES
@@ -202,6 +221,8 @@ if(WITH_CUDA)
   install(TARGETS front_camera_vision
     DESTINATION lib/${PROJECT_NAME})
   install(TARGETS bottom_camera_vision
+    DESTINATION lib/${PROJECT_NAME})
+  install(TARGETS displayFeed
     DESTINATION lib/${PROJECT_NAME})
 endif()
 
