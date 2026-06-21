@@ -56,7 +56,7 @@ public:
 
         // Subscribe to D405 color feed
         color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/d405/color/image_raw",
+            "/d405/color/image_rect_raw",
             rclcpp::SensorDataQoS(),
             std::bind(&BottomCameraVision::color_callback, this, std::placeholders::_1));
 

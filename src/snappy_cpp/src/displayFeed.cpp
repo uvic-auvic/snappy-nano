@@ -41,7 +41,7 @@ public:
                       std::placeholders::_1, std::placeholders::_2));
 
         // Bottom camera (D405)
-        bottom_image_sub_.subscribe(this, "/d405/color/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
+        bottom_image_sub_.subscribe(this, "/d405/color/image_rect_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
         bottom_detection_sub_.subscribe(this, "/d405/detections", rclcpp::QoS(10).get_rmw_qos_profile());
         bottom_sync_ = std::make_shared<Synchronizer>(SyncPolicy(10), bottom_image_sub_, bottom_detection_sub_);
         bottom_sync_->registerCallback(
