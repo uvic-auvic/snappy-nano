@@ -42,6 +42,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BoundingBox2D.msg"
   "msg/ObjectDetection.msg"
   "msg/DetectionArray.msg"
+  "msg/Polygon2D.msg"
   DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -112,19 +113,39 @@ if(WITH_CUDA)
 
   # Single shared multi-camera inference node (replaces front_cam + bottom_cam,
   # which were byte-for-byte duplicate per-camera TensorRT pipelines).
-  add_executable(camera_inference
-    src/camera_inference.cpp
+  add_executable(front_camera_vision
+    src/front_camera_vision.cpp
     src/preprocess_cuda.cu)
-  target_include_directories(camera_inference PRIVATE
+  target_include_directories(front_camera_vision PRIVATE
     src /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
-  set_target_properties(camera_inference PROPERTIES
+  set_target_properties(front_camera_vision PROPERTIES
     CUDA_STANDARD 17
     CUDA_STANDARD_REQUIRED ON)
-  ament_target_dependencies(camera_inference rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
-
+  ament_target_dependencies(front_camera_vision rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
   # Link to generated message library
-  add_dependencies(camera_inference ${PROJECT_NAME})
-  target_link_libraries(camera_inference
+  add_dependencies(front_camera_vision ${PROJECT_NAME})
+  target_link_libraries(front_camera_vision
+    ${PROJECT_NAME}__rosidl_typesupport_cpp
+    ${PROJECT_NAME}__rosidl_typesupport_c
+    ${NVINFER}
+    ${NVONNXPARSER}
+    ${CUDA_LIBRARIES}
+    ${OpenCV_LIBS}
+    /usr/local/cuda-12.6/targets/aarch64-linux/lib/libcudart.so
+  )
+
+  add_executable(bottom_camera_vision
+    src/bottom_camera_vision.cpp
+    src/preprocess_cuda.cu)
+  target_include_directories(bottom_camera_vision PRIVATE
+    src /usr/lib/aarch64-linux-gnu /usr/local/cuda/include)
+  set_target_properties(bottom_camera_vision PROPERTIES
+    CUDA_STANDARD 17
+    CUDA_STANDARD_REQUIRED ON)
+  ament_target_dependencies(bottom_camera_vision rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
+
+  add_dependencies(bottom_camera_vision ${PROJECT_NAME})
+  target_link_libraries(bottom_camera_vision
     ${PROJECT_NAME}__rosidl_typesupport_cpp
     ${PROJECT_NAME}__rosidl_typesupport_c
     ${NVINFER}
@@ -178,7 +199,9 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME})
 
 if(WITH_CUDA)
-  install(TARGETS camera_inference
+  install(TARGETS front_camera_vision
+    DESTINATION lib/${PROJECT_NAME})
+  install(TARGETS bottom_camera_vision
     DESTINATION lib/${PROJECT_NAME})
 endif()
 
