@@ -250,86 +250,54 @@ private:
         const float * output0, const float * output1,
         int orig_w, int orig_h, float scale, int pad_x, int pad_y)
     {
-        // YOLOv26 seg output0 layout: [1, (4 + num_classes + 32), 8400]
+        // YOLO26 is NMS-free / end-to-end: output0 layout is
+        //   [1, num_det, 4 + 1 + 1 + 32]  e.g. (1, 300, 38)
+        // per detection: [x1, y1, x2, y2, conf, class_id, m0..m31]
+        //   - boxes are xyxy in letterboxed INPUT pixel space (0..input_w/h)
+        //   - detections are already filtered + sorted by conf (no manual NMS)
         // output1 (proto masks) layout: [1, 32, mask_h_, mask_w_]
-        const int num_anchors = 8400;
-        const int num_mask_coeffs = 32;
-        const int values_per_anchor = 4 + num_classes_ + num_mask_coeffs;
-
-        std::vector<Anchor> anchors;
-        anchors.reserve(256);
-
-        for (int i = 0; i < num_anchors; ++i) {
-            const int offset = i * values_per_anchor;
-
-            float max_conf = 0.0f;
-            int best_class = 0;
-            for (int c = 0; c < num_classes_; ++c) {
-                float conf = output0[offset + 4 + c];
-                if (conf > max_conf) {
-                    max_conf = conf;
-                    best_class = c;
-                }
-            }
-
-            if (max_conf < static_cast<float>(conf_threshold_)) continue;
-
-            Anchor a;
-            a.x = output0[offset + 0];
-            a.y = output0[offset + 1];
-            a.w = output0[offset + 2];
-            a.h = output0[offset + 3];
-            a.confidence = max_conf;
-            a.class_id = best_class;
-
-            a.mask_coeffs.resize(num_mask_coeffs);
-            for (int k = 0; k < num_mask_coeffs; ++k) {
-                a.mask_coeffs[k] = output0[offset + 4 + num_classes_ + k];
-            }
-            anchors.push_back(a);
-        }
-
-        // Sort by confidence descending for NMS
-        std::sort(anchors.begin(), anchors.end(),
-                  [](const Anchor & a, const Anchor & b) {
-                      return a.confidence > b.confidence;
-                  });
-
-        // Simple greedy NMS
-        std::vector<bool> suppressed(anchors.size(), false);
-        constexpr float iou_threshold = 0.45f;
-
-        for (size_t i = 0; i < anchors.size(); ++i) {
-            if (suppressed[i]) continue;
-            for (size_t j = i + 1; j < anchors.size(); ++j) {
-                if (suppressed[j]) continue;
-                if (compute_iou(anchors[i], anchors[j]) > iou_threshold) {
-                    suppressed[j] = true;
-                }
-            }
-        }
-
-        // Convert surviving anchors to original-image-space detections,
-        // decoding the per-instance mask from the proto tensor along the way.
-        std::vector<Detection> detections;
+        const int num_det = num_detections_;          // out0_dims.d[1], e.g. 300
+        const int attrs   = det_attrs_;               // out0_dims.d[2], e.g. 38
+        const int num_mask_coeffs = attrs - 6;        // 38 - 6 = 32
         constexpr float mask_threshold = 0.5f;
 
-        for (size_t i = 0; i < anchors.size(); ++i) {
-            if (suppressed[i]) continue;
-            const auto & a = anchors[i];
+        std::vector<Detection> detections;
+
+        for (int i = 0; i < num_det; ++i) {
+            const int offset = i * attrs;
+            const float conf = output0[offset + 4];
+
+            // Sorted by confidence desc: once below threshold, the rest are too.
+            if (conf < static_cast<float>(conf_threshold_)) break;
+
+            const int class_id = static_cast<int>(std::lround(output0[offset + 5]));
 
             Detection det;
-            det.x1 = std::clamp((a.x - a.w / 2.0f - pad_x) / scale, 0.0f, static_cast<float>(orig_w));
-            det.y1 = std::clamp((a.y - a.h / 2.0f - pad_y) / scale, 0.0f, static_cast<float>(orig_h));
-            det.x2 = std::clamp((a.x + a.w / 2.0f - pad_x) / scale, 0.0f, static_cast<float>(orig_w));
-            det.y2 = std::clamp((a.y + a.h / 2.0f - pad_y) / scale, 0.0f, static_cast<float>(orig_h));
-            det.confidence = a.confidence;
-            det.class_id = a.class_id;
-            det.mask_polygon = decode_mask_polygon(a.mask_coeffs, output1, det,
+            det.x1 = std::clamp((output0[offset + 0] - pad_x) / scale, 0.0f, static_cast<float>(orig_w));
+            det.y1 = std::clamp((output0[offset + 1] - pad_y) / scale, 0.0f, static_cast<float>(orig_h));
+            det.x2 = std::clamp((output0[offset + 2] - pad_x) / scale, 0.0f, static_cast<float>(orig_w));
+            det.y2 = std::clamp((output0[offset + 3] - pad_y) / scale, 0.0f, static_cast<float>(orig_h));
+            det.confidence = conf;
+            det.class_id = class_id;
+
+            std::vector<float> coeffs(num_mask_coeffs);
+            for (int k = 0; k < num_mask_coeffs; ++k) {
+                coeffs[k] = output0[offset + 6 + k];
+            }
+            det.mask_polygon = decode_mask_polygon(coeffs, output1, det,
                                                     orig_w, orig_h, pad_x, pad_y,
                                                     mask_threshold);
 
             detections.push_back(std::move(det));
+        }
+
+        // Debug: dump the top detection's raw values so the box format can be
+        // verified (xyxy vs xywh) against ground truth.
+        if (num_det > 0) {
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 5000,
+                "raw det0: [%.1f %.1f %.1f %.1f] conf=%.3f cls=%.1f | kept=%zu",
+                output0[0], output0[1], output0[2], output0[3],
+                output0[4], output0[5], detections.size());
         }
 
         return detections;
@@ -528,6 +496,9 @@ private:
         auto out0_dims = engine_->getTensorShape(output0_name_.c_str());
         output0_size_ = 1;
         for (int i = 0; i < out0_dims.nbDims; ++i) output0_size_ *= out0_dims.d[i];
+        // YOLO26 NMS-free: out0 = [1, num_det, attrs] e.g. (1, 300, 38)
+        num_detections_ = out0_dims.d[1];
+        det_attrs_      = out0_dims.d[2];
 
         auto out1_dims = engine_->getTensorShape(output1_name_.c_str());
         output1_size_ = 1;
@@ -583,6 +554,7 @@ private:
     std::string input_name_, output0_name_, output1_name_;
     int    input_w_ = 640, input_h_ = 640;
     size_t output0_size_ = 0, output1_size_ = 0;
+    int    num_detections_ = 0, det_attrs_ = 0;
 
     // Threading
     std::deque<InferenceJob>   job_queue_;
@@ -600,12 +572,9 @@ private:
 
     int mask_h_ = 0, mask_w_ = 0;
 
-    // TODO: fill in with your own class labels, indexed by class_id.
-    // Must have num_classes_ entries (or class_name_for() will return "unknown"
-    // for any id past the end of this vector).
-    std::vector<std::string> class_names_ = {
-        // "class_0_name", "class_1_name", ...
-    };
+    // FFC (front camera) classes, indexed by class_id (see detection_classes.hpp).
+    // class_name_for() returns "unknown" for out-of-range ids.
+    std::vector<std::string> class_names_ = snappy_cpp::kFrontDetectionClasses;
 };
 
 int main(int argc, char * argv[])
