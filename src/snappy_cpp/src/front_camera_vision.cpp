@@ -17,6 +17,7 @@
 #include <cstring>
 #include <cstdint>
 #include <deque>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <mutex>
@@ -169,7 +170,10 @@ private:
 
             float inference_ms = 0.0f;
             auto detections = run_inference(job.image, inference_ms);
-            if(int8_t(job.timestamp.seconds()) % 5 == 0) {
+            // Save a frame for later review, at most once every 5 seconds.
+            const double frame_s = job.timestamp.seconds();
+            if (frame_s - last_save_s_ >= 5.0) {
+                last_save_s_ = frame_s;
                 save_image(job.image, job.timestamp);
             }
             publish_detections(detections, job.timestamp, inference_ms);
@@ -179,9 +183,16 @@ private:
     // take image and save to desktop
     void save_image(const cv::Mat &image, const rclcpp::Time &timestamp)
     {
-        std::string filename = "front_camera_" + std::to_string(timestamp.seconds()) + ".jpg";
-        //save to desktop
-        cv::imwrite("/home/Desktop/snappy_inference/d405" + filename, image);
+        // imwrite does NOT create directories and returns false (never throws)
+        // on a bad path -- so the dir must exist first, and we check the result.
+        static const std::string dir = "/home/kraken/Desktop/snappy_inference/d455";
+        std::error_code ec;
+        std::filesystem::create_directories(dir, ec);
+        const std::string path =
+            dir + "/front_camera_" + std::to_string(timestamp.seconds()) + ".jpg";
+        if (!cv::imwrite(path, image)) {
+            RCLCPP_WARN(get_logger(), "save_image: failed to write %s", path.c_str());
+        }
     }
 
     // ---- Core inference pipeline -------------------------------------------
@@ -582,6 +593,7 @@ private:
     int         num_classes_     = 80;
     std::string engine_path_;
     std::optional<rclcpp::Time> last_inference_time_;
+    double last_save_s_ = 0.0;
 
     int mask_h_ = 0, mask_w_ = 0;
 
