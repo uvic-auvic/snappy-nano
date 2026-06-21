@@ -43,7 +43,7 @@ public:
     : Node("front_camera_vision", options)
     {
         // Declare parameters
-        inference_hz_ = this->declare_parameter<double>("inference_hz", 10.0);
+        inference_hz_ = this->declare_parameter<double>("inference_hz", 0.0);
         conf_threshold_ = this->declare_parameter<double>("conf_threshold", 0.5);
         engine_path_ = this->declare_parameter<std::string>(
             "engine_path", "/home/kraken/Desktop/ffc_rs_26.engine");
@@ -169,8 +169,19 @@ private:
 
             float inference_ms = 0.0f;
             auto detections = run_inference(job.image, inference_ms);
+            if(int8_t(job.timestamp.seconds()) % 5 == 0) {
+                save_image(job.image, job.timestamp);
+            }
             publish_detections(detections, job.timestamp, inference_ms);
         }
+    }
+
+    // take image and save to desktop
+    void save_image(const cv::Mat &image, const rclcpp::Time &timestamp)
+    {
+        std::string filename = "front_camera_" + std::to_string(timestamp.seconds()) + ".jpg";
+        //save to desktop
+        cv::imwrite("/home/Desktop/snappy_inference/d405" + filename, image);
     }
 
     // ---- Core inference pipeline -------------------------------------------

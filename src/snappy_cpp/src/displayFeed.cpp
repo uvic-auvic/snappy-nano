@@ -56,7 +56,7 @@ public:
 
         // Bottom camera (D405).
         bottom_image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/d405/color/image_raw", rclcpp::SensorDataQoS(),
+            "/d405/color/image_rect_raw", rclcpp::SensorDataQoS(),
             [this](const sensor_msgs::msg::Image::ConstSharedPtr & msg) {
                 std::lock_guard<std::mutex> lock(bottom_mutex_);
                 bottom_image_ = msg;
