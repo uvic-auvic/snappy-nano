@@ -38,10 +38,10 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.5f, 0.0f, 0.1f),
             pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(45.0f, 0.5f, 1.2f),
+            pid_z_(1.0f, 0.5f, 1.2f),
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.1f, 0.0f, 0.5f)
+            pid_yaw_(0.02f, 0.0f, 0.5f)
          {
             // count_ = 0;
             flag_ = 0;
@@ -171,9 +171,9 @@ class Controller : public rclcpp::Node {
             for (int i = 0; i < allocation.size(); i++) {
                 double force = allocation_data[i];
                 if (force > 0) {
-                    allocation_array[i] = static_cast<int8_t>(round(force) * 20); // Convert max = 5 (kgf) to max = 100 (speed)
+                    allocation_array[i] = static_cast<int8_t>(round(force * 20)); // Convert max = 5 (kgf) to max = 100 (speed)
                 } else {
-                    allocation_array[i] = static_cast<int8_t>(round(force) * 25); // Convert max = -4 (kgf) to max = -100 (speed)
+                    allocation_array[i] = static_cast<int8_t>(round(force * 25)); // Convert max = -4 (kgf) to max = -100 (speed)
                 }
             }
 
