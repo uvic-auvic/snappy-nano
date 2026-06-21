@@ -14,6 +14,7 @@
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "snappy_cpp/msg/task.hpp"
 #include "snappy_cpp/msg/pose.hpp"
@@ -89,6 +90,10 @@ class Controller : public rclcpp::Node {
                 "/filter/euler", 10, std::bind(&Controller::imu_callback, this, _1));
             //currently state estimator does not publish state. maybe parse through IMU..
 
+            // Receive DVL pose
+            dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+                "/waterlinked_dvl_driver/odom", 10, std::bind(&Controller::dvl_callback, this, _1));
+
             // Publish every 100ms ??
             status_timer_ = this->create_wall_timer(
                 100ms, std::bind(&Controller::status_callback, this));
@@ -132,21 +137,25 @@ class Controller : public rclcpp::Node {
         void timer_callback() {
             count_++;
 	    //Depth STUFF
+			float x_master = x;
+			float y_master = y;
             float depth_master = current_depth;
             float roll_master = roll;
             float pitch_master = pitch;
             float yaw_master = yaw;
 
-            RCLCPP_INFO(this->get_logger(), "Position [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", 0.0, 0.0, depth_master, roll_master, pitch_master, yaw_master);
+            RCLCPP_INFO(this->get_logger(), "Position [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", x_master, y_master, depth_master, roll_master, pitch_master, yaw_master);
             // Update the Z-axis PID with current depth
+            float x_thrust = pid_x_.update(x_master);
+            float y_thrust = pid_y_.update(y_master);
             float z_thrust = pid_z_.update(depth_master);
             float yaw_thrust = pid_yaw_.update(yaw_master);
 
-            RCLCPP_INFO(this->get_logger(), "Wrench   [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", 0.0, 0.0, z_thrust, 0.0, 0.0, yaw_thrust);
+            RCLCPP_INFO(this->get_logger(), "Wrench   [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", x_thrust, y_thrust, z_thrust, 0.0, 0.0, yaw_thrust);
 
             // Create a wrench vector representing the desired force and torque
             Eigen::VectorXd wrench(6);
-            wrench << 0, 0, z_thrust / 5, 0, 0, yaw_thrust / 5;
+            wrench << x_thrust, y_thrust, z_thrust, 0, 0, yaw_thrust;
 
             // Allocate thrust to motors based on the wrench
             Eigen::VectorXd allocation = thruster_allocator.allocate(wrench);
@@ -259,6 +268,11 @@ class Controller : public rclcpp::Node {
     	    }
         }
 
+        void dvl_callback(const nav_msgs::msg::Odometry & msg) {
+            x = msg.pose.pose.position.x;
+            y = msg.pose.pose.position.y;
+        }
+
         // Compute difference between current and target
         std::pair<double, double> computeError() {
             if (!position_target_.has_value() || !orientation_target_.has_value()) { // if no target received:
@@ -353,6 +367,7 @@ class Controller : public rclcpp::Node {
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
     	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr imu_subscription_;
+        rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr dvl_subscription_;
     	rclcpp::TimerBase::SharedPtr status_timer_;
         rclcpp::TimerBase::SharedPtr trajectory_timer_;
 
@@ -381,6 +396,8 @@ class Controller : public rclcpp::Node {
 	float pitch;
 	float yaw;
 	float roll;
+	float x;
+	float y;
 	float current_depth;
 
 	Eigen::MatrixXd configuration;

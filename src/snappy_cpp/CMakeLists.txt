@@ -23,6 +23,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ament_index_cpp REQUIRED)
@@ -43,7 +44,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BoundingBox2D.msg"
   "msg/ObjectDetection.msg"
   "msg/DetectionArray.msg"
-  DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
+  DEPENDENCIES std_msgs nav_msgs geometry_msgs builtin_interfaces
 )
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
@@ -156,6 +157,7 @@ add_executable(controller
 ament_target_dependencies(controller
   rclcpp
   std_msgs
+  nav_msgs
   geometry_msgs
   Eigen3
   tf2
