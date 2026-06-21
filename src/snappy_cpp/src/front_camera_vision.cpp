@@ -8,6 +8,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/dnn.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -166,14 +167,15 @@ private:
 
             if (job.image.empty()) continue;
 
-            auto detections = run_inference(job.image);
-            publish_detections(detections, job.timestamp);
+            float inference_ms = 0.0f;
+            auto detections = run_inference(job.image, inference_ms);
+            publish_detections(detections, job.timestamp, inference_ms);
         }
     }
 
     // ---- Core inference pipeline -------------------------------------------
 
-    std::vector<Detection> run_inference(const cv::Mat & image)
+    std::vector<Detection> run_inference(const cv::Mat & image, float & inference_ms)
     {
         auto t0 = std::chrono::steady_clock::now();
 
@@ -186,22 +188,16 @@ private:
         int pad_x, pad_y;
         letterbox(image, resized, scale, pad_x, pad_y);
 
-        // BGR -> RGB, normalize to [0,1], HWC -> CHW
-        cv::cvtColor(resized, resized, cv::COLOR_BGR2RGB);
-        resized.convertTo(resized, CV_32F, 1.0 / 255.0);
+        // BGR -> RGB, scale to [0,1], HWC -> CHW (NCHW blob) in one vectorized
+        // call. `resized` is already letterboxed to input size, so the Size arg
+        // is a no-op resize; swapRB handles BGR->RGB. `blob` must stay alive
+        // until the stream sync below (cudaMemcpyAsync only queues the copy).
+        cv::Mat blob = cv::dnn::blobFromImage(
+            resized, 1.0 / 255.0, cv::Size(input_w_, input_h_),
+            cv::Scalar(), /*swapRB=*/true, /*crop=*/false);
 
-        std::vector<float> input_data(3 * input_h_ * input_w_);
-        for (int c = 0; c < 3; ++c) {
-            for (int h = 0; h < input_h_; ++h) {
-                for (int w = 0; w < input_w_; ++w) {
-                    input_data[c * input_h_ * input_w_ + h * input_w_ + w] =
-                        resized.at<cv::Vec3f>(h, w)[c];
-                }
-            }
-        }
-
-        cudaMemcpyAsync(device_input_, input_data.data(),
-                        input_data.size() * sizeof(float),
+        cudaMemcpyAsync(device_input_, blob.ptr<float>(),
+                        blob.total() * sizeof(float),
                         cudaMemcpyHostToDevice, stream_);
 
         context_->enqueueV3(stream_);
@@ -219,10 +215,10 @@ private:
             host_output0_, host_output1_, orig_w, orig_h, scale, pad_x, pad_y);
 
         auto t1 = std::chrono::steady_clock::now();
-        float ms = std::chrono::duration<float, std::milli>(t1 - t0).count();
+        inference_ms = std::chrono::duration<float, std::milli>(t1 - t0).count();
         RCLCPP_INFO_THROTTLE(get_logger(), *this->get_clock(), 1000,
                              "Inference: %.2f ms (%.1f FPS), %zu detections",
-                             ms, 1000.0f / ms, detections.size());
+                             inference_ms, 1000.0f / inference_ms, detections.size());
 
         return detections;
     }
@@ -315,17 +311,21 @@ private:
     {
         const int num_mask_coeffs = static_cast<int>(mask_coeffs.size());
 
-        // coeffs . proto -> low-res mask, then sigmoid
-        cv::Mat mask_low(mask_h_, mask_w_, CV_32F, cv::Scalar(0.0f));
-        for (int my = 0; my < mask_h_; ++my) {
-            for (int mx = 0; mx < mask_w_; ++mx) {
-                float sum = 0.0f;
-                for (int k = 0; k < num_mask_coeffs; ++k) {
-                    sum += mask_coeffs[k] * proto[k * mask_h_ * mask_w_ + my * mask_w_ + mx];
-                }
-                mask_low.at<float>(my, mx) = 1.0f / (1.0f + std::exp(-sum));
-            }
-        }
+        // coeffs . proto -> low-res mask, then sigmoid.
+        // proto is [num_mask_coeffs, mask_h_*mask_w_]; coeffs is [1, num_mask_coeffs].
+        // A single GEMM (BLAS) replaces the per-pixel triple loop -- the dominant
+        // CPU cost per detection.
+        const cv::Mat proto_mat(num_mask_coeffs, mask_h_ * mask_w_, CV_32F,
+                                const_cast<float *>(proto));
+        const cv::Mat coeffs_mat(1, num_mask_coeffs, CV_32F,
+                                 const_cast<float *>(mask_coeffs.data()));
+        cv::Mat mask_low = coeffs_mat * proto_mat;        // [1, mask_h_*mask_w_]
+        mask_low = mask_low.reshape(1, mask_h_);          // [mask_h_, mask_w_]
+
+        // Sigmoid in place: 1 / (1 + exp(-x))
+        cv::exp(-mask_low, mask_low);
+        cv::add(mask_low, 1.0, mask_low);
+        cv::divide(1.0, mask_low, mask_low);
 
         // Upscale proto mask to letterboxed input size
         cv::Mat mask_input;
@@ -393,11 +393,13 @@ private:
     // ---- Publishing --------------------------------------------------------
 
     void publish_detections(const std::vector<Detection> & detections,
-                            const rclcpp::Time & timestamp)
+                            const rclcpp::Time & timestamp,
+                            float inference_ms)
     {
         auto msg = snappy_cpp::msg::DetectionArray();
         msg.header.stamp = timestamp;
         msg.header.frame_id = "d455_color_optical_frame";
+        msg.inference_time_ms = static_cast<uint32_t>(std::lround(inference_ms));
         msg.detections.reserve(detections.size());
 
         for (const auto & det : detections) {
