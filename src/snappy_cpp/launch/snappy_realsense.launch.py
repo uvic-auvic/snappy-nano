@@ -122,19 +122,6 @@ def generate_launch_description():
         arguments=[],
     )
 
-    # Delay starting the C++ nodes to let camera initialize (3 seconds)
-    computer_vision_node = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="computer_vision",
-                name="computer_vision",
-                output="screen",
-            )
-        ],
-    )
-
     controller_node = TimerAction(
         period=3.0,
         actions=[

@@ -69,10 +69,6 @@ ament_target_dependencies(serial_lib rclcpp std_msgs)
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
 
-add_executable(computer_vision_cpu src/computer_vision_cpu.cpp)
-ament_target_dependencies(computer_vision_cpu rclcpp std_msgs sensor_msgs geometry_msgs cv_bridge ament_index_cpp)
-target_link_libraries(computer_vision_cpu ${ONNXRUNTIME_LIB} ${OpenCV_LIBS})
-
 add_executable(image_capture src/image_capture.cpp)
 ament_target_dependencies(image_capture rclcpp sensor_msgs cv_bridge)
 target_link_libraries(image_capture ${OpenCV_LIBS})
@@ -174,7 +170,6 @@ target_link_libraries(planner "${cpp_typesupport_target}")
 # Install all executables
 install(TARGETS
   pressureSensor
-  computer_vision_cpu
   image_capture
   controller
   state_estimator
