@@ -24,6 +24,21 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+
+    dvl = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("waterlinked_dvl_driver"),
+                        "launch",
+                        "dvl.launch.py",
+                    ]
+                )
+            ]
+        ),
+    )
+
     serial_dev_arg = DeclareLaunchArgument(
         "serial_dev",
         default_value="/dev/ttyUSB1",
@@ -207,6 +222,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            dvl,
             serial_dev_arg,
             micro_ros_agent,
             serial_no_d455_arg,
