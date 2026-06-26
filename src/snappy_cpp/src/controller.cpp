@@ -44,21 +44,20 @@ class Controller : public rclcpp::Node {
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.15f, 0.0f, 5.0f)
          {
-            // count_ = 0;
-            flag_ = 0;
+            timer_first_ = 0;
+            dvl_first_ = 0;
             state_ = 0;
-            pid_z_.set_target(1);
 
             // Configuration of motors on the AUV
             // Rows: Fx, Fy, Fz, Tx, Ty, Tz
             // Columns: Thrusters
             configuration = Eigen::MatrixXd(6, 8);
             configuration << 0, 0, 1, 0, 0, 0, 1, 0,
-                             0, 0, 0, 0, 1, 0, 0, 0,
+                             -1, 0, 0, 0, 1, 0, 0, 0,
                              0, 1, 0, 1, 0, 1, 0, 1,
-                             0, 0.1654, 0, 0.1654, -0.1302, -0.1648, 0, -0.1648,
+                             0.1302, 0.1654, 0, 0.1654, -0.1302, -0.1648, 0, -0.1648,
                              0, 0.3125, -0.0159, -0.2878, 0, -0.2878, -0.0159, 0.3125,
-                             0, 0, -0.2739, 0, -0.3022, 0, 0.2734, 0;
+                             -0.3142, 0, -0.2739, 0, -0.3022, 0, 0.2734, 0;
 
             // Allocate thrusters based on the configuration matrix
             // Blue Robotics T200 thrusters can achieve ~5.0 kgf backwards and 5.0 kgf forwards
@@ -140,10 +139,6 @@ class Controller : public rclcpp::Node {
         }
 
         void timer_callback() {
-            count_++;
-            if(count_ < 6000 ) {
-                return;
-            };
 	    //Depth STUFF
 			float x_master = x;
 			float y_master = y;
@@ -152,10 +147,14 @@ class Controller : public rclcpp::Node {
             float pitch_master = pitch;
             float yaw_master = yaw;
 
-      		pid_yaw_.set_target(yaw);
-      		pid_y_.set_target(y);
-      		pid_x_.set_target(x);
-
+            // Set target values to be first read values
+            if (timer_first_ == 1) {
+                pid_yaw_.set_target(yaw_master);
+                pid_y_.set_target(y_master);
+                pid_x_.set_target(x_master);
+                pid_z_.set_target(depth_master);
+                timer_first_ = 0;
+            }
 
             if(depth_master > 0.8 && state_ == 0) {
                 state_ = 1;
@@ -195,7 +194,7 @@ class Controller : public rclcpp::Node {
             wrench << x_thrust, y_thrust, z_thrust, 0, 0, yaw_thrust;
 
             // Allocate thrust to motors based on the wrench
-            Eigen::VectorXd allocation = thruster_allocator.allocate(wrench);
+            Eigen::VectorXd allocation = thruster_allocator.allocate(wrench.cwiseMax(10).cwiseMin(8));
 
             RCLCPP_INFO(this->get_logger(), "Allocation: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
                 allocation[0], allocation[1], allocation[2], allocation[3],
@@ -352,8 +351,8 @@ class Controller : public rclcpp::Node {
           Eigen::Vector3d euler = R.eulerAngles(2,1,0);
 
             yaw = euler[0];
-       	    if (flag_ == 0) {
-          		flag_ = 1;
+       	    if (dvl_first_ == 0) {
+          		dvl_first_ = 1;
           		// first reference of yaw
           		pid_yaw_.set_target(yaw);
           		pid_y_.set_target(y);
@@ -479,9 +478,9 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 
-        int flag_;
+        int dvl_first_;
+        int timer_first_;
         int state_;
-        int count_;
 	float pitch;
 	float yaw;
 	float roll;
