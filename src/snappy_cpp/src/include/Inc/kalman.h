@@ -1,5 +1,5 @@
 // Kalman Filter header file
-// Fuses two IMUs and depth sensor to estimate position, velocity, and orientation
+// Fuses two IMUs, a depth sensor,and a DVL to estimate position, velocity, and orientation
 
 #ifndef KALMANFILTER_H
 #define KALMANFILTER_H
@@ -16,28 +16,35 @@ public:
     
     KalmanFilter();
 
-    // - x0: Initial state [pos(3), vel(3), quat(4), gyro_bias(3), accel_bias(3)] = 16x1
-    // - P0: Initial covariance matrix 16x16 
-    // - Q: Process noise covariance 16x16 Smaller the Q = more trust in imu
-    // - R_imu2: IMU2 measurement noise covariance (quaternion)
+    // - x0: Initial state [pos(3), vel(3), quat(4), accel_bias(3)] = 13x1
+    // - P0: Initial error-state covariance 12x12
+    // - Q: Process noise covariance 6x6 [accel_noise(0:3), accel_bias_walk(3:6)]
+    // - R_imu1: IMU1 measurement noise covariance (accel gravity vector, low trust)
     // - R_depth: Depth sensor measurement noise covariance
-    // - q_imu1_to_body: rotation from IMU1 (camera) frame to the filter body frame (IMU2/AHRS frame).
+    // - q_imu1_to_body: rotation from IMU1 frame to the filter body frame
+    // - q_imu2_to_body: rotation from IMU2 frame to the filter body frame
     KalmanFilter(VectorXd x0Input, MatrixXd P0Input, MatrixXd QInput,
-                 MatrixXd R_imu2Input, MatrixXd R_depthInput,
-                 Quaterniond q_imu1_to_body = Quaterniond::Identity());
+                 MatrixXd R_imu1Input, MatrixXd R_depthInput,
+                 Quaterniond q_imu1_to_body = Quaterniond::Identity(),
+                 Quaterniond q_imu2_to_body = Quaterniond::Identity());
 
 
-    void predict(Eigen::VectorXd& U, double dt);
+    // Predict step: propagate pos/vel from IMU2 accel, update orientation from IMU2 quat.
+    void predict(const Eigen::Vector3d& accel, const Eigen::Quaterniond& quat_imu2, double dt);
 
-
-    void updateIMU2(const Quaterniond& quat_measured);
+    // Update step: low-trust correction from IMU1 (accel + gyro).
+    // Orientation: gyro rate increment + accel gravity-vector tilt.
+    // Velocity: accel-derived increment (feeds position via the next predict()).
+    void updateIMU1(const Vector3d& accel, const Vector3d& gyro, double dt);
 
     // Update step: correct state estimate using depth sensor
     void updateDepth(double depth_measured);
 
-    // Update step: correct velocity estimate (e.g., zero-velocity update if we know we're stationary, or if we have something to measure velo)
-    // Not currently used
-    void updateVelocity(const Vector3d& v_measured, const Matrix3d& R_vel);
+    // Update step: DVL velocity + position update.
+    // v_measured: DVL body-frame velocity. p_measured: world-frame position.
+    // R_vel / R_pos: 3x3 noise covariances for velocity and position respectively.
+    void updateDVL(const Vector3d& v_measured, const Vector3d& p_measured,
+                   const Matrix3d& R_vel, const Matrix3d& R_pos);
 
     // For testing using csv files
     static MatrixXd openData(const std::string& fileToOpen);
@@ -54,11 +61,20 @@ public:
     MatrixXd getCovariance() const { return P; }
 
     // Setters for noise covariances and initial conditions
-    void setIMU2MeasurementNoise(const MatrixXd& R_imu2Input);
+    void setIMU1MeasurementNoise(const MatrixXd& R_imu1Input);
     void setDepthMeasurementNoise(const MatrixXd& R_depthInput);
     void setProcessNoise(const MatrixXd& QInput);
     void setInitialCovariance(const MatrixXd& P0Input);
     void setIMU1ToBodyRotation(const Quaterniond& q_imu1_to_body);
+    void setIMU2ToBodyRotation(const Quaterniond& q_imu2_to_body);
+
+    // Orientation trust knobs:
+    //  - IMU1 gyro update noise (low trust, large => less IMU1 influence)
+    //  - IMU2 quaternion update noise (high trust, small => IMU2 dominates)
+    //  - orientation process noise (rad²/s) re-grown each predict()
+    void setIMU1GyroNoise(const Matrix3d& R)        { R_imu1_gyro_ = R; }
+    void setIMU2OrientationNoise(const Matrix3d& R) { R_imu2_orient_ = R; }
+    void setOrientationProcessVar(double v)         { orient_process_var_ = v; }
 
 
 
@@ -76,25 +92,33 @@ private:
     MatrixXd Q;
 
     // Measurement noise covariances
-
-    MatrixXd R_imu2;  
+    MatrixXd R_imu1_;      // low trust orientation (3x3, gravity vector)
+    MatrixXd R_imu1_vel_;  // low trust velocity (3x3, accel-derived)
     MatrixXd R_depth;
-    //MatrixXd R_vel;
 
-    // Rotation from IMU1 (camera) body frame to the filter body frame (AHRS/IMU2 frame).
-    // Defaults to identity; set by initializeFromStaticData().
+    // Low-trust IMU1 gyro orientation update (rad²). Larger => less IMU1 influence.
+    Matrix3d R_imu1_gyro_ = Matrix3d::Identity() * 1e-2;
+
+    // High-trust IMU2 quaternion orientation update (rad²) used in predict().
+    // Small => IMU2 dominates attitude (gain near 1).
+    Matrix3d R_imu2_orient_ = Matrix3d::Identity() * 1e-4;
+
+    // Rotation from IMU1 frame to filter body frame (used in updateIMU1)
     Quaterniond q_imu1_to_body_ = Quaterniond::Identity();
 
-    // IMU2 orientation reference used to define a local world frame at startup:
-    // +x forward, +y right, +z down relative to the sub at t0.
-    Quaterniond q_imu2_ref_ = Quaterniond::Identity();
-    bool imu2_ref_initialized_ = false;
+    // Rotation from IMU2 frame to filter body frame (used in predict)
+    Quaterniond q_imu2_to_body_ = Quaterniond::Identity();
+
+    // Orientation process noise (rad²/s) added to P(6:9,6:9) each predict(). Lets the
+    // orientation covariance re-grow between updates so the IMU2 fusion and the
+    // low-trust IMU1 corrections keep a non-zero Kalman gain.
+    double orient_process_var_ = 1e-2;
 
     // Gravity vector 
     const Vector3d gravity = Vector3d(0, 0, 9.81);
 
-    // Computes error-state transition Jacobian F 
-    MatrixXd computeF(double dt, const VectorXd& U) const;
+    // Computes error-state transition Jacobian F
+    MatrixXd computeF(double dt, const Vector3d& accel) const;
 
     // Computes process noise mapping G (15x12)
     MatrixXd computeG() const;
@@ -110,6 +134,10 @@ private:
 
     // Generic ESKF measurement update with residual and error-state Jacobian H
     void updateErrorState(const VectorXd& residual, const MatrixXd& H, const MatrixXd& R);
+
+    // Orientation measurement update: pulls the state quaternion toward q_meas
+    // (a measured body-in-world attitude) with measurement noise R.
+    void updateOrientation(const Quaterniond& q_meas, const Matrix3d& R);
 
 };
 

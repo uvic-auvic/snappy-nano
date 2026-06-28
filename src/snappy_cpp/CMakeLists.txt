@@ -11,6 +11,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include/Inc)
 
 install(DIRECTORY config/
 	DESTINATION share/${PROJECT_NAME}/config
@@ -59,8 +61,9 @@ ament_target_dependencies(serial_lib rclcpp std_msgs)
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
 
-add_executable(state_estimator src/state_estimator.cpp)
+add_executable(state_estimator src/state_estimator.cpp src/include/src/kalman.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
+target_link_libraries(state_estimator Eigen3::Eigen)
 
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
