@@ -9,6 +9,7 @@
 #include "snappy_cpp/msg/pose.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include "std_msgs/msg/string.hpp"
 
 #include "kalman.h"
 
@@ -18,12 +19,15 @@ using namespace std::chrono_literals;
 class StateEstimator : public rclcpp::Node
 {
 public:
-
+    //Output files
     std::fstream imu1_file;
     std::fstream imu2_file;
+    std::fstream depth_file;
+    //std::fstream dvl_file;
     std::fstream kalman_file;
-    // std::fstream depth_file;
-    double last_time_imu1_sec_ = 0.0; // for dt
+
+    //change in time between imu messages
+    double last_time_imu1_sec_ = 0.0; 
     double last_time_imu2_sec_ = 0.0;
     KalmanFilter kf;
 
@@ -37,6 +41,8 @@ public:
         
         imu1_file.open("imu1.csv", std::fstream::app);
         imu2_file.open("imu2.csv", std::fstream::app);
+        depth_file.open("depth.csv", std::fstream::app);
+        // dvl_file.open("dvl.csv", std::fstream::app);
         kalman_file.open("kalman.csv", std::fstream::app); // output of kalman
         // Create QoS profile matching RealSense camera publisher
         // RealSense uses: Best Effort reliability + Volatile durability
@@ -55,57 +61,50 @@ public:
             "/imu", //"/imu/data"
             qos,
             std::bind(&StateEstimator::imu2_callback, this, std::placeholders::_1));
-        /*depth_sub_ = this->create_subscription<std_msgs::msg::String>(
+        depth_sub_ = this->create_subscription<std_msgs::msg::String>(
             "pressure_data",
             10,
-            std::bind(&StateEstimator::depth_callback, this, std::placeholders::_1));   */
+            std::bind(&StateEstimator::depth_callback, this, std::placeholders::_1));
 
-        // Set bias initial conditions from stationary data (calibration file)
-        Vector3d accel_bias_init, gyro_bias_init;
-        /*
-        # accel_bias_x,accel_bias_y,accel_bias_z,gyro_bias_x,gyro_bias_y,gyro_bias_z
-        -0.0196133,-0.284393,0.17987,-0.0021293,0,-0.00106465        */
-        accel_bias_init << -0.0196133, -0.284393, 0.17987;
-        gyro_bias_init << -0.0021293, 0, -0.00106465;
+        dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+                "/waterlinked_dvl_driver/odom", 10, std::bind(&StateEstimator::dvl_callback, this, _1));
 
-        VectorXd x0 = VectorXd::Zero(16);
+
+
+
+        // need  to update for imu2, this is from imu1
+        accel_bias_init_ << -0.0196133, -0.284393, 0.17987;
+
+        // Default state before frame initialization fires (filter not yet active)
+        VectorXd x0 = VectorXd::Zero(13);
         x0(6) = 1.0;  // identity quaternion [w, x, y, z]
-        x0.segment<3>(10) = gyro_bias_init;
-        x0.segment<3>(13) = accel_bias_init;
+        x0.segment<3>(10) = accel_bias_init_;
 
-        // TODO: add uncertainty vaules, all set to 0 or 1 right now, need to tune based on sensor specs and expected noise levels
-        MatrixXd P_init = MatrixXd::Identity(15, 15);
-        P_init.block<3,3>(0,0)   *= 0.05;  // position uncertainty
-        P_init.block<3,3>(3,3)   *= 0.1;   // velocity uncertainty
-        P_init.block<3,3>(6,6)   *= 0.01;  // orientation error uncertainty
-        P_init.block<3,3>(9,9)   *= 0.01;  // gyro bias uncertainty
-        P_init.block<3,3>(12,12) *= 0.01;  // accel bias uncertainty
+        // Error-state covariance: [δp(3), δv(3), δθ(3), δb_a(3)] = 12 dims
+        MatrixXd P_init = MatrixXd::Identity(12, 12);
+        P_init.block<3,3>(0,0) *= 0.05;  // position uncertainty
+        P_init.block<3,3>(3,3) *= 0.1;   // velocity uncertainty
+        P_init.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty
+        P_init.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty
 
-
-        MatrixXd Q_init = MatrixXd::Identity(12, 12);
-        Q_init.block<3,3>(0,0) *= 0.1;    // accel noise
-        Q_init.block<3,3>(3,3) *= 0.1;    // gyro noise
-        Q_init.block<3,3>(6,6) *= 0.01;   // gyro bias random walk
-        Q_init.block<3,3>(9,9) *= 0.01;   // accel bias random walk
+        // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
+        MatrixXd Q_init = MatrixXd::Zero(6, 6);
+        Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.1;    // accel noise → velocity growth
+        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-6;   // accel bias random walk
         kf.setProcessNoise(Q_init);
        
         // To get better R_ vaules, should take stationary data and compute standard deviation
 
-        MatrixXd R_imu2_init = MatrixXd::Identity(3, 3) * 0.01;  // IMU2 orientation noise
-        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.05;  // depth sensor noise
-        //MatrixXd R_vel_init = MatrixXd::Identity(3, 3) * 0.1; // velocity measurement noise
-        kf.setIMU2MeasurementNoise(R_imu2_init);
+        MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
+        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.05; // depth sensor noise
+        kf.setIMU1MeasurementNoise(R_imu1_init);
         kf.setDepthMeasurementNoise(R_depth_init);
 
-        // IMU1(camera)->body(IMU2) frame calibration from scripts/calibrate_imu.py
-        // File: src/imu1_to_body_calibration.csv
-        const Quaterniond q_imu1_to_body(
-            0.484858263,   // w
-           -0.507383770,   // x
-            0.521311010,   // y
-           -0.485498719    // z
-        );
-        kf.setIMU1ToBodyRotation(q_imu1_to_body);
+        // IMU2 is mounted upside-down (180° rotation around Y axis).
+        // 180° around Y: x→-x, y→y, z→-z  ⟹  q = (w=0, x=0, y=1, z=0)
+        // Applied to both accel and the orientation quaternion in predict().
+        q_imu2_to_body_node_ = Quaterniond(0, 0, 1, 0);  // w, x, y, z; 180° around Y
+        kf.setIMU2ToBodyRotation(q_imu2_to_body_node_);
 
         kf.reset(x0, P_init);
 
@@ -125,6 +124,12 @@ public:
         */
         publisher_ = this->create_publisher<snappy_cpp::msg::Pose>(
             "state_estimator/state", 10
+        );
+        orientation_publisher_ = this->create_publisher<std_msgs::msg::String>(
+            "state_estimator/orientation", 10
+        );
+        depth_publisher_ = this->create_publisher<std_msgs::msg::String>(
+            "state_estimator/depth", 10
         );
 
         RCLCPP_INFO(this->get_logger(), "State Estimator subscribed to:");
@@ -156,12 +161,11 @@ private:
 
         const double dt = now_sec - last_time_imu1_sec_;
         last_time_imu1_sec_ = now_sec;
-        if(dt > 0.001) // Ensure dt is reasonable (not negative or huge)
+        if(dt > 0.001 && frame_initialized_)
         {
-            VectorXd U(6);
-            U << msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z,
-                 msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z;
-            kf.predict(U, dt);
+            Vector3d accel(msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
+            Vector3d gyro(msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
+            kf.updateIMU1(accel, gyro, dt);
         }
 
 
@@ -176,6 +180,12 @@ private:
                 kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
                 kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w());
         }
+        auto orient_msg = std_msgs::msg::String();
+        orient_msg.data = std::to_string(kf.getOrientation().w()) + "," +
+                          std::to_string(kf.getOrientation().x()) + "," +
+                          std::to_string(kf.getOrientation().y()) + "," +
+                          std::to_string(kf.getOrientation().z());
+        orientation_publisher_->publish(orient_msg);
         
         // Write all data to file
         imu1_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
@@ -216,8 +226,24 @@ private:
             imu2_initialized_ = true;
             last_time_imu2_sec_ = now_sec;
         }
-        kf.updateIMU2(Quaterniond(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z));
+
+        // Buffer first IMU2 quaternion to define the world frame yaw at startup
+        if (!init_imu2_ready_) {
+            init_imu2_quat_ = Quaterniond(msg->orientation.w, msg->orientation.x,
+                                          msg->orientation.y, msg->orientation.z);
+            init_imu2_ready_ = true;
+            try_initialize();
+        }
+
+        const double dt = now_sec - last_time_imu2_sec_;
         last_time_imu2_sec_ = now_sec;
+
+        if (dt > 0.001 && frame_initialized_)
+        {
+            Vector3d accel(msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
+            Quaterniond quat(msg->orientation.w, msg->orientation.x, msg->orientation.y, msg->orientation.z);
+            kf.predict(accel, quat, dt);
+        }
 
         pose.position.x = kf.getPosition().x();
         pose.position.y = kf.getPosition().y();
@@ -235,6 +261,12 @@ private:
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
         }
         publisher_->publish(pose);
+        auto orient_msg = std_msgs::msg::String();
+        orient_msg.data = std::to_string(pose.orientation.w) + "," +
+                          std::to_string(pose.orientation.x) + "," +
+                          std::to_string(pose.orientation.y) + "," +
+                          std::to_string(pose.orientation.z);
+        orientation_publisher_->publish(orient_msg);
 
         // Write all data to file
         imu2_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
@@ -247,14 +279,29 @@ private:
                 << msg->orientation.w << std::endl;
     }
 
-   /* void depth_callback(const std_msgs::msg::String::SharedPtr msg)
+   void depth_callback(const std_msgs::msg::String::SharedPtr msg)
     {
         std::string depth_data = msg->data;
         RCLCPP_INFO(this->get_logger(), "Depth data received: %s", msg->data.c_str());
 
+        // Buffer first depth to seed z0 for world frame initialization
+        if (!init_depth_ready_) {
+            init_depth_ = std::stod(depth_data);
+            init_depth_ready_ = true;
+            try_initialize();
+        }
+
+        if(frame_initialized_)
+        {
+            kf.updateDepth(std::stod(depth_data));
+        }
+        auto depth_msg = std_msgs::msg::String();
+        depth_msg.data = depth_data;
+        depth_publisher_->publish(depth_msg);
+
         // Write depth data to file
         depth_file << depth_data << std::endl;
-    }*/
+    }
     
     void gyro_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
@@ -286,6 +333,33 @@ private:
         }
     }
     
+    void try_initialize()
+    {
+        if (frame_initialized_ || !init_depth_ready_ || !init_imu2_ready_) return;
+
+        // World frame is gravity-aligned (world-z = true down), so the depth sensor
+        // (true hydrostatic depth) maps directly onto the z position.
+        double z0 = init_depth_;
+
+        VectorXd x0 = VectorXd::Zero(13);
+        x0(2) = z0;           // depth at startup: (0, 0, depth)
+        x0(6) = 1.0;          // identity quaternion — overwritten by IMU2 attitude on first predict()
+        x0.segment<3>(10) = accel_bias_init_;
+
+        MatrixXd P_init = MatrixXd::Identity(12, 12);
+        P_init.block<3,3>(0,0) *= 0.05;  // position
+        P_init.block<3,3>(3,3) *= 0.1;   // velocity
+        P_init.block<3,3>(6,6) *= 0.01;  // orientation
+        P_init.block<3,3>(9,9) *= 0.01;  // accel bias
+
+        kf.reset(x0, P_init);
+        frame_initialized_ = true;
+
+        RCLCPP_INFO(this->get_logger(),
+            "KF world frame initialized: pos=(0, 0, %.3f) m  [depth=%.3f m]",
+            z0, init_depth_);
+    }
+
     void check_status()
     {
         if (!imu_received_ && !gyro_received_ && !accel_received_) {
@@ -301,8 +375,10 @@ private:
 
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub1_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub2_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr depth_sub_;
     rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr publisher_;
-    //rclcpp::Subscription<std_msgs::msg::String>::SharedPtr depth_sub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr orientation_publisher_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr depth_publisher_;
     //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub_;
     //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub_;
     rclcpp::TimerBase::SharedPtr check_timer_;
@@ -316,11 +392,19 @@ private:
     int imu2_count_ = 0;
     int gyro_count_ = 0;
     int accel_count_ = 0;
+
+    // Deferred world-frame initialization: wait for first depth + first IMU2
+    bool frame_initialized_ = false;
+    bool init_depth_ready_  = false;
+    bool init_imu2_ready_   = false;
+    double init_depth_ = 0.0;
+    Quaterniond init_imu2_quat_;
+    Quaterniond q_imu2_to_body_node_;      // local copy for try_initialize()
+    Vector3d accel_bias_init_ = Vector3d::Zero();
 };
 
 int main(int argc, char * argv[])
 {
-        int imu2_count_ = 0;
     rclcpp::init(argc, argv);
     auto node = std::make_shared<StateEstimator>();
     rclcpp::spin(node);

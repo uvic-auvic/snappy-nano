@@ -14,6 +14,8 @@ option(WITH_CUDA "Build with CUDA and TensorRT support" OFF)
 option(BUILD_TESTING "Build tests" OFF)
 
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include/Inc)
 
 install(DIRECTORY config/
 	DESTINATION share/${PROJECT_NAME}/config
@@ -26,6 +28,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -50,17 +53,13 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # Find and require ONNX Runtime
-find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
-find_library(ONNXRUNTIME_LIB onnxruntime PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQU
-	IRED)
+# find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h PATHS /usr/include /usr/local/include REQUIRED)
+# find_library(ONNXRUNTIME_LIB onnxruntime PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQUIRED)
 
-message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
-message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
-include_directories(
-  ${ONNXRUNTIME_INCLUDE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/include
-)
-link_directories(/usr/local/lib)
+# message(STATUS "Found ONNX Runtime: ${ONNXRUNTIME_LIB}")
+# message(STATUS "Found ONNX Runtime Headers: ${ONNXRUNTIME_INCLUDE_DIR}")
+# include_directories(${ONNXRUNTIME_INCLUDE_DIR})
+# link_directories(/usr/local/lib)
 
 # Build all executables
 set(BOOST_ROOT "/usr")
@@ -79,8 +78,9 @@ target_link_libraries(image_capture ${OpenCV_LIBS})
 # add_executable(controller src/controller.cpp)
 # ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
 
-add_executable(state_estimator src/state_estimator.cpp)
+add_executable(state_estimator src/state_estimator.cpp src/include/src/kalman.cpp)
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
+target_link_libraries(state_estimator Eigen3::Eigen)
 
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
