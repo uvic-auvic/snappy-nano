@@ -10,6 +10,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
 #include "kalman.h"
 
@@ -66,10 +67,11 @@ public:
             10,
             std::bind(&StateEstimator::depth_callback, this, std::placeholders::_1));
 
+        // DVL: Water Linked driver publishes nav_msgs/Odometry. We fuse the
+        // body-frame velocity (twist.twist.linear) as a high-trust velocity update.
         dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
-                "/waterlinked_dvl_driver/odom", 10, std::bind(&StateEstimator::dvl_callback, this, _1));
-
-
+            "/waterlinked_dvl_driver/odom", 10,
+            std::bind(&StateEstimator::dvl_callback, this, std::placeholders::_1));
 
 
         // need  to update for imu2, this is from imu1
@@ -99,6 +101,10 @@ public:
         MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.05; // depth sensor noise
         kf.setIMU1MeasurementNoise(R_imu1_init);
         kf.setDepthMeasurementNoise(R_depth_init);
+
+        // DVL velocity update noise (high trust). Small => DVL strongly bounds
+        // velocity drift. ~0.1 m/s std as a starting point; tune from bench data.
+        R_dvl_vel_ = Matrix3d::Identity() * 0.01;
 
         // IMU2 is mounted upside-down (180° rotation around Y axis).
         // 180° around Y: x→-x, y→y, z→-z  ⟹  q = (w=0, x=0, y=1, z=0)
@@ -302,7 +308,38 @@ private:
         // Write depth data to file
         depth_file << depth_data << std::endl;
     }
-    
+
+    void dvl_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
+    {
+        if (!dvl_received_) {
+            RCLCPP_INFO(this->get_logger(), "✅ First DVL message received!");
+            dvl_received_ = true;
+        }
+        dvl_count_++;
+
+        if (!frame_initialized_) return;
+
+        // Odometry twist is in child_frame_id (the DVL/body frame, REP-105). Per the
+        // mounting notes the DVL axes match the body frame (fwd +x, right +y, down +z),
+        // so no extra rotation is applied. If a DVL->body mount offset is added later,
+        // rotate v_body by it before the update.
+        Vector3d v_body(msg->twist.twist.linear.x,
+                        msg->twist.twist.linear.y,
+                        msg->twist.twist.linear.z);
+
+        // Skip bad samples (driver emits NaN/inf when there is no bottom lock)
+        if (!v_body.allFinite()) return;
+
+        kf.updateDVLVelocity(v_body, R_dvl_vel_);
+
+        if (dvl_count_ % 20 == 0) {
+            RCLCPP_INFO(this->get_logger(),
+                "[DVL] v_body=[%.3f, %.3f, %.3f] m/s | Vel est=[%.2f, %.2f, %.2f]",
+                v_body.x(), v_body.y(), v_body.z(),
+                kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z());
+        }
+    }
+
     void gyro_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         if (!gyro_received_) {
@@ -376,6 +413,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub1_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub2_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr depth_sub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr dvl_subscription_;
     rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr orientation_publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr depth_publisher_;
@@ -388,10 +426,15 @@ private:
     bool imu2_initialized_ = false;
     bool gyro_received_ = false;
     bool accel_received_ = false;
+    bool dvl_received_ = false;
     int imu_count_ = 0;
     int imu2_count_ = 0;
     int gyro_count_ = 0;
     int accel_count_ = 0;
+    int dvl_count_ = 0;
+
+    // DVL velocity measurement noise (3x3)
+    Matrix3d R_dvl_vel_ = Matrix3d::Identity() * 0.01;
 
     // Deferred world-frame initialization: wait for first depth + first IMU2
     bool frame_initialized_ = false;

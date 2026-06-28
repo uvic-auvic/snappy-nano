@@ -104,30 +104,15 @@ void KalmanFilter::predict(const Eigen::Vector3d& accel, const Eigen::Quaternion
     MatrixXd G   = computeG();
     P = Phi * P * Phi.transpose() + G * Q * G.transpose() * dt;
 
-    // Orientation error growth. There is no gyro term in this predict (orientation
-    // is driven by the IMU2 measurement below), so the orientation block would
-    // otherwise never grow and its Kalman gain would collapse to ~0. Re-grow it a
-    // little each step so both the IMU2 quaternion fusion and the low-trust IMU1
-    // gyro/accel orientation corrections keep a meaningful gain.
     P.block<3,3>(6,6) += Matrix3d::Identity() * orient_process_var_ * dt;
     P = 0.5 * (P + P.transpose());
 
-    // ---- 3. Orientation: fuse IMU2 quaternion as a HIGH-TRUST measurement ----
-    // Apply body-frame rotation: q_body_in_world = q_imu2_in_world * q_body_in_imu2
-    //   where q_body_in_imu2 = q_imu2_to_body_.conjugate().
-    // The IMU2 (AHRS) outputs a gravity- and heading-referenced attitude, so this
-    // is the dominant orientation source (small R_imu2_orient_ => gain near 1).
-    //
-    // This is a proper measurement update, NOT a hard overwrite — so a low-trust
-    // IMU1 gyro/accel correction applied between IMU2 messages is no longer thrown
-    // away on the next predict(); it just gets out-weighted by IMU2.
+    // Since quaternion is a direct measurement, use an update step here. (May want to split this later)
     Quaterniond q_meas = (quat_imu2.normalized() * q_imu2_to_body_.conjugate()).normalized();
     updateOrientation(q_meas, R_imu2_orient_);
 }
 
-// Orientation measurement update: pull the state quaternion toward q_meas (a
-// measured body-in-world attitude) with measurement noise R (rad²). Uses the same
-// local/body-frame error convention as computeF() and injectErrorState().
+
 void KalmanFilter::updateOrientation(const Quaterniond& q_meas, const Matrix3d& R)
 {
     Quaterniond q(x(6), x(7), x(8), x(9));
@@ -144,24 +129,12 @@ void KalmanFilter::updateOrientation(const Quaterniond& q_meas, const Matrix3d& 
 }
 
 
-// Low-trust update from IMU1 (accel + gyro). All corrections are deliberately
-// low trust (large R_imu1_*), so IMU2's high-rate predict()/quaternion fusion
-// stays the dominant attitude source; IMU1 only nudges the estimate.
-// Three sequential corrections:
-//   1. Orientation rate — integrate the gyro over dt as a body-frame rotation
-//      increment (low trust via R_imu1_gyro_).
-//   2. Orientation tilt — gravity-vector residual from the accelerometer
-//      (low trust via R_imu1_).
-//   3. Velocity — world-frame accel × dt increment (low trust via R_imu1_vel_),
-//      which in turn feeds position through the next predict() integration.
+
 void KalmanFilter::updateIMU1(const Vector3d& accel_raw, const Vector3d& gyro_raw, double dt)
 {
     Quaterniond q(x(6), x(7), x(8), x(9));
     q.normalize();
 
-    // --- 1. Orientation rate from gyro: low-trust integration of angular rate ---
-    // The gyro says the body should have rotated by (gyro_body * dt) this step.
-    // Residual is that body-frame increment; H targets the orientation error states.
     if (dt > 0.0) {
         Vector3d gyro_body = q_imu1_to_body_ * gyro_raw;
         Vector3d residual_gyro = gyro_body * dt;
@@ -176,14 +149,7 @@ void KalmanFilter::updateIMU1(const Vector3d& accel_raw, const Vector3d& gyro_ra
 
     Vector3d accel_body = q_imu1_to_body_ * accel_raw;
 
-    // --- 2. Orientation tilt from accel: gravity vector correction ---
-    Vector3d g_body = q.conjugate() * gravity;
-    Vector3d residual_orient = accel_body - g_body;
-    MatrixXd H_orient = MatrixXd::Zero(3, 12);
-    H_orient.block<3,3>(0, 6) = skew(g_body);
-    updateErrorState(residual_orient, H_orient, R_imu1_);
-
-    // --- 3. Velocity from accel: low-trust increment (feeds position via predict) ---
+    // --- Velocity from accel: low-trust increment (feeds position via predict) ---
     if (dt > 0.0) {
         q = Quaterniond(x(6), x(7), x(8), x(9));
         q.normalize();
@@ -208,7 +174,7 @@ void KalmanFilter::updateDepth(double depth_measured)
 
     updateErrorState(residual, H, R_depth);
 }
-
+/*
 // DVL update: corrects both velocity and position in one EKF step.
 // v_measured: DVL body-frame velocity. p_measured: world-frame position.
 void KalmanFilter::updateDVL(const Vector3d& v_measured, const Vector3d& p_measured,
@@ -236,6 +202,27 @@ void KalmanFilter::updateDVL(const Vector3d& v_measured, const Vector3d& p_measu
     R_dvl.block<3,3>(3, 3) = R_vel;
 
     updateErrorState(residual, H, R_dvl);
+}
+*/
+
+// DVL velocity-only update. The DVL twist is in the DVL/body frame; rotate it into
+// the world frame and correct the velocity state. Position is intentionally NOT
+// fused here (the DVL's dead-reckoned position lives in the driver's own odom
+// frame, which does not align with this filter's gravity/heading world frame).
+void KalmanFilter::updateDVLVelocity(const Vector3d& v_measured, const Matrix3d& R_vel)
+{
+    Quaterniond q(x(6), x(7), x(8), x(9));
+    q.normalize();
+
+    Vector3d v_world = q * v_measured;          // body -> world
+
+    VectorXd residual(3);
+    residual = v_world - x.segment<3>(3);
+
+    MatrixXd H = MatrixXd::Zero(3, 12);
+    H.block<3,3>(0, 3) = Matrix3d::Identity();  // observes velocity error states
+
+    updateErrorState(residual, H, R_vel);
 }
 
 
