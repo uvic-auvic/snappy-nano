@@ -20,12 +20,21 @@ using namespace std::chrono_literals;
 class StateEstimator : public rclcpp::Node
 {
 public:
-    //Output files
+    // Output files
     std::fstream imu1_file;
     std::fstream imu2_file;
     std::fstream depth_file;
     std::fstream dvl_file;
     std::fstream kalman_file;
+
+    // name files different every run
+    std::string time_now = std::to_string(rclcpp::Clock().now().nanoseconds());
+    std::string imu1_filename   = "imu1_"   + time_now + ".csv";
+    std::string imu2_filename   = "imu2_"   + time_now + ".csv";
+    std::string depth_filename  = "depth_"  + time_now + ".csv";
+    std::string dvl_filename    = "dvl_"    + time_now + ".csv";
+    std::string kalman_filename = "kalman_" + time_now + ".csv";
+
 
     //change in time between imu messages
     double last_time_imu1_sec_ = 0.0; 
@@ -40,11 +49,11 @@ public:
         // imu1_file: accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
         // imu2_file: accel_x, accel_y, accel_z, quat_x, quat_y, quat_z, quat_w
         
-        imu1_file.open("imu1.csv", std::fstream::app);
-        imu2_file.open("imu2.csv", std::fstream::app);
-        depth_file.open("depth.csv", std::fstream::app);
-        dvl_file.open("dvl.csv", std::fstream::app);
-        kalman_file.open("kalman.csv", std::fstream::app); // output of kalman
+        imu1_file.open(imu1_filename, std::fstream::out);
+        imu2_file.open(imu2_filename, std::fstream::out);
+        depth_file.open(depth_filename, std::fstream::out);
+        dvl_file.open(dvl_filename, std::fstream::out);
+        kalman_file.open(kalman_filename, std::fstream::out); // output of kalman
         // Create QoS profile matching RealSense camera publisher
         // RealSense uses: Best Effort reliability + Volatile durability
         auto qos = rclcpp::QoS(rclcpp::KeepLast(10))
