@@ -55,7 +55,7 @@ def generate_launch_description():
 
     serial_dev_arg = DeclareLaunchArgument(
         "serial_dev",
-        default_value="/dev/ttyUSB1",
+        default_value="/dev/ttyUSB0",
         description="Serial device for micro-ROS agent",
     )
 
