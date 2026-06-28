@@ -24,7 +24,7 @@ public:
     std::fstream imu1_file;
     std::fstream imu2_file;
     std::fstream depth_file;
-    //std::fstream dvl_file;
+    std::fstream dvl_file;
     std::fstream kalman_file;
 
     //change in time between imu messages
@@ -43,7 +43,7 @@ public:
         imu1_file.open("imu1.csv", std::fstream::app);
         imu2_file.open("imu2.csv", std::fstream::app);
         depth_file.open("depth.csv", std::fstream::app);
-        // dvl_file.open("dvl.csv", std::fstream::app);
+        dvl_file.open("dvl.csv", std::fstream::app);
         kalman_file.open("kalman.csv", std::fstream::app); // output of kalman
         // Create QoS profile matching RealSense camera publisher
         // RealSense uses: Best Effort reliability + Volatile durability
@@ -338,6 +338,13 @@ private:
                 v_body.x(), v_body.y(), v_body.z(),
                 kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z());
         }
+
+        // write to dvl file 
+        dvl_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
+                 << v_body.x() << ","
+                 << v_body.y() << ","
+                 << v_body.z() << std::endl;
+
     }
 
     void gyro_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
