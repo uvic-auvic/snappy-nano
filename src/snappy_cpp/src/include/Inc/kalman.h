@@ -46,6 +46,11 @@ public:
     void updateDVL(const Vector3d& v_measured, const Vector3d& p_measured,
                    const Matrix3d& R_vel, const Matrix3d& R_pos);
 
+    // Update step: DVL velocity only (frame-safe). v_measured is the DVL/body-frame
+    // velocity; it is rotated into the world frame by the current attitude and used
+    // to correct the velocity state (which in turn bounds position drift via predict).
+    void updateDVLVelocity(const Vector3d& v_measured, const Matrix3d& R_vel);
+
     // For testing using csv files
     static MatrixXd openData(const std::string& fileToOpen);
 
