@@ -394,11 +394,11 @@ private:
     {
         if (frame_initialized_ || !init_depth_ready_ || !init_imu2_ready_) return;
 
-    
+        // May need to apply a sin(pitch) to the depth measurement if the vehicle is not level
         double z0 = init_depth_;
 
         // Initial orientation(roll, pitch,yaw) = (0, 0, yaw0), with yaw0 taken from the IMU2 on first message
-
+        
         // The Xsens quaternion answers "how is the SENSOR rotated relative to an
         // ENU (z-up) world?" — our filter world is z-DOWN, so BOTH sides of that
         // relationship need fixing before it can be used:

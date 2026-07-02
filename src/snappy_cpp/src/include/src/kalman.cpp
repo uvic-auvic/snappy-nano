@@ -10,8 +10,7 @@
     Example: (1.0, 2.0, 9.0) = 9 m below the surface, and we moved 1 m forward and 2 m right from starting measurement.
 
      - World frame: Position (0, 0, depth) at t = 0 (depth sensor value)
-     - World frame: Orientation (0, 0, y) at t = 0, with y being the yaw from IMU2's first measurement
-
+     - World frame: Orientation (0, 0, y) at t = 0, with y being the yaw from IMU2's first measurement 
     Body frame: +x forward, +y right, +z down (matches the world when level).
 
     The IMU2/Xsens quaternion is referenced to an ENU (z-up) world, so predict()
@@ -106,6 +105,7 @@ void KalmanFilter::predict(const Eigen::Vector3d& accel, const Eigen::Quaternion
     // reference into the filter's z-down world.
     Quaterniond q_meas = (q_enu_to_world_ * quat_imu2.normalized()
                           * q_imu2_to_body_.conjugate()).normalized();
+
     updateOrientation(q_meas, R_imu2_orient_);
 }
 
@@ -165,6 +165,7 @@ void KalmanFilter::updateIMU1(const Vector3d& accel_raw, const Vector3d& gyro_ra
 
 void KalmanFilter::updateDepth(double depth_measured)
 {
+    // We may have to apply a sin(pitch) to the depth measurement if the vehicle is not level
     VectorXd residual(1);
     residual << (depth_measured - x(2));
 
@@ -293,7 +294,7 @@ void KalmanFilter::normalizeQuaternion()
 }
 
 // F: Jacobian of the error-state transition function (Sola 7.3).
-// Orientation rows are zero — orientation comes from direct IMU2 injection, not gyro integration.
+// Orientation rows are zero — orientation comes from direct IMU2 injection.
 // accel_bias is treated as being in the IMU2 frame (consistent with predict()).
 MatrixXd KalmanFilter::computeF(double dt, const Vector3d& accel) const
 {
@@ -361,59 +362,3 @@ void KalmanFilter::injectErrorState(const VectorXd& dx)
     x.segment<3>(10) += dx.segment<3>(9);  // accel_bias
 }
 
-
-// Helper function to save state to CSV file
-void saveStateToCSV(const std::string& filename, const VectorXd& state, double timestamp)
-{
-    std::ofstream file(filename, std::ios::app);
-    if (file.is_open()) {
-        file << timestamp;
-        for (int i = 0; i < state.size(); ++i) {
-            file << "," << state(i);
-        }
-        file << std::endl;
-        file.close();
-    }
-}
-
-// Helper function to load measurements from CSV file
-MatrixXd loadCSV(const std::string& filename)
-{
-    std::ifstream file(filename);
-    std::vector<std::vector<double>> data;
-
-    if (file.is_open()) {
-        std::string line;
-        while (std::getline(file, line)) {
-            std::stringstream ss(line);
-            std::vector<double> row;
-            std::string value;
-
-            while (std::getline(ss, value, ',')) {
-                row.push_back(std::stod(value));
-            }
-            data.push_back(row);
-        }
-        file.close();
-    }
-
-    // Convert to Eigen matrix
-    if (data.empty()) return MatrixXd();
-
-    int rows = data.size();
-    int cols = data[0].size();
-    MatrixXd matrix(rows, cols);
-
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            matrix(i, j) = data[i][j];
-        }
-    }
-
-    return matrix;
-}
-
-MatrixXd KalmanFilter::openData(const std::string& fileToOpen)
-{
-    return loadCSV(fileToOpen);
-}
