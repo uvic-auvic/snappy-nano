@@ -63,7 +63,7 @@ add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
 
 add_executable(state_estimator src/state_estimator.cpp src/include/src/kalman.cpp)
-ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs nav_msgs)
+ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs nav_msgs tf2)
 target_link_libraries(state_estimator Eigen3::Eigen)
 
 add_executable(planner src/planner.cpp)

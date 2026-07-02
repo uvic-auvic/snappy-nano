@@ -5,35 +5,29 @@
 
 
 /*
-    ---- Updates that need to be made ----
-    Orientation updates:
-     - World frame: Position (0,0,x) at t = 0, wth x being sin(pitch) * depth senor vaule
-        - Example: (1.0,2.0,9.0) means sub has moved 1m forward, and 2m right from startng position, and is 9m below the surface.
-     - World frame: Orientation (0,0,y) at t = 0, with y being the yaw from the IMU2 orientation
+    ---- Frame conventions ----
+    World frame: Depth below the surface maps to POSITIVE world z: moving 2 m down => z = +2.
+    Example: (1.0, 2.0, 9.0) = 9 m below the surface, and we moved 1 m forward and 2 m right from starting measurement.
 
+     - World frame: Position (0, 0, depth) at t = 0 (depth sensor value)
+     - World frame: Orientation (0, 0, y) at t = 0, with y being the yaw from IMU2's first measurement
 
+    Body frame: +x forward, +y right, +z down (matches the world when level).
+
+    The IMU2/Xsens quaternion is referenced to an ENU (z-up) world, so predict()
+    converts it with the fixed rotation q_enu_to_world_ (180 deg about the x+y
+    diagonal: ENU east->world y, north->x, up->-z) before fusing.
 
     - IMU2 orientation:
-        - IMU2 needs to be flipped on y axis (negate pitch and roll)
-        - middle of sub
+        - physically mounted upside down: rotate 180 deg about the Y axis to reach the
+          body frame (x fwd, y right, z down): q_imu2_to_body = (w=0, x=0, y=1, z=0)
 
+    - IMU1: sensor z points UP (verified: src/imu1_stationary.csv reads +9.6 m/s^2 on +z
+      at rest), so it needs 180 deg about the X axis: q_imu1_to_body = (w=0, x=1, y=0, z=0)
 
-    - IMU1 orientation:
-        - foward is +x, right is +y, down is +z
-        - no flpping needed
-        - at front of sub
-
-    -DVL orientation:
-        - DVL same as IMU1 orientation, no flipping needed
-        - at back of sub
-
-
-
- Using IMU2 as predict rather then IMU1
- - IMU1 for gyro and accel updates - Low trust
- - DVL for velocity and position updates - High trust
- - Depth sensor for depth updates - High trust
- - IMU2 for orientation prediction - High trust
+    - DVL: assumed to already match the body frame (+x forward, +y right, +z down) — no
+      rotation applied. No recorded capture verifies this; see dvl_callback() in
+      state_estimator.cpp.
 
 */
 
@@ -55,21 +49,20 @@ KalmanFilter::KalmanFilter()
     x(6) = 1.0;  // identity quaternion [w, x, y, z]
     P = MatrixXd::Identity(12, 12);
     Q = MatrixXd::Identity(6, 6);
-    R_imu1_     = MatrixXd::Identity(3, 3) * 10.0;
-    R_imu1_vel_ = MatrixXd::Identity(3, 3) * 10.0;
+    R_imu1_ = MatrixXd::Identity(3, 3) * 10.0;
     R_depth = MatrixXd::Identity(1, 1);
 }
 
 KalmanFilter::KalmanFilter(VectorXd x0Input, MatrixXd P0Input, MatrixXd QInput,
                            MatrixXd R_imu1Input, MatrixXd R_depthInput,
-                           Quaterniond q_imu1_to_body, Quaterniond q_imu2_to_body)
+                           Quaterniond q_imu1_to_body, Quaterniond q_imu2_to_body, MatrixXd R_dvl_velInput)
 {
     x = x0Input;
     P = P0Input;
     Q = QInput;
-    R_imu1_     = R_imu1Input;
-    R_imu1_vel_ = R_imu1Input;  // same scale by default; tune separately if needed
+    R_imu1_ = R_imu1Input;
     R_depth = R_depthInput;
+    R_dvl_vel_ = R_dvl_velInput;
     q_imu1_to_body_ = q_imu1_to_body.normalized();
     q_imu2_to_body_ = q_imu2_to_body.normalized();
 
@@ -88,7 +81,7 @@ void KalmanFilter::predict(const Eigen::Vector3d& accel, const Eigen::Quaternion
 
     Vector3d accel_body = q_imu2_to_body_ * (accel - accel_bias);
 
-    Vector3d accel_world = q * accel_body - gravity;
+    Vector3d accel_world = q * accel_body + gravity;
 
     Vector3d position = x.segment<3>(0);
     Vector3d velocity = x.segment<3>(3);
@@ -108,7 +101,11 @@ void KalmanFilter::predict(const Eigen::Vector3d& accel, const Eigen::Quaternion
     P = 0.5 * (P + P.transpose());
 
     // Since quaternion is a direct measurement, use an update step here. (May want to split this later)
-    Quaterniond q_meas = (quat_imu2.normalized() * q_imu2_to_body_.conjugate()).normalized();
+    // Chain: q_world<-body = q_world<-enu * q_enu<-imu2 * q_imu2<-body.
+    // The Xsens quaternion is body-in-ENU (z-up); q_enu_to_world_ converts its
+    // reference into the filter's z-down world.
+    Quaterniond q_meas = (q_enu_to_world_ * quat_imu2.normalized()
+                          * q_imu2_to_body_.conjugate()).normalized();
     updateOrientation(q_meas, R_imu2_orient_);
 }
 
@@ -130,42 +127,44 @@ void KalmanFilter::updateOrientation(const Quaterniond& q_meas, const Matrix3d& 
 
 
 
+
+// IMU1 low-trust update: the residual is what IMU1 says changed over dt minus
+// what the state says (dead-reckoned candidate minus current state, which
+// simplifies to the deltas below). Large R => small Kalman gain, so this only
+// weakly corrects the filter; IMU2/DVL/depth stay the strong corrections.
 void KalmanFilter::updateIMU1(const Vector3d& accel_raw, const Vector3d& gyro_raw, double dt)
 {
+    if (dt <= 0.0) return;
+
     Quaterniond q(x(6), x(7), x(8), x(9));
     q.normalize();
 
-    if (dt > 0.0) {
-        Vector3d gyro_body = q_imu1_to_body_ * gyro_raw;
-        Vector3d residual_gyro = gyro_body * dt;
-        MatrixXd H_gyro = MatrixXd::Zero(3, 12);
-        H_gyro.block<3,3>(0, 6) = Matrix3d::Identity();
-        updateErrorState(residual_gyro, H_gyro, R_imu1_gyro_);
+    // Gyro: body-frame rotation over dt — already the small-angle orientation
 
-        // refresh local quaternion after the orientation correction
-        q = Quaterniond(x(6), x(7), x(8), x(9));
-        q.normalize();
-    }
+    Vector3d dtheta = (q_imu1_to_body_ * gyro_raw) * dt;
 
-    Vector3d accel_body = q_imu1_to_body_ * accel_raw;
+    // Accel: same z-DOWN world convention as predict(): a = q*f + g
+    Vector3d accel_world = q * (q_imu1_to_body_ * accel_raw) + gravity;
 
-    // --- Velocity from accel: low-trust increment (feeds position via predict) ---
-    if (dt > 0.0) {
-        q = Quaterniond(x(6), x(7), x(8), x(9));
-        q.normalize();
-        Vector3d accel_world = q * accel_body - gravity;
-        Vector3d residual_vel = accel_world * dt;
-        MatrixXd H_vel = MatrixXd::Zero(3, 12);
-        H_vel.block<3,3>(0, 3) = Matrix3d::Identity();
-        updateErrorState(residual_vel, H_vel, R_imu1_vel_);
-    }
+    Vector3d velocity = x.segment<3>(3);
+
+    VectorXd residual(9);
+    residual.segment<3>(0) = velocity * dt + 0.5 * accel_world * dt * dt;  // = p_cand - p
+    residual.segment<3>(3) = accel_world * dt;                             // = v_cand - v
+    residual.segment<3>(6) = dtheta;
+
+    MatrixXd H = MatrixXd::Zero(9, 12);
+    H.block<3,3>(0, 0) = Matrix3d::Identity();  // observes position error states
+    H.block<3,3>(3, 3) = Matrix3d::Identity();  // observes velocity error states
+    H.block<3,3>(6, 6) = Matrix3d::Identity();  // observes orientation error states
+
+    updateErrorState(residual, H, R_imu1_);
 }
 
 
 
 void KalmanFilter::updateDepth(double depth_measured)
 {
-    // Simple measurement: depth directly observes z-position state x(2)
     VectorXd residual(1);
     residual << (depth_measured - x(2));
 
@@ -174,42 +173,10 @@ void KalmanFilter::updateDepth(double depth_measured)
 
     updateErrorState(residual, H, R_depth);
 }
-/*
-// DVL update: corrects both velocity and position in one EKF step.
-// v_measured: DVL body-frame velocity. p_measured: world-frame position.
-void KalmanFilter::updateDVL(const Vector3d& v_measured, const Vector3d& p_measured,
-                              const Matrix3d& R_vel, const Matrix3d& R_pos)
-{
-    Quaterniond q(x(6), x(7), x(8), x(9));
-    q.normalize();
 
-    // Rotate DVL body-frame velocity into world frame
-    Vector3d v_world = q * v_measured;
-
-    // Combined 6D residual: [position error, velocity error]
-    VectorXd residual(6);
-    residual.segment<3>(0) = p_measured - x.segment<3>(0);
-    residual.segment<3>(3) = v_world    - x.segment<3>(3);
-
-    // H: position at indices 0-2, velocity at indices 3-5
-    MatrixXd H = MatrixXd::Zero(6, 12);
-    H.block<3,3>(0, 0) = Matrix3d::Identity();
-    H.block<3,3>(3, 3) = Matrix3d::Identity();
-
-    // Block-diagonal noise: position and velocity tuned independently
-    MatrixXd R_dvl = MatrixXd::Zero(6, 6);
-    R_dvl.block<3,3>(0, 0) = R_pos;
-    R_dvl.block<3,3>(3, 3) = R_vel;
-
-    updateErrorState(residual, H, R_dvl);
-}
-*/
-
-// DVL velocity-only update. The DVL twist is in the DVL/body frame; rotate it into
-// the world frame and correct the velocity state. Position is intentionally NOT
-// fused here (the DVL's dead-reckoned position lives in the driver's own odom
-// frame, which does not align with this filter's gravity/heading world frame).
-void KalmanFilter::updateDVLVelocity(const Vector3d& v_measured, const Matrix3d& R_vel)
+// DVL velocity update
+// may want a position update too (add later if needed)
+void KalmanFilter::updateDVLVelocity(const Vector3d& v_measured)
 {
     Quaterniond q(x(6), x(7), x(8), x(9));
     q.normalize();
@@ -222,7 +189,7 @@ void KalmanFilter::updateDVLVelocity(const Vector3d& v_measured, const Matrix3d&
     MatrixXd H = MatrixXd::Zero(3, 12);
     H.block<3,3>(0, 3) = Matrix3d::Identity();  // observes velocity error states
 
-    updateErrorState(residual, H, R_vel);
+    updateErrorState(residual, H, R_dvl_vel_);
 }
 
 
@@ -274,6 +241,11 @@ void KalmanFilter::setIMU1MeasurementNoise(const MatrixXd& R_imu1Input)
 void KalmanFilter::setDepthMeasurementNoise(const MatrixXd& R_depthInput)
 {
     R_depth = R_depthInput;
+}
+
+void KalmanFilter::setDVLVelocityMeasurementNoise(const MatrixXd& R_dvl_vel)
+{
+    R_dvl_vel_ = R_dvl_vel;
 }
 
 void KalmanFilter::setProcessNoise(const MatrixXd& QInput)
