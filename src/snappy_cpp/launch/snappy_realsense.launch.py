@@ -24,6 +24,21 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+
+    dvl = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("waterlinked_dvl_driver"),
+                        "launch",
+                        "dvl.launch.py",
+                    ]
+                )
+            ]
+        ),
+    )
+
     serial_dev_arg = DeclareLaunchArgument(
         "serial_dev",
         default_value="/dev/ttyUSB1",
@@ -75,8 +90,11 @@ def generate_launch_description():
             "camera_namespace": "d455",
             "camera_name": "d455",
             "serial_no": serial_no_d455,
-            "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "d455_underwater.json"]),
-            #"json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test455.json"]),
+            "json_file_path": PathJoinSubstitution(
+                [FindPackageShare("snappy_cpp"), "config", "d455_underwater.json"]
+            ),
+            # "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test455.json"]),
+            "rgb_camera.color_profile": "848x480x30",
             "enable_gyro": "true",
             "enable_accel": "true",
             "unite_imu_method": "2",
@@ -98,8 +116,11 @@ def generate_launch_description():
             "camera_namespace": "d405",
             "camera_name": "d405",
             "serial_no": serial_no_d405,
-            "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "d405_underwater.json"]),
-            #"json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test405.json"]),
+            "json_file_path": PathJoinSubstitution(
+                [FindPackageShare("snappy_cpp"), "config", "d405_underwater.json"]
+            ),
+            # "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test405.json"]),
+            "rgb_camera.color_profile": "848x480x30",
             "enable_gyro": "false",  # D405 does not include IMU
             "enable_accel": "false",
             "unite_imu_method": "0",
@@ -120,19 +141,6 @@ def generate_launch_description():
         output="screen",
         parameters=[parameters_file_path],
         arguments=[],
-    )
-
-    # Delay starting the C++ nodes to let camera initialize (3 seconds)
-    computer_vision_node = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="computer_vision",
-                name="computer_vision",
-                output="screen",
-            )
-        ],
     )
 
     controller_node = TimerAction(
@@ -183,50 +191,38 @@ def generate_launch_description():
         ],
     )
 
-    image_capture_node = TimerAction(
+    # Single shared TensorRT inference node serving both cameras (D455 front,
+    # D405 bottom). Replaces the former front_cam + bottom_cam processes: one
+    # CUDA context / engine for all cameras. Add a camera by appending its
+    # namespace to camera_namespaces.
+    #
+    front_camera_vision = TimerAction(
         period=3.0,
         actions=[
             Node(
                 package="snappy_cpp",
-                executable="image_capture",
-                name="image_capture",
+                executable="front_camera_vision",
+                name="front_camera_vision",
                 output="screen",
             )
         ],
     )
 
-    # Single shared TensorRT inference node serving both cameras (D455 front,
-    # D405 bottom). Replaces the former front_cam + bottom_cam processes: one
-    # CUDA context / engine for all cameras. Add a camera by appending its
-    # namespace to camera_namespaces.
-    camera_inference = TimerAction(
+    bottom_camera_vision = TimerAction(
         period=3.0,
         actions=[
             Node(
                 package="snappy_cpp",
-                executable="camera_inference",
-                name="camera_inference",
+                executable="bottom_camera_vision",
+                name="bottom_camera_vision",
                 output="screen",
-                parameters=[
-                    {"camera_namespaces": ["d455", "d405"]},
-                    {"inference_hz": 10.0},
-                    {"display": True},
-                    {"distance_samples": 100},
-                    # 0 => one queue slot per camera.
-                    {"queue_depth": 0},
-                    # Batch all cameras into one inference (0 => number of cameras).
-                    # Only takes effect if the engine has a dynamic batch axis.
-                    {"max_batch": 0},
-                    # Coalescing window to let both cameras' frames join one batch.
-                    # 0 => opportunistic (no added latency); try 5-15ms to batch more.
-                    {"batch_collect_ms": 0.0},
-                ],
             )
         ],
     )
 
     return LaunchDescription(
         [
+            dvl,
             serial_dev_arg,
             micro_ros_agent,
             serial_no_d455_arg,
@@ -234,8 +230,9 @@ def generate_launch_description():
             d455_launch,
             d405_launch,
             xsens_mti_node,
-            camera_inference,
             pressure_sensor_node,
+            front_camera_vision,
+            bottom_camera_vision,
             planner_node,
             controller_node,
         ]

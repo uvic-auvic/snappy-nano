@@ -14,16 +14,20 @@
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "snappy_cpp/msg/task.hpp"
 #include "snappy_cpp/msg/pose.hpp"
 #include "snappy_interfaces/msg/thruster_command.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <queue>
 
 #include "include/Inc/pid.h"
 #include "include/Inc/motorboard.h"
+#include "include/Inc/thruster_allocator.h"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -35,14 +39,29 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.5f, 0.0f, 0.1f),
             pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(45.0f, 0.5f, 1.2f),
+            pid_z_(0.7f, 0.3f, 5.0f),
             pid_roll_(0.5f, 0.0f, 0.1f),
             pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.1f, 0.0f, 0.5f)
+            pid_yaw_(0.15f, 0.0f, 5.0f)
          {
-            // count_ = 0;
-            flag_ = 0;
-            pid_z_.set_target(1);
+            timer_first_ = 0;
+            dvl_first_ = 0;
+            state_ = 0;
+
+            // Configuration of motors on the AUV
+            // Rows: Fx, Fy, Fz, Tx, Ty, Tz
+            // Columns: Thrusters
+            configuration = Eigen::MatrixXd(6, 8);
+            configuration << 0, 0, 1, 0, 0, 0, 1, 0,
+                             -1, 0, 0, 0, 1, 0, 0, 0,
+                             0, 1, 0, 1, 0, 1, 0, 1,
+                             0.1302, 0.1654, 0, 0.1654, -0.1302, -0.1648, 0, -0.1648,
+                             0, 0.3125, -0.0159, -0.2878, 0, -0.2878, -0.0159, 0.3125,
+                             -0.3142, 0, -0.2739, 0, -0.3022, 0, 0.2734, 0;
+
+            // Allocate thrusters based on the configuration matrix
+            // Blue Robotics T200 thrusters can achieve ~5.0 kgf backwards and 5.0 kgf forwards
+            thruster_allocator = ThrusterAllocator(configuration, -4.0, 5.0);
 
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
@@ -71,6 +90,13 @@ class Controller : public rclcpp::Node {
             imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
                 "/filter/euler", 10, std::bind(&Controller::imu_callback, this, _1));
             //currently state estimator does not publish state. maybe parse through IMU..
+
+            // imu_d455_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
+            //   "/d455/imu", 10, std::bind(&Controller::imu_d455_subscription_callback, this, _1));
+
+            // Receive DVL pose
+            dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+                "/waterlinked_dvl_driver/odom", 10, std::bind(&Controller::dvl_callback, this, _1));
 
             // Publish every 100ms ??
             status_timer_ = this->create_wall_timer(
@@ -113,45 +139,91 @@ class Controller : public rclcpp::Node {
         }
 
         void timer_callback() {
-            count_++;
-            // RCLCPP_INFO(this->get_logger(), "Tick #%d", count_);
 	    //Depth STUFF
+			float x_master = x;
+			float y_master = y;
             float depth_master = current_depth;
-            RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth_master);
-            RCLCPP_INFO(this->get_logger(), "CURRENT Depth: %.4f m", current_depth);
-            // Update the Z-axis PID with current depth
-            float z_thrust = pid_z_.update(depth_master);
-
-            // Apply the thrust to the vertical motors
-            const int8_t thrust = clampThrust(z_thrust);
-            if (thrust > 0) {
-                motorboard_->down(thrust);
-                RCLCPP_INFO(this->get_logger(), "Down called: thrust=%d", thrust);
-            } else if (thrust < 0) {
-                motorboard_->up(thrust);
-                RCLCPP_INFO(this->get_logger(), "Up called: thrust=%d", thrust);
-            }
-
-
-
-	    // YAW stuff
             float roll_master = roll;
-            //pitch
             float pitch_master = pitch;
-            //yaw
             float yaw_master = yaw;
 
-            //yaw correction
-            RCLCPP_INFO(this->get_logger(), "Roll: %.2f, Pitch: %.2f, Yaw: %.2f", roll_master, pitch_master, yaw_master);
-            float yaw_thrust = pid_yaw_.update(yaw_master);
-            const int8_t yaw_thrust_clamped = clampThrust(yaw_thrust);
-            if (yaw_thrust_clamped > 0) {
-                motorboard_->yaw_ccw(yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CCW called: thrust=%d", -yaw_thrust_clamped);
-            } else if (yaw_thrust_clamped < 0) {
-                motorboard_->yaw_cw(-yaw_thrust_clamped);
-                RCLCPP_INFO(this->get_logger(), "Yaw CW called: thrust=%d", yaw_thrust_clamped);
+            // Set target values to be first read values
+            if (timer_first_ == 1) {
+                pid_yaw_.set_target(yaw_master);
+                pid_y_.set_target(y_master);
+                pid_x_.set_target(x_master);
+                pid_z_.set_target(depth_master);
+                timer_first_ = 0;
             }
+
+            if(depth_master > 0.8 && state_ == 0) {
+                state_ = 1;
+                pid_x_.set_target(13);
+                pid_y_.set_target(0);
+            }
+            if(x_master > 13 && state_ == 1) {
+                state_ = 2;
+                pid_x_.set_target(13);
+                pid_y_.set_target(3);
+            }
+            if(y_master > 2 && state_ == 2) {
+                state_ = 3;
+                pid_x_.set_target(0);
+                pid_y_.set_target(0);
+                pid_z_.set_target(1);
+            }
+
+            RCLCPP_INFO(this->get_logger(), "Position [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", x_master, y_master, depth_master, roll_master, pitch_master, yaw_master);
+            // Update the Z-axis PID with current depth
+            float x_thrust = pid_x_.update(x_master);
+            float y_thrust = pid_y_.update(y_master);
+            float z_thrust = pid_z_.update(depth_master);
+
+            if(yaw_master < -180) {
+                yaw_master += 360;
+            }else if (yaw_master > 180) {
+                yaw_master -= 360;
+            }
+
+            float yaw_thrust = pid_yaw_.update(yaw_master);
+
+            RCLCPP_INFO(this->get_logger(), "Wrench   [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", x_thrust, y_thrust, z_thrust, 0.0, 0.0, yaw_thrust);
+
+            // Create a wrench vector representing the desired force and torque
+            Eigen::VectorXd wrench(6);
+            wrench << x_thrust, y_thrust, z_thrust, 0, 0, yaw_thrust;
+
+            // Allocate thrust to motors based on the wrench
+            Eigen::VectorXd allocation = thruster_allocator.allocate(wrench.cwiseMax(10).cwiseMin(8));
+
+            RCLCPP_INFO(this->get_logger(), "Allocation: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+                allocation[0], allocation[1], allocation[2], allocation[3],
+                allocation[4], allocation[5], allocation[6], allocation[7]);
+
+            int8_t allocation_array[8];
+
+            // Turn the allocation vector into an array of int8_t for the motorboard
+            double* allocation_data = allocation.data();
+            for (int i = 0; i < allocation.size(); i++) {
+                double force = allocation_data[i];
+                if (force > 0) {
+                    allocation_array[i] = static_cast<int8_t>(round(force * 20)); // Convert max = 5 (kgf) to max = 100 (speed)
+                } else {
+                    allocation_array[i] = static_cast<int8_t>(round(force * 25)); // Convert max = -4 (kgf) to max = -100 (speed)
+                }
+            }
+
+
+
+            // Send the allocation array to the motorboard
+            motorboard_->sendCmd(255, allocation_array);
+
+
+
+            RCLCPP_INFO(this->get_logger(), "Speeds: %d, %d, %d, %d, %d, %d, %d, %d",
+                allocation_array[0], allocation_array[1], allocation_array[2], allocation_array[3],
+                allocation_array[4], allocation_array[5], allocation_array[6], allocation_array[7]);
+
 
 
         }
@@ -227,12 +299,65 @@ class Controller : public rclcpp::Node {
             //pitch
             pitch = msg.vector.y;
             //yaw
-            yaw = msg.vector.z;
-    	    if (flag_ == 0) {
-    		flag_ = 1;
-    		// first reference of yaw
-    		pid_yaw_.set_target(yaw);
-    	    }
+      //       yaw = msg.vector.z;
+    	 //    if (flag_ == 0) {
+    		// flag_ = 1;
+    		// // first reference of yaw
+    		// pid_yaw_.set_target(yaw);
+    	 //    }
+        }
+
+      //   void imu_d455_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
+      //       //RCLCPP_INFO(this->get_logger(), "Received IMU data: roll=%.2f, pitch=%.2f, yaw=%.2f", msg.vector.x, msg.vector.y, msg.vector.z);
+      //       //rollroll
+    	 //    roll = msg.vector.x;
+      //       //pitch
+      //       pitch = msg.vector.y;
+      //       //yaw
+      //       yaw = msg.vector.z;
+    	 //    if (flag_ == 0) {
+    		// flag_ = 1;
+    		// // first reference of yaw
+    		// pid_yaw_.set_target(yaw);
+    	 //    }
+      //   }
+
+
+// pose:
+//   pose:
+//     position:
+//       x: 0.21390331654677197
+//       y: 0.15011672381170452
+//       z: 0.031298197173737205
+//     orientation:
+//       x: 0.5008356545579112
+//       y: -0.4569927882399792
+//       z: 0.6090910863871614
+//       w: -0.41149639986749026
+
+        void dvl_callback(const nav_msgs::msg::Odometry & msg) {
+            x = msg.pose.pose.position.x;
+            y = msg.pose.pose.position.y;
+
+            float orientationX = msg.pose.pose.orientation.x;
+            float orientationY = msg.pose.pose.orientation.y;
+            float orientationZ = msg.pose.pose.orientation.z;
+            float orientationW = msg.pose.pose.orientation.w;
+
+           Eigen::Quaterniond q(orientationW, orientationX, orientationY, orientationZ);
+          q.normalize();
+          Eigen::Matrix3d R = q.toRotationMatrix();
+
+          Eigen::Vector3d euler = R.eulerAngles(2,1,0);
+
+            yaw = euler[0];
+       	    if (dvl_first_ == 0) {
+          		dvl_first_ = 1;
+          		// first reference of yaw
+          		pid_yaw_.set_target(yaw);
+          		pid_y_.set_target(y);
+          		pid_x_.set_target(x);
+            }
         }
 
         // Compute difference between current and target
@@ -329,6 +454,7 @@ class Controller : public rclcpp::Node {
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
     	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr imu_subscription_;
+        rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr dvl_subscription_;
     	rclcpp::TimerBase::SharedPtr status_timer_;
         rclcpp::TimerBase::SharedPtr trajectory_timer_;
 
@@ -352,12 +478,18 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 
-        int flag_;
-        int count_;
+        int dvl_first_;
+        int timer_first_;
+        int state_;
 	float pitch;
 	float yaw;
 	float roll;
+	float x;
+	float y;
 	float current_depth;
+
+	Eigen::MatrixXd configuration;
+	ThrusterAllocator thruster_allocator;
 };
 
 

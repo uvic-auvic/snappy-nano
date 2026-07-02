@@ -1,6 +1,6 @@
-# A single object detection result
-string object_class        # Name of detected object (from COCO classes)
-float32 confidence         # Confidence score 0.0-1.0
-float32 distance_m         # Distance from camera in meters (-1 if unavailable)
-BoundingBox2D bounding_box # Bounding box in pixel coordinates
-builtin_interfaces/Time timestamp  # Detection timestamp
+string object_class
+float32 confidence
+float32 distance_m
+BoundingBox2D bounding_box
+Polygon2D[] mask_polygons       # usually length 1, but supports multi-contour masks
+builtin_interfaces/Time timestamp
