@@ -80,7 +80,7 @@ target_link_libraries(image_capture ${OpenCV_LIBS})
 # ament_target_dependencies(controller rclcpp std_msgs geometry_msgs)
 
 add_executable(state_estimator src/state_estimator.cpp src/include/src/kalman.cpp)
-ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs nav_msgs)
+ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs nav_msgs tf2)
 target_link_libraries(state_estimator Eigen3::Eigen)
 
 add_executable(planner src/planner.cpp)

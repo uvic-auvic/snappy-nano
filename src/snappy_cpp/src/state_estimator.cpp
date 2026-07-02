@@ -1,5 +1,6 @@
 // this file is going to contain the code for the state estimator
 #include <chrono>
+#include <cmath>
 #include <functional>
 #include <memory>
 #include <string>
@@ -11,6 +12,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "tf2/LinearMath/Quaternion.h"
 
 #include "kalman.h"
 
@@ -53,7 +55,8 @@ public:
         imu2_file.open(imu2_filename, std::fstream::out);
         depth_file.open(depth_filename, std::fstream::out);
         dvl_file.open(dvl_filename, std::fstream::out);
-        kalman_file.open(kalman_filename, std::fstream::out); // output of kalman
+        kalman_file.open(kalman_filename, std::fstream::out); // output of kalman filter
+
         // Create QoS profile matching RealSense camera publisher
         // RealSense uses: Best Effort reliability + Volatile durability
         auto qos = rclcpp::QoS(rclcpp::KeepLast(10))
@@ -71,20 +74,20 @@ public:
             "/imu", //"/imu/data"
             qos,
             std::bind(&StateEstimator::imu2_callback, this, std::placeholders::_1));
+
         depth_sub_ = this->create_subscription<std_msgs::msg::String>(
             "pressure_data",
             10,
             std::bind(&StateEstimator::depth_callback, this, std::placeholders::_1));
 
-        // DVL: Water Linked driver publishes nav_msgs/Odometry. We fuse the
-        // body-frame velocity (twist.twist.linear) as a high-trust velocity update.
+      
         dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/waterlinked_dvl_driver/odom", 10,
             std::bind(&StateEstimator::dvl_callback, this, std::placeholders::_1));
 
 
-        // need  to update for imu2, this is from imu1
-        accel_bias_init_ << -0.0196133, -0.284393, 0.17987;
+        // need to update for imu2,
+        accel_bias_init_ << 0, 0, 0;
 
         // Default state before frame initialization fires (filter not yet active)
         VectorXd x0 = VectorXd::Zero(13);
@@ -92,11 +95,12 @@ public:
         x0.segment<3>(10) = accel_bias_init_;
 
         // Error-state covariance: [δp(3), δv(3), δθ(3), δb_a(3)] = 12 dims
-        MatrixXd P_init = MatrixXd::Identity(12, 12);
-        P_init.block<3,3>(0,0) *= 0.05;  // position uncertainty
-        P_init.block<3,3>(3,3) *= 0.1;   // velocity uncertainty
-        P_init.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty
-        P_init.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty
+
+        P_init_ = MatrixXd::Identity(12, 12);
+        P_init_.block<3,3>(0,0) *= 0.05;  // position uncertainty
+        P_init_.block<3,3>(3,3) *= 0.1;   // velocity uncertainty
+        P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty
+        P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty
 
         // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
         MatrixXd Q_init = MatrixXd::Zero(6, 6);
@@ -105,23 +109,25 @@ public:
         kf.setProcessNoise(Q_init);
        
         // To get better R_ vaules, should take stationary data and compute standard deviation
-
+        // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
         MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.05; // depth sensor noise
+        MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * 0.01; // DVL velocity measurement noise, high trust
+
         kf.setIMU1MeasurementNoise(R_imu1_init);
         kf.setDepthMeasurementNoise(R_depth_init);
+        kf.setDVLVelocityMeasurementNoise(R_dvl_vel_);
 
-        // DVL velocity update noise (high trust). Small => DVL strongly bounds
-        // velocity drift. ~0.1 m/s std as a starting point; tune from bench data.
-        R_dvl_vel_ = Matrix3d::Identity() * 0.01;
-
-        // IMU2 is mounted upside-down (180° rotation around Y axis).
-        // 180° around Y: x→-x, y→y, z→-z  ⟹  q = (w=0, x=0, y=1, z=0)
-        // Applied to both accel and the orientation quaternion in predict().
-        q_imu2_to_body_node_ = Quaterniond(0, 0, 1, 0);  // w, x, y, z; 180° around Y
+        // IMU2 is mounted upside-down
+        // must roate IMU2 around y axis 180 degrees
+        q_imu2_to_body_node_ = Quaterniond(0, 0, 1, 0);  // w, x, y, z; 180° around y
         kf.setIMU2ToBodyRotation(q_imu2_to_body_node_);
 
-        kf.reset(x0, P_init);
+
+        // kf.setIMU1ToBodyRotation(Quaterniond::Identity());  // no mount rotation
+        kf.setIMU1ToBodyRotation(Quaterniond(0, 1, 0, 0));
+
+        kf.reset(x0, P_init_);
 
 
         /*
@@ -242,7 +248,7 @@ private:
             last_time_imu2_sec_ = now_sec;
         }
 
-        // Buffer first IMU2 quaternion to define the world frame yaw at startup
+        // wait until we have received the first IMU2 message to initialize the filter to set the right starting frame 
         if (!init_imu2_ready_) {
             init_imu2_quat_ = Quaterniond(msg->orientation.w, msg->orientation.x,
                                           msg->orientation.y, msg->orientation.z);
@@ -321,25 +327,23 @@ private:
     void dvl_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
         if (!dvl_received_) {
-            RCLCPP_INFO(this->get_logger(), "✅ First DVL message received!");
+            RCLCPP_INFO(this->get_logger(), "First DVL message received!");
             dvl_received_ = true;
         }
         dvl_count_++;
 
         if (!frame_initialized_) return;
 
-        // Odometry twist is in child_frame_id (the DVL/body frame, REP-105). Per the
-        // mounting notes the DVL axes match the body frame (fwd +x, right +y, down +z),
-        // so no extra rotation is applied. If a DVL->body mount offset is added later,
-        // rotate v_body by it before the update.
+    
         Vector3d v_body(msg->twist.twist.linear.x,
                         msg->twist.twist.linear.y,
                         msg->twist.twist.linear.z);
 
-        // Skip bad samples (driver emits NaN/inf when there is no bottom lock)
+        // Skip bad samples, assuming dvl publishes NaN when bad vaules
+        // if this doesnt work must look at our orientation and stop reading vaules when the dvl is not facing down
         if (!v_body.allFinite()) return;
 
-        kf.updateDVLVelocity(v_body, R_dvl_vel_);
+        kf.updateDVLVelocity(v_body);
 
         if (dvl_count_ % 20 == 0) {
             RCLCPP_INFO(this->get_logger(),
@@ -390,27 +394,53 @@ private:
     {
         if (frame_initialized_ || !init_depth_ready_ || !init_imu2_ready_) return;
 
-        // World frame is gravity-aligned (world-z = true down), so the depth sensor
-        // (true hydrostatic depth) maps directly onto the z position.
+    
         double z0 = init_depth_;
+
+        // Initial orientation(roll, pitch,yaw) = (0, 0, yaw0), with yaw0 taken from the IMU2 on first message
+
+        // The Xsens quaternion answers "how is the SENSOR rotated relative to an
+        // ENU (z-up) world?" — our filter world is z-DOWN, so BOTH sides of that
+        // relationship need fixing before it can be used:
+        //   q_world<-body = q_enu_to_world * quat_imu2 * q_imu2_to_body^-1
+        //                   (world side)                 (sensor/mount side)
+        // The mount flip alone is NOT enough: without the ENU term the at-rest
+        // attitude comes out 180° flipped (filter thinks it's upside down) and
+        // gravity stops cancelling (+19.6 m/s² phantom accel). Uses the same
+        // shared constant predict() fuses with (see kalman.h).
+        Quaterniond q_body0 = (KalmanFilter::q_enu_to_world_ * init_imu2_quat_.normalized()
+                               * q_imu2_to_body_node_.conjugate()).normalized();
+        
+        
+        // Formula from stack overflow:  atan2(2.0f * (w * z + x * y), 1.0f - 2.0f * (y * y + z * z));                  
+        const double yaw0 = std::atan2(
+            2.0 * (q_body0.w() * q_body0.z() + q_body0.x() * q_body0.y()),
+            1.0 - 2.0 * (q_body0.y() * q_body0.y() + q_body0.z() * q_body0.z()));
+            
+        // Save quaternion for yaw = yaw0 (radians, from atan2), roll, pitch = 0.0
+        Quaterniond q0 = getQuaternionFromYawPitchRollRadians(yaw0, 0.0, 0.0);
 
         VectorXd x0 = VectorXd::Zero(13);
         x0(2) = z0;           // depth at startup: (0, 0, depth)
-        x0(6) = 1.0;          // identity quaternion — overwritten by IMU2 attitude on first predict()
+        x0(6) = q0.w();       // yaw-only startup quaternion [w, x, y, z]
+        x0(7) = q0.x();
+        x0(8) = q0.y();
+        x0(9) = q0.z();
         x0.segment<3>(10) = accel_bias_init_;
 
-        MatrixXd P_init = MatrixXd::Identity(12, 12);
-        P_init.block<3,3>(0,0) *= 0.05;  // position
-        P_init.block<3,3>(3,3) *= 0.1;   // velocity
-        P_init.block<3,3>(6,6) *= 0.01;  // orientation
-        P_init.block<3,3>(9,9) *= 0.01;  // accel bias
-
-        kf.reset(x0, P_init);
+        kf.reset(x0, P_init_);
         frame_initialized_ = true;
 
         RCLCPP_INFO(this->get_logger(),
-            "KF world frame initialized: pos=(0, 0, %.3f) m  [depth=%.3f m]",
-            z0, init_depth_);
+            "KF world frame initialized: pos=(0, 0, %.3f) m  [depth=%.3f m, yaw0=%.1f deg]",
+            z0, init_depth_, yaw0 * 180.0 / M_PI);
+    }   
+
+    // RADIANS in — do not pass degrees. ZYX composition q = Rz(yaw)*Ry(pitch)*Rx(roll)
+    Quaterniond getQuaternionFromYawPitchRollRadians(double yaw_rad, double pitch_rad, double roll_rad) {
+        tf2::Quaternion q_tf;
+        q_tf.setRPY(roll_rad, pitch_rad, yaw_rad);  // tf2 argument order is (roll, pitch, yaw), radians
+        return Quaterniond(q_tf.w(), q_tf.x(), q_tf.y(), q_tf.z());
     }
 
     void check_status()
@@ -449,9 +479,6 @@ private:
     int accel_count_ = 0;
     int dvl_count_ = 0;
 
-    // DVL velocity measurement noise (3x3)
-    Matrix3d R_dvl_vel_ = Matrix3d::Identity() * 0.01;
-
     // Deferred world-frame initialization: wait for first depth + first IMU2
     bool frame_initialized_ = false;
     bool init_depth_ready_  = false;
@@ -460,6 +487,7 @@ private:
     Quaterniond init_imu2_quat_;
     Quaterniond q_imu2_to_body_node_;      // local copy for try_initialize()
     Vector3d accel_bias_init_ = Vector3d::Zero();
+    MatrixXd P_init_;                      // initial error-state covariance, built once in the constructor
 };
 
 int main(int argc, char * argv[])
