@@ -60,7 +60,12 @@ public:
           if (!received_[name]) {
             RCLCPP_INFO(this->get_logger(), "  [PASS] %-25s is publishing.", name.c_str());
             received_[name] = true;
-            check_if_done();
+            int check = check_if_done();
+            if(check == 1){
+                return 1;
+            }else {
+                return 0;
+            }
           }
         });
       subs_.push_back(sub);
@@ -80,18 +85,23 @@ public:
   }
 
 private:
-  void check_if_done()
+  int check_if_done()
   {
     for (auto & [name, ok] : received_) {
-      if (!ok) return;  // still waiting on something
+      if (!ok) return 10;  // still waiting on something
     }
     // All sensors received at least one message — no need to wait for timeout
     timer_->cancel();
-    print_results();
+    int x = print_results();
+    if(x == 1){
+        return 1;
+    } else {
+        return 0;
+    }
     rclcpp::shutdown();
   }
 
-  void print_results()
+  int print_results()
   {
     bool all_passed = true;
     int passed = 0;
@@ -115,8 +125,10 @@ private:
 
     if (all_passed) {
       RCLCPP_INFO(this->get_logger(),  "  ALL SENSORS OK — Snappy is ready to dive.");
+      return 0;
     } else {
       RCLCPP_ERROR(this->get_logger(), "  SENSOR FAILURE — Do not operate the submarine.");
+      return 1;
     }
   }
 
