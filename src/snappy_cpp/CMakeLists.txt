@@ -183,6 +183,18 @@ install(FILES
     DESTINATION share/${PROJECT_NAME}/models
 )
 
+add_executable(sensorTest
+    src/sensorTest.cpp)
+ament_target_dependencies(sensorTest
+  rclcpp
+  std_msgs
+  nav_msgs
+  geometry_msgs
+  Eigen3
+  tf2
+  tf2_geometry_msgs
+  snappy_interfaces
+)
 
 add_executable(controller
   src/controller.cpp
@@ -203,6 +215,7 @@ ament_target_dependencies(controller
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(controller "${cpp_typesupport_target}")
+target_link_libraries(sensorTest "${cpp_typesupport_target}")
 target_link_libraries(state_estimator "${cpp_typesupport_target}")
 target_link_libraries(planner "${cpp_typesupport_target}")
 #target_link_libraries(helloWorld "${cpp_typesupport_target}")
@@ -217,6 +230,7 @@ install(TARGETS
   pressureSensor
   image_capture
   controller
+  sensorTest
   state_estimator
   planner
   counter_publisher
@@ -228,6 +242,8 @@ if(WITH_CUDA)
   install(TARGETS bottom_camera_vision
     DESTINATION lib/${PROJECT_NAME})
   install(TARGETS displayFeed
+    DESTINATION lib/${PROJECT_NAME})
+  install(TARGETS sensorTest
     DESTINATION lib/${PROJECT_NAME})
 endif()
 
