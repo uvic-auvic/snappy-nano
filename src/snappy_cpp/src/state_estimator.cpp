@@ -19,6 +19,7 @@
 
 
 using namespace std::chrono_literals;
+using std::placeholders::_1;
 
 class StateEstimator : public rclcpp::Node
 {
@@ -40,7 +41,7 @@ public:
 
 
     //change in time between imu messages
-    double last_time_imu1_sec_ = 0.0; 
+    double last_time_imu1_sec_ = 0.0;
     double last_time_imu2_sec_ = 0.0;
     KalmanFilter kf;
 
@@ -48,10 +49,10 @@ public:
     StateEstimator() : Node("state_estimator")
     {
         RCLCPP_INFO(this->get_logger(), "State Estimator starting...");
-        
+
         // imu1_file: accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
         // imu2_file: accel_x, accel_y, accel_z, quat_x, quat_y, quat_z, quat_w
-        
+
         imu1_file.open(imu1_filename, std::fstream::out);
         imu2_file.open(imu2_filename, std::fstream::out);
         depth_file.open(depth_filename, std::fstream::out);
@@ -63,28 +64,28 @@ public:
         auto qos = rclcpp::QoS(rclcpp::KeepLast(10))
             .best_effort()  // Use Best Effort (not Reliable)
             .durability_volatile();  // Volatile durability
-        
+
         // Primary: unified IMU topic (gyro + accel combined) from camera
         imu_sub1_ = this->create_subscription<sensor_msgs::msg::Imu>(
             "/camera/camera/imu",
             qos,
-            std::bind(&StateEstimator::imu1_callback, this, std::placeholders::_1));
-        
+            std::bind(&StateEstimator::imu1_callback, this, _1));
+
         // From on-board IMU (Xsens MTi driver)
         imu_sub2_ = this->create_subscription<sensor_msgs::msg::Imu>(
             "/imu/data",
             qos,
-            std::bind(&StateEstimator::imu2_callback, this, std::placeholders::_1));
+            std::bind(&StateEstimator::imu2_callback, this, _1));
 
         depth_sub_ = this->create_subscription<std_msgs::msg::Float32>(
-            "depth_data",
+            "/depth_data",
             10,
-            std::bind(&StateEstimator::depth_callback, this, std::placeholders::_1));
+            std::bind(&StateEstimator::depth_callback, this, _1));
 
-      
+
         dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/waterlinked_dvl_driver/odom", 10,
-            std::bind(&StateEstimator::dvl_callback, this, std::placeholders::_1));
+            std::bind(&StateEstimator::dvl_callback, this, _1));
 
 
         // need to update for imu2,
@@ -108,7 +109,7 @@ public:
         Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.1;    // accel noise → velocity growth
         Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-6;   // accel bias random walk
         kf.setProcessNoise(Q_init);
-       
+
         // To get better R_ vaules, should take stationary data and compute standard deviation
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
@@ -131,7 +132,7 @@ public:
         kf.reset(x0, P_init_);
 
 
-    
+
         publisher_ = this->create_publisher<snappy_cpp::msg::Pose>(
             "state_estimator/state", 10
         );
@@ -148,7 +149,7 @@ public:
         RCLCPP_INFO(this->get_logger(), "  - depth_data");
         RCLCPP_INFO(this->get_logger(), "  - /waterlinked_dvl_driver/odom");
         RCLCPP_INFO(this->get_logger(), "Waiting for IMU data...");
-        
+
         // Timer to check status
         check_timer_ = this->create_wall_timer(
             std::chrono::seconds(2),
@@ -181,12 +182,12 @@ private:
 
         // Print combined IMU data every 20 messages
         if (imu_count_ % 20 == 0) {
-            RCLCPP_INFO(this->get_logger(), 
+            RCLCPP_INFO(this->get_logger(),
                 "[IMU 1] Gyro: [%.3f, %.3f, %.3f] rad/s | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
         }
-        
+
         // Write all data to file
         imu1_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
                 << msg->linear_acceleration.x << ","
@@ -196,9 +197,9 @@ private:
                 << msg->angular_velocity.y << ","
                 << msg->angular_velocity.z << std::endl;
 
-       
+
     }
-    
+
     void imu2_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         //pose message
@@ -217,7 +218,7 @@ private:
             last_time_imu2_sec_ = now_sec;
         }
 
-        // wait until we have received the first IMU2 message to initialize the filter to set the right starting frame 
+        // wait until we have received the first IMU2 message to initialize the filter to set the right starting frame
         if (!init_imu2_ready_) {
             init_imu2_quat_ = Quaterniond(msg->orientation.w, msg->orientation.x,
                                           msg->orientation.y, msg->orientation.z);
@@ -245,7 +246,7 @@ private:
 
         // Print combined IMU data every 20 messages
         if (imu2_count_ % 20 == 0) {
-            RCLCPP_INFO(this->get_logger(), 
+            RCLCPP_INFO(this->get_logger(),
                 "[IMU 2] Orient: [%.3f, %.3f, %.3f, %.3f] rad | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
@@ -286,12 +287,13 @@ private:
                     << kf.getOrientation().x() << ","
                     << kf.getOrientation().y() << ","
                     << kf.getOrientation().z() << std::endl;
-  
+
     }
 
    void depth_callback(const std_msgs::msg::Float32 & msg)
     {
-        float32 depth_data = msg.data;
+        float depth_data = msg.data;
+        RCLCPP_INFO(this->get_logger(), "HIIIIITTTTT");
         RCLCPP_INFO(this->get_logger(), "Depth data received: %f", depth_data);
 
         // Buffer first depth to seed z0 for world frame initialization
@@ -323,7 +325,7 @@ private:
 
         if (!frame_initialized_) return;
 
-    
+
         Vector3d v_body(msg->twist.twist.linear.x,
                         msg->twist.twist.linear.y,
                         msg->twist.twist.linear.z);
@@ -341,7 +343,7 @@ private:
                 kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z());
         }
 
-        // write to dvl file 
+        // write to dvl file
         dvl_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
                  << v_body.x() << ","
                  << v_body.y() << ","
@@ -349,7 +351,7 @@ private:
 
     }
 
-    
+
     void try_initialize()
     {
         if (frame_initialized_ || !init_depth_ready_ || !init_imu2_ready_) return;
@@ -370,13 +372,13 @@ private:
         // shared constant predict() fuses with (see kalman.h).
         Quaterniond q_body0 = (KalmanFilter::q_enu_to_world_ * init_imu2_quat_.normalized()
                                * q_imu2_to_body_node_.conjugate()).normalized();
-        
-        
-        // Formula from stack overflow:  atan2(2.0f * (w * z + x * y), 1.0f - 2.0f * (y * y + z * z));                  
+
+
+        // Formula from stack overflow:  atan2(2.0f * (w * z + x * y), 1.0f - 2.0f * (y * y + z * z));
         const double yaw0 = std::atan2(
             2.0 * (q_body0.w() * q_body0.z() + q_body0.x() * q_body0.y()),
             1.0 - 2.0 * (q_body0.y() * q_body0.y() + q_body0.z() * q_body0.z()));
-            
+
         // Save quaternion for yaw = yaw0 (radians, from atan2), roll, pitch = 0.0
         Quaterniond q0 = getQuaternionFromYawPitchRollRadians(yaw0, 0.0, 0.0);
 
@@ -394,7 +396,7 @@ private:
         RCLCPP_INFO(this->get_logger(),
             "KF world frame initialized: pos=(0, 0, %.3f) m  [depth=%.3f m, yaw0=%.1f deg]",
             z0, init_depth_, yaw0 * 180.0 / M_PI);
-    }   
+    }
 
     // RADIANS in — do not pass degrees. ZYX composition q = Rz(yaw)*Ry(pitch)*Rx(roll)
     Quaterniond getQuaternionFromYawPitchRollRadians(double yaw_rad, double pitch_rad, double roll_rad) {
@@ -406,12 +408,12 @@ private:
     void check_status()
     {
         if (!imu_received_ && !gyro_received_ && !accel_received_) {
-            RCLCPP_WARN(this->get_logger(), 
+            RCLCPP_WARN(this->get_logger(),
                 "❌ No IMU data received yet. Total: IMU=%d, Gyro=%d, Accel=%d",
                 imu_count_, gyro_count_, accel_count_);
         } else {
-            RCLCPP_INFO(this->get_logger(), 
-                "✅ Receiving - IMU:%d Gyro:%d Accel:%d msgs", 
+            RCLCPP_INFO(this->get_logger(),
+                "✅ Receiving - IMU:%d Gyro:%d Accel:%d msgs",
                 imu_count_, gyro_count_, accel_count_);
         }
     }
@@ -426,7 +428,7 @@ private:
     //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub_;
     //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub_;
     rclcpp::TimerBase::SharedPtr check_timer_;
-    
+
     bool imu_received_ = false;
     bool imu1_initialized_ = false;
     bool imu2_initialized_ = false;

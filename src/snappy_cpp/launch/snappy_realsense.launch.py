@@ -55,7 +55,7 @@ def generate_launch_description():
 
     serial_dev_arg = DeclareLaunchArgument(
         "serial_dev",
-        default_value="/dev/ttyUSB0",
+        default_value="/dev/ttyUSB1",
         description="Serial device for micro-ROS agent",
     )
 
@@ -101,7 +101,7 @@ def generate_launch_description():
     )
 
     state_estimator_node = TimerAction(
-        period=3.0,
+        period=6.0,
         actions=[
             Node(
                 package="snappy_cpp",
@@ -141,10 +141,11 @@ def generate_launch_description():
             snappyComputerVision,
             dvl,
             serial_dev_arg,
-            micro_ros_agent,
+            # micro_ros_agent,
             xsens_mti_node,
             pressure_sensor_node,
             planner_node,
-            controller_node,
+            #            controller_node,
+            state_estimator_node,
         ]
     )

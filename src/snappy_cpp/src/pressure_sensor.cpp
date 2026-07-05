@@ -24,9 +24,9 @@ public:
         // Publishes a plain float — your state estimator reads this directly
         publisher_ = this->create_publisher<std_msgs::msg::Float32>("depth_data", 10);
 
-        serial_fd_ = open("/dev/ttyUSB1", O_RDONLY | O_NOCTTY | O_NONBLOCK);
+        serial_fd_ = open("/dev/ttyUSB0", O_RDONLY | O_NOCTTY | O_NONBLOCK);
         if (serial_fd_ < 0) {
-            RCLCPP_ERROR(this->get_logger(), "Failed to open /dev/ttyUSB1");
+            RCLCPP_ERROR(this->get_logger(), "Failed to open /dev/ttyUSB0");
             return;
         }
 
