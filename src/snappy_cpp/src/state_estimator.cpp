@@ -159,7 +159,7 @@ private:
     void imu1_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         if (!imu_received_) {
-            RCLCPP_INFO(this->get_logger(), "✅ First IMU message received!");
+            RCLCPP_INFO(this->get_logger(), "✅ First IMU1 message received!");
             imu_received_ = true;
         }
         const double now_sec = rclcpp::Time(msg->header.stamp).seconds();
@@ -186,12 +186,6 @@ private:
                 msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
         }
-        // auto orient_msg = std_msgs::msg::String();
-        // orient_msg.data = std::to_string(kf.getOrientation().w()) + "," +
-        //                   std::to_string(kf.getOrientation().x()) + "," +
-        //                   std::to_string(kf.getOrientation().y()) + "," +
-        //                   std::to_string(kf.getOrientation().z());
-        // orientation_publisher_->publish(orient_msg);
         
         // Write all data to file
         imu1_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
@@ -212,7 +206,7 @@ private:
 
 
         if (!imu_received_) {
-            RCLCPP_INFO(this->get_logger(), "✅ First IMU message received!");
+            RCLCPP_INFO(this->get_logger(), "✅ First IMU2 message received!");
             imu_received_ = true;
         }
         imu2_count_++;
@@ -295,9 +289,9 @@ private:
   
     }
 
-   void depth_callback(const std_msgs::msg::Float32::SharedPtr msg)
+   void depth_callback(const std_msgs::msg::Float32 & msg)
     {
-        const double depth_data = msg->data;
+        float32 depth_data = msg.data;
         RCLCPP_INFO(this->get_logger(), "Depth data received: %f", depth_data);
 
         // Buffer first depth to seed z0 for world frame initialization

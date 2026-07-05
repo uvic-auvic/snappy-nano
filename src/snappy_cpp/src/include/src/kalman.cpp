@@ -169,6 +169,12 @@ void KalmanFilter::updateDepth(double depth_measured)
     VectorXd residual(1);
     residual << (depth_measured - x(2));
 
+    // if the residual is too large, ignore the depth measurement (likely a bad reading) 
+    if (residual(0) > 0.5 || residual(0) < -0.5)
+    {
+        return;
+    }
+
     MatrixXd H = MatrixXd::Zero(1, 12);
     H(0, 2) = 1.0;
 
