@@ -144,7 +144,7 @@ def generate_launch_description():
     )
 
     controller_node = TimerAction(
-        period=3.0,
+        period=5.0,
         actions=[
             Node(
                 package="snappy_cpp",
