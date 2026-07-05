@@ -37,20 +37,22 @@ using std::placeholders::_1;
 class Controller : public rclcpp::Node {
     public:
         Controller() : Node("controller"),
-            pid_x_(0.5f, 0.0f, 0.1f),
-            pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(3.0f, 1.0f, 1.0f),
-            pid_roll_(0.5f, 0.0f, 0.1f),
-            pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.15f, 0.0f, 5.0f)
+            pid_x_(0.0f, 0.0f, 0.0f),
+            pid_y_(0.0f, 0.0f, 0.0f),
+            pid_z_(8.0f, 1.0f, 4.0f),
+            pid_roll_(0.0f, 0.0f, 0.0f),
+            pid_pitch_(0.0f, 0.0f, 0.0f),
+            pid_yaw_(0.3f, 0.0f, 0.0f)
          {
-             target_position = Eigen::Vector3d(0.0, 10.0, 0.0);
+             target_position = Eigen::Vector3d(0.0, 0.0, 1.0);
              target_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
 
             // For testing, set the target orientation
              double roll = 0;
              double pitch = 0;
              double yaw = 0;
+
+             flag_ = 0;
 
              target_orientation = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX())
                  * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
@@ -197,7 +199,7 @@ class Controller : public rclcpp::Node {
 
             // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << thrust_x, thrust_y, thrust_z, thrust_yaw, thrust_pitch, thrust_roll;
+            wrench << thrust_x, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }
@@ -333,16 +335,17 @@ class Controller : public rclcpp::Node {
         void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
             //RCLCPP_INFO(this->get_logger(), "Received IMU data: roll=%.2f, pitch=%.2f, yaw=%.2f", msg.vector.x, msg.vector.y, msg.vector.z);
             //rollroll
-    	    roll = msg.vector.x;
+    	    //roll = msg.vector.x;
             //pitch
-            pitch = msg.vector.y;
+            //pitch = msg.vector.y;
             //yaw
-      //       yaw = msg.vector.z;
-    	 //    if (flag_ == 0) {
-    		// flag_ = 1;
+            yaw = msg.vector.z * EIGEN_PI / 180;
+    	    if (flag_ == 0) {
+                flag_ = 1;
     		// // first reference of yaw
-    		// pid_yaw_.set_target(yaw);
-    	 //    }
+    		    //pid_yaw_.set_target(yaw);
+                set_yaw(yaw);
+          }
         }
 
 
@@ -414,6 +417,8 @@ class Controller : public rclcpp::Node {
 
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
+
+        int flag_;
 
         int dvl_first_;
         int timer_first_;
