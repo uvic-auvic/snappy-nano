@@ -11,6 +11,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float32.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 
@@ -69,14 +70,14 @@ public:
             qos,
             std::bind(&StateEstimator::imu1_callback, this, std::placeholders::_1));
         
-        // From on-board IMU
+        // From on-board IMU (Xsens MTi driver)
         imu_sub2_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/imu", //"/imu/data"
+            "/imu/data",
             qos,
             std::bind(&StateEstimator::imu2_callback, this, std::placeholders::_1));
 
-        depth_sub_ = this->create_subscription<std_msgs::msg::String>(
-            "pressure_data",
+        depth_sub_ = this->create_subscription<std_msgs::msg::Float32>(
+            "depth_data",
             10,
             std::bind(&StateEstimator::depth_callback, this, std::placeholders::_1));
 
@@ -97,10 +98,10 @@ public:
         // Error-state covariance: [δp(3), δv(3), δθ(3), δb_a(3)] = 12 dims
 
         P_init_ = MatrixXd::Identity(12, 12);
-        P_init_.block<3,3>(0,0) *= 0.05;  // position uncertainty
-        P_init_.block<3,3>(3,3) *= 0.1;   // velocity uncertainty
-        P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty
-        P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty
+        P_init_.block<3,3>(0,0) *= 0.1;  // position uncertainty of initial guess
+        P_init_.block<3,3>(3,3) *= 0.1;   // velocity uncertainty of initial guess
+        P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty of initial guess
+        P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty of initial guess
 
         // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
         MatrixXd Q_init = MatrixXd::Zero(6, 6);
@@ -130,19 +131,7 @@ public:
         kf.reset(x0, P_init_);
 
 
-        /*
-        // Alternative: separate gyro topic
-        gyro_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/camera/camera/gyro/sample",
-            qos,
-            std::bind(&StateEstimator::gyro_callback, this, std::placeholders::_1));
-        
-        // Alternative: separate accel topic
-        accel_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/camera/camera/accel/sample",
-            qos,
-            std::bind(&StateEstimator::accel_callback, this, std::placeholders::_1));
-        */
+    
         publisher_ = this->create_publisher<snappy_cpp::msg::Pose>(
             "state_estimator/state", 10
         );
@@ -155,9 +144,9 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "State Estimator subscribed to:");
         RCLCPP_INFO(this->get_logger(), "  - /camera/camera/imu");
-        RCLCPP_INFO(this->get_logger(), "  - /imu");
-        RCLCPP_INFO(this->get_logger(), "  - /camera/camera/gyro/sample");
-        RCLCPP_INFO(this->get_logger(), "  - /camera/camera/accel/sample");
+        RCLCPP_INFO(this->get_logger(), "  - /imu/data");
+        RCLCPP_INFO(this->get_logger(), "  - depth_data");
+        RCLCPP_INFO(this->get_logger(), "  - /waterlinked_dvl_driver/odom");
         RCLCPP_INFO(this->get_logger(), "Waiting for IMU data...");
         
         // Timer to check status
@@ -196,17 +185,13 @@ private:
                 "[IMU 1] Gyro: [%.3f, %.3f, %.3f] rad/s | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
-            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f]",
-                kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
-                kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
-                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w());
         }
-        auto orient_msg = std_msgs::msg::String();
-        orient_msg.data = std::to_string(kf.getOrientation().w()) + "," +
-                          std::to_string(kf.getOrientation().x()) + "," +
-                          std::to_string(kf.getOrientation().y()) + "," +
-                          std::to_string(kf.getOrientation().z());
-        orientation_publisher_->publish(orient_msg);
+        // auto orient_msg = std_msgs::msg::String();
+        // orient_msg.data = std::to_string(kf.getOrientation().w()) + "," +
+        //                   std::to_string(kf.getOrientation().x()) + "," +
+        //                   std::to_string(kf.getOrientation().y()) + "," +
+        //                   std::to_string(kf.getOrientation().z());
+        // orientation_publisher_->publish(orient_msg);
         
         // Write all data to file
         imu1_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
@@ -217,18 +202,7 @@ private:
                 << msg->angular_velocity.y << ","
                 << msg->angular_velocity.z << std::endl;
 
-        kalman_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
-                    << kf.getPosition().x() << ","
-                    << kf.getPosition().y() << ","
-                    << kf.getPosition().z() << ","
-                    << kf.getVelocity().x() << ","
-                    << kf.getVelocity().y() << ","
-                    << kf.getVelocity().z() << ","
-                    << kf.getOrientation().w() << ","
-                    << kf.getOrientation().x() << ","
-                    << kf.getOrientation().y() << ","
-                    << kf.getOrientation().z() << std::endl;
-  
+       
     }
     
     void imu2_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
@@ -243,6 +217,7 @@ private:
         }
         imu2_count_++;
         const double now_sec = rclcpp::Time(msg->header.stamp).seconds();
+
         if (!imu2_initialized_) {
             imu2_initialized_ = true;
             last_time_imu2_sec_ = now_sec;
@@ -280,7 +255,13 @@ private:
                 "[IMU 2] Orient: [%.3f, %.3f, %.3f, %.3f] rad | Accel: [%.3f, %.3f, %.3f] m/s²",
                 msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
+
+            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f]",
+                kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
+                kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
+                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w());
         }
+
         publisher_->publish(pose);
         auto orient_msg = std_msgs::msg::String();
         orient_msg.data = std::to_string(pose.orientation.w) + "," +
@@ -298,26 +279,40 @@ private:
                 << msg->orientation.y << ","
                 << msg->orientation.z << ","
                 << msg->orientation.w << std::endl;
+
+
+         kalman_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
+                    << kf.getPosition().x() << ","
+                    << kf.getPosition().y() << ","
+                    << kf.getPosition().z() << ","
+                    << kf.getVelocity().x() << ","
+                    << kf.getVelocity().y() << ","
+                    << kf.getVelocity().z() << ","
+                    << kf.getOrientation().w() << ","
+                    << kf.getOrientation().x() << ","
+                    << kf.getOrientation().y() << ","
+                    << kf.getOrientation().z() << std::endl;
+  
     }
 
-   void depth_callback(const std_msgs::msg::String::SharedPtr msg)
+   void depth_callback(const std_msgs::msg::Float32::SharedPtr msg)
     {
-        std::string depth_data = msg->data;
-        RCLCPP_INFO(this->get_logger(), "Depth data received: %s", msg->data.c_str());
+        const double depth_data = msg->data;
+        RCLCPP_INFO(this->get_logger(), "Depth data received: %f", depth_data);
 
         // Buffer first depth to seed z0 for world frame initialization
         if (!init_depth_ready_) {
-            init_depth_ = std::stod(depth_data);
+            init_depth_ = depth_data;
             init_depth_ready_ = true;
             try_initialize();
         }
 
         if(frame_initialized_)
         {
-            kf.updateDepth(std::stod(depth_data));
+            kf.updateDepth(depth_data);
         }
         auto depth_msg = std_msgs::msg::String();
-        depth_msg.data = depth_data;
+        depth_msg.data = std::to_string(depth_data);
         depth_publisher_->publish(depth_msg);
 
         // Write depth data to file
@@ -360,35 +355,6 @@ private:
 
     }
 
-    void gyro_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
-    {
-        if (!gyro_received_) {
-            RCLCPP_INFO(this->get_logger(), "✅ First Gyro message received!");
-            gyro_received_ = true;
-        }
-        gyro_count_++;
-        
-        if (gyro_count_ % 50 == 0) {
-            RCLCPP_INFO(this->get_logger(), 
-                "[Gyro] X=%.3f, Y=%.3f, Z=%.3f rad/s (count: %d)",
-                msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z, gyro_count_);
-        }
-    }
-    
-    void accel_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
-    {
-        if (!accel_received_) {
-            RCLCPP_INFO(this->get_logger(), "✅ First Accel message received!");
-            accel_received_ = true;
-        }
-        accel_count_++;
-        
-        if (accel_count_ % 50 == 0) {
-            RCLCPP_INFO(this->get_logger(), 
-                "[Accel] X=%.3f, Y=%.3f, Z=%.3f m/s² (count: %d)",
-                msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z, accel_count_);
-        }
-    }
     
     void try_initialize()
     {
@@ -398,7 +364,7 @@ private:
         double z0 = init_depth_;
 
         // Initial orientation(roll, pitch,yaw) = (0, 0, yaw0), with yaw0 taken from the IMU2 on first message
-        
+
         // The Xsens quaternion answers "how is the SENSOR rotated relative to an
         // ENU (z-up) world?" — our filter world is z-DOWN, so BOTH sides of that
         // relationship need fixing before it can be used:
@@ -458,7 +424,7 @@ private:
 
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub1_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub2_;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr depth_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr dvl_subscription_;
     rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr orientation_publisher_;
