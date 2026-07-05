@@ -1,5 +1,5 @@
 """
-Launch file for Snappy ROV with RealSense cameras.
+Launch File for snappy to test and make sure all our sensors have been booted up correctly so we can run the submarine
 Uses the official RealSense rs_launch.py and launches all Snappy C++ nodes.
 
 Usage:
@@ -13,10 +13,15 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
+    EmitEvent,
     ExecuteProcess,
     IncludeLaunchDescription,
+    OpaqueFunction,
+    RegisterEventHandler,
     TimerAction,
 )
+from launch.event_handlers import OnProcessExit
+from launch.events import Shutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -59,8 +64,7 @@ def generate_launch_description():
         ],
         output="screen",
     )
-    # Launch arguments for serial numbers (with defaults)
-    # Serial numbers must be wrapped in single quotes for RealSense parameter type handling
+
     serial_no_d455_arg = DeclareLaunchArgument(
         "serial_no_d455",
         default_value="'239222301226'",
@@ -73,7 +77,6 @@ def generate_launch_description():
         description="Serial number of D405 camera",
     )
 
-    # Get launch configuration
     serial_no_d455 = LaunchConfiguration("serial_no_d455")
     serial_no_d405 = LaunchConfiguration("serial_no_d405")
 
@@ -93,7 +96,6 @@ def generate_launch_description():
             "json_file_path": PathJoinSubstitution(
                 [FindPackageShare("snappy_cpp"), "config", "d455_underwater.json"]
             ),
-            # "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test455.json"]),
             "rgb_camera.color_profile": "848x480x30",
             "enable_gyro": "true",
             "enable_accel": "true",
@@ -119,7 +121,6 @@ def generate_launch_description():
             "json_file_path": PathJoinSubstitution(
                 [FindPackageShare("snappy_cpp"), "config", "d405_underwater.json"]
             ),
-            # "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test405.json"]),
             "rgb_camera.color_profile": "848x480x30",
             "enable_gyro": "false",  # D405 does not include IMU
             "enable_accel": "false",
@@ -134,6 +135,7 @@ def generate_launch_description():
         "param",
         "xsens_mti_node.yaml",
     )
+
     xsens_mti_node = Node(
         package="xsens_mti_ros2_driver",
         executable="xsens_mti_node",
@@ -141,42 +143,6 @@ def generate_launch_description():
         output="screen",
         parameters=[parameters_file_path],
         arguments=[],
-    )
-
-    controller_node = TimerAction(
-        period=5.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="controller",
-                name="controller",
-                output="screen",
-            )
-        ],
-    )
-
-    state_estimator_node = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="state_estimator",
-                name="state_estimator",
-                output="screen",
-            )
-        ],
-    )
-
-    planner_node = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="planner",
-                name="planner",
-                output="screen",
-            )
-        ],
     )
 
     pressure_sensor_node = TimerAction(
@@ -191,33 +157,29 @@ def generate_launch_description():
         ],
     )
 
-    # Single shared TensorRT inference node serving both cameras (D455 front,
-    # D405 bottom). Replaces the former front_cam + bottom_cam processes: one
-    # CUDA context / engine for all cameras. Add a camera by appending its
-    # namespace to camera_namespaces.
-    #
-    front_camera_vision = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="front_camera_vision",
-                name="front_camera_vision",
-                output="screen",
-            )
-        ],
+    # Bare Node reference needed for OnProcessExit to target
+    sensor_test_node = Node(
+        package="snappy_cpp",
+        executable="sensorTest",
+        name="sensorTest",
+        output="screen",
     )
 
-    bottom_camera_vision = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="bottom_camera_vision",
-                name="bottom_camera_vision",
-                output="screen",
-            )
-        ],
+    # Delayed start to give sensors time to spin up
+    sensor_test_timer = TimerAction(
+        period=15.0,  # cameras + pressure sensor need time to initialize
+        actions=[sensor_test_node],
+    )
+
+    def on_sensor_test_exit(event, context):
+        # Only shut down the launch if sensorTest returned non-zero (failure)
+        return [EmitEvent(event=Shutdown(reason="Sensors Did Not Work"))]
+
+    sensor_test_exit_handler = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=sensor_test_node,
+            on_exit=on_sensor_test_exit,
+        )
     )
 
     return LaunchDescription(
@@ -231,9 +193,7 @@ def generate_launch_description():
             d405_launch,
             xsens_mti_node,
             pressure_sensor_node,
-            front_camera_vision,
-            bottom_camera_vision,
-            planner_node,
-            controller_node,
+            sensor_test_timer,
+            sensor_test_exit_handler,
         ]
     )
