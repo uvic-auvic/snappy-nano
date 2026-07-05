@@ -220,6 +220,40 @@ def generate_launch_description():
         ],
     )
 
+    # ------------------------------------------------------------------
+    # Optional open-loop movement test. Fires a depth + forward command a
+    # while after launch so you can watch the controller hold depth/heading
+    # and drive forward without touching the planner. DISABLED by default --
+    # uncomment `drive_test` in the LaunchDescription list below to enable.
+    # Prefer running these from the CLI (see MOVEMENT.md) so you control WHEN
+    # the sub moves and always have a `stop` command ready.
+    # ------------------------------------------------------------------
+    drive_test = TimerAction(
+        period=20.0,  # seconds after launch; tune so sensors are up & sub is settled
+        actions=[
+            # Go down 0.5 m from wherever it started, then hold (closed-loop depth).
+            ExecuteProcess(
+                cmd=[
+                    "ros2", "topic", "pub", "--once", "/planner/task",
+                    "snappy_cpp/msg/Task",
+                    '{type: "move", direction: "z", magnitude: 0.5, '
+                    "absolute: false, overwrite: true}",
+                ],
+                output="screen",
+            ),
+            # Open-loop forward at 40% (auto-stops after drive_timeout_, ~3 s).
+            ExecuteProcess(
+                cmd=[
+                    "ros2", "topic", "pub", "--once", "/planner/task",
+                    "snappy_cpp/msg/Task",
+                    '{type: "drive", direction: "forward", magnitude: 40, '
+                    "absolute: false, overwrite: true}",
+                ],
+                output="screen",
+            ),
+        ],
+    )
+
     return LaunchDescription(
         [
             dvl,
@@ -235,5 +269,6 @@ def generate_launch_description():
             bottom_camera_vision,
             planner_node,
             controller_node,
+            # drive_test,   # <-- uncomment to auto-run the open-loop movement test
         ]
     )

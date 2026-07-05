@@ -1,13 +1,20 @@
-// this file will have all the controller logic for the submarine
-// Motor command publisher — publishes Float32MultiArray on /motor_cmd
-// data[0] = MotorSelect (0–255, cast to uint8 on the STM32 side) 11111111 (255) = all 8 motors
-// data[1] = Speed       (–100.0 to 100.0)
+// Controller node for the submarine.
+//
+// PID-only control (no thruster allocator, no state estimator on this branch).
+// Six independent PIDs (x, y, depth, roll, pitch, yaw) each produce a scalar
+// thrust in [-100, 100]. timer_callback() mixes those onto the 8 thrusters by
+// SUMMING each DOF's contribution (never overwriting), then clamps once and
+// publishes a ThrusterCommand on /motor_cmd (mask=255, thrust_pct[8]).
+//
+// Thruster map (index = bit position, see motorboard.h):
+//   0 FRONT_YAW   1 FRONT_RIGHT*  2 FORWARD_RIGHT  3 BACK_RIGHT*
+//   4 BACK_YAW    5 BACK_LEFT*    6 FORWARD_LEFT   7 FRONT_LEFT*
+//   (* = vertical thruster, shared by depth/roll/pitch)
 
 #include <algorithm>
 #include <cstdint>
 #include <cmath>
 #include <optional>
-#include <std_msgs/msg/float32_multi_array.hpp>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -43,10 +50,6 @@ class Controller : public rclcpp::Node {
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.15f, 0.0f, 5.0f)
          {
-            timer_first_ = 0;
-            dvl_first_ = 0;
-            state_ = 0;
-
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
             motor_publisher_ = create_publisher<snappy_interfaces::msg::ThrusterCommand>(
@@ -89,6 +92,7 @@ class Controller : public rclcpp::Node {
                 100ms, std::bind(&Controller::trajectory_callback, this));
 
 
+            last_drive_cmd_time_ = this->now();
             timer_ = this->create_wall_timer(10ms, std::bind(&Controller::timer_callback, this));
             RCLCPP_INFO(this->get_logger(), "Timer Node started");
 
@@ -122,71 +126,104 @@ class Controller : public rclcpp::Node {
             // RCLCPP_INFO(this->get_logger(), "Publishing status: '%s'", status_message.data.c_str());
         }
 
+        // Mix depth/pitch/roll onto the 4 vertical thrusters (indices 1,3,5,7)
+        // with strict priority: depth > pitch > roll. Depth is applied first as a
+        // common-mode term so it always keeps full authority; pitch, then roll, each
+        // receive only the thruster headroom that is left, scaled uniformly so the
+        // term stays a pure moment instead of being distorted per-thruster.
+        void vertical_thrust_pid(float cmd[8]) {
+            // Run the three vertical-axis PIDs. Stored as members so logControlDebug()
+            // can print them without re-running update() (which would corrupt PID state).
+            z_thrust_     = pid_z_.update(current_depth);
+            pitch_thrust_ = pid_pitch_.update(pitch);
+            roll_thrust_  = pid_roll_.update(roll);
+
+            // Vertical thrusters in order [FRONT_RIGHT, BACK_RIGHT, BACK_LEFT, FRONT_LEFT].
+            const int   idx[4]        = {1, 3, 5, 7};
+            // Per-thruster sign of each DOF's contribution (from motorboard.cpp).
+            const float z_sign[4]     = {+1.0f, +1.0f, +1.0f, +1.0f};
+            const float pitch_sign[4] = {-1.0f, +1.0f, +1.0f, -1.0f};
+            const float roll_sign[4]  = {-1.0f, -1.0f, +1.0f, +1.0f};
+
+            // Priority 1: depth. |z_thrust_| <= 100 (PID clamps it) so this always fits.
+            float u[4];
+            for (int i = 0; i < 4; i++) {
+                u[i] = z_thrust_ * z_sign[i];
+            }
+
+            // Priority 2: pitch. Priority 3: roll. Each scaled to the leftover headroom.
+            addScaledMoment(u, pitch_sign, pitch_thrust_);
+            addScaledMoment(u, roll_sign,  roll_thrust_);
+
+            for (int i = 0; i < 4; i++) {
+                cmd[idx[i]] = u[i];
+            }
+        }
+
         void timer_callback() {
-	    //Depth STUFF
-			float x_master = x;
-			float y_master = y;
-            float depth_master = current_depth;
-            float roll_master = roll;
-            float pitch_master = pitch;
+            // Snapshot the latest heading (updated asynchronously by the IMU callback).
             float yaw_master = yaw;
 
-            // Set target values to be first read values
-            if (timer_first_ == 1) {
-                pid_yaw_.set_target(yaw_master);
-                pid_y_.set_target(y_master);
-                pid_x_.set_target(x_master);
-                pid_z_.set_target(depth_master);
-                timer_first_ = 0;
+            // Deadman: open-loop surge/sway auto-stop if no fresh "drive" command
+            // arrived within drive_timeout_ seconds. Depth + heading keep holding.
+            // This is why publishing one "forward" command drives for ~drive_timeout_
+            // seconds and then stops on its own.
+            if ((this->now() - last_drive_cmd_time_).seconds() > drive_timeout_) {
+                open_surge_ = 0.0f;
+                open_sway_  = 0.0f;
             }
 
-            // RCLCPP_INFO(this->get_logger(), "Position [X, Y, Z, Roll, Pitch, Yaw]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", x_master, y_master, depth_master, roll_master, pitch_master, yaw_master);
-            // Update the Z-axis PID with current depth
-            float x_thrust = pid_x_.update(x_master);
-            float y_thrust = pid_y_.update(y_master);
-            float z_thrust = pid_z_.update(depth_master);
-
-            if(yaw_master < -180) {
+            // Heading hold: wrap yaw into [-180, 180] so 179 -> -179 reads as a
+            // 2 degree error, not 358, then run the yaw PID.
+            if (yaw_master < -180) {
                 yaw_master += 360;
-            }else if (yaw_master > 180) {
+            } else if (yaw_master > 180) {
                 yaw_master -= 360;
             }
+            yaw_thrust_ = pid_yaw_.update(yaw_master);
 
-            float yaw_thrust = pid_yaw_.update(yaw_master);
+            // Build the per-thruster command by SUMMING each contribution; shared
+            // thrusters add up rather than overwrite, then we clamp once at the end.
+            float cmd[8] = {0};
 
+            // Vertical group: depth > pitch > roll priority (closed-loop PID).
+            vertical_thrust_pid(cmd);
 
+            // Lateral group: open-loop strafe (sway) + closed-loop heading hold (yaw).
+            cmd[0] = -open_sway_ - yaw_thrust_; // FRONT_YAW
+            cmd[4] =  open_sway_ - yaw_thrust_; // BACK_YAW
 
-            RCLCPP_INFO(this->get_logger(), "Speed getting set: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
-                allocation[0], allocation[1], allocation[2], allocation[3],
-                allocation[4], allocation[5], allocation[6], allocation[7]);
+            // Forward group: open-loop surge.
+            cmd[2] = open_surge_; // FORWARD_RIGHT
+            cmd[6] = open_surge_; // FORWARD_LEFT
 
-            int8_t allocation_array[8];
-
-            // allocate the values of force/speed per thruster
-
-
-            // Turn the allocation vector into an array of int8_t for the motorboard
-            double* allocation_data = allocation.data();
-            for (int i = 0; i < allocation.size(); i++) {
-                double force = allocation_data[i];
-                if (force > 0) {
-                    allocation_array[i] = static_cast<int8_t>(round(force * 20)); // Convert max = 5 (kgf) to max = 100 (speed)
-                } else {
-                    allocation_array[i] = static_cast<int8_t>(round(force * 25)); // Convert max = -4 (kgf) to max = -100 (speed)
-                }
+            int8_t motors[8];
+            for (int i = 0; i < 8; i++) {
+                motors[i] = clampThrust(cmd[i]);
             }
 
+            motorboard_->sendCmd(255, motors);
+            logControlDebug(motors);
+        }
 
-
-            // Send the allocation array to the motorboard
-            motorboard_->sendCmd(255, allocation_array);
-
-
-
-            RCLCPP_INFO(this->get_logger(), "Send Speeds: %d, %d, %d, %d, %d, %d, %d, %d",
-                allocation_array[0], allocation_array[1], allocation_array[2], allocation_array[3],
-                allocation_array[4], allocation_array[5], allocation_array[6], allocation_array[7]);
-
+        // Human-readable, rate-limited tuning readout. Prints each axis' target,
+        // current value, error and thrust output, plus the final motor commands.
+        // Throttled to ~4 Hz so the 100 Hz control loop does not flood the console.
+        void logControlDebug(const int8_t motors[8]) {
+            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 250,
+                "\n[PID] DEPTH tgt=%6.2f cur=%6.2f err=%+6.2f out=%+6.1f"
+                "\n      YAW   tgt=%6.1f cur=%6.1f err=%+6.1f out=%+6.1f"
+                "\n      ROLL  tgt=%6.1f cur=%6.1f err=%+6.1f out=%+6.1f"
+                "\n      PITCH tgt=%6.1f cur=%6.1f err=%+6.1f out=%+6.1f"
+                "\n      DRIVE surge=%+6.1f sway=%+6.1f (open-loop)"
+                "\n[MTR] FYaw=%4d FR=%4d FwdR=%4d BR=%4d BYaw=%4d BL=%4d FwdL=%4d FL=%4d",
+                pid_z_.get_target(),    current_depth, pid_z_.get_target()    - current_depth, z_thrust_,
+                pid_yaw_.get_target(),  yaw,           pid_yaw_.get_target()  - yaw,           yaw_thrust_,
+                pid_roll_.get_target(), roll,          pid_roll_.get_target() - roll,          roll_thrust_,
+                pid_pitch_.get_target(),pitch,         pid_pitch_.get_target()- pitch,         pitch_thrust_,
+                open_surge_, open_sway_,
+                motors[0], motors[1], motors[2], motors[3],
+                motors[4], motors[5], motors[6], motors[7]);
         }
 
 
@@ -236,21 +273,31 @@ class Controller : public rclcpp::Node {
             position_current_ = msg.position;
             orientation_current_ = msg.orientation;
 
-            // Update PID values
-            tf2::Quaternion q_current;
-            tf2::fromMsg(orientation_current_, q_current);
-            double roll, pitch, yaw;
-            tf2::Matrix3x3(q_current).getRPY(roll, pitch, yaw);
-            float thrust_x = pid_x_.update(position_current_.x);
-            float thrust_y = pid_y_.update(position_current_.y);
-            //float thrust_z = pid_z_.update(position_current_.z);
-            float thrust_roll = pid_roll_.update(roll);
-            float thrust_pitch = pid_pitch_.update(pitch);
-            float thrust_yaw = pid_yaw_.update(yaw);
+            // NOTE: state estimator is disabled for now (buggy, being worked on).
+            // These PID .update() calls are commented out because timer_callback is the
+            // single owner of PID state. Calling update() here too would corrupt the
+            // shared integral / prev_err / dt that the depth/pitch/roll mixing relies on.
+            // Re-enable (and remove the duplicate updates from timer_callback) only when
+            // state_estimator/state is trusted as the sole state source.
+            // tf2::Quaternion q_current;
+            // tf2::fromMsg(orientation_current_, q_current);
+            // double roll, pitch, yaw;
+            // tf2::Matrix3x3(q_current).getRPY(roll, pitch, yaw);
+            // float thrust_x = pid_x_.update(position_current_.x);
+            // float thrust_y = pid_y_.update(position_current_.y);
+            // //float thrust_z = pid_z_.update(position_current_.z);
+            // float thrust_roll = pid_roll_.update(roll);
+            // float thrust_pitch = pid_pitch_.update(pitch);
+            // float thrust_yaw = pid_yaw_.update(yaw);
         }
 
         void depth_callback(const std_msgs::msg::Float32 & msg) {
-    	    current_depth = msg.data;
+            current_depth = msg.data;
+            if (depth_first_ == 0) {
+                depth_first_ = 1;
+                // Hold the depth we started at until the planner commands a new one.
+                pid_z_.set_target(current_depth);
+            }
         }
 
         void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
@@ -267,19 +314,6 @@ class Controller : public rclcpp::Node {
           		pid_yaw_.set_target(yaw);
     	    }
         }
-
-
-// pose:
-//   pose:
-//     position:
-//       x: 0.21390331654677197
-//       y: 0.15011672381170452
-//       z: 0.031298197173737205
-//     orientation:
-//       x: 0.5008356545579112
-//       y: -0.4569927882399792
-//       z: 0.6090910863871614
-//       w: -0.41149639986749026
 
         void dvl_callback(const nav_msgs::msg::Odometry & msg) {
             x = msg.pose.pose.position.x;
@@ -329,6 +363,30 @@ class Controller : public rclcpp::Node {
         }
 
         void parseTask(const snappy_cpp::msg::Task & msg) {
+            // Open-loop drive: set a surge/sway thrust setpoint directly (percent).
+            // Depth and heading keep holding via their PIDs. The setpoint auto-zeros
+            // after drive_timeout_ seconds (deadman in timer_callback), so publishing
+            // one command drives for ~drive_timeout_ s and then stops.
+            if (msg.type == "drive") {
+                last_drive_cmd_time_ = this->now();
+                float pct = static_cast<float>(msg.magnitude);
+                if (msg.direction == "forward") {
+                    open_surge_ = pct;
+                } else if (msg.direction == "backward") {
+                    open_surge_ = -pct;
+                } else if (msg.direction == "right") {
+                    open_sway_ = pct;
+                } else if (msg.direction == "left") {
+                    open_sway_ = -pct;
+                } else if (msg.direction == "stop") {
+                    open_surge_ = 0.0f;
+                    open_sway_ = 0.0f;
+                } else {
+                    RCLCPP_ERROR(this->get_logger(), "Invalid drive direction '%s'", msg.direction.c_str());
+                }
+                return;
+            }
+
             // If there is no current target:
             if (!position_target_.has_value()) {
                 position_target_ = position_current_;
@@ -349,7 +407,10 @@ class Controller : public rclcpp::Node {
                         position_target_->y = msg.absolute ? msg.magnitude : msg.magnitude + position_current_.y;
                         pid_y_.set_target(position_target_->y);
                     } else {
-                        position_target_->z = msg.absolute ? msg.magnitude : msg.magnitude + position_current_.z;
+                        // Depth feedback is the pressure sensor (current_depth), not the
+                        // disabled state estimator -- use it so "go down X from here"
+                        // works. (+magnitude = deeper, assuming depth grows downward.)
+                        position_target_->z = msg.absolute ? msg.magnitude : (current_depth + msg.magnitude);
                         pid_z_.set_target(position_target_->z);
                     }
 
@@ -392,6 +453,31 @@ class Controller : public rclcpp::Node {
             return static_cast<int8_t>(std::lround(std::clamp(value, -100.0f, 100.0f)));
         }
 
+        // Add gain*sign[i] to each u[i], but scale the whole term by a single factor
+        // alpha in [0,1] so that no |u[i]| exceeds 100. Uniform scaling keeps the term
+        // a pure moment; a lower-priority DOF simply gets weaker (or drops to zero) when
+        // the higher-priority DOFs have already used up a thruster's headroom.
+        static void addScaledMoment(float u[4], const float sign[4], float gain) {
+            float alpha = 1.0f;
+            for (int i = 0; i < 4; i++) {
+                float d = sign[i] * gain;
+                if (d == 0.0f) {
+                    continue;
+                }
+                float room = (d > 0.0f) ? (100.0f - u[i]) : (-100.0f - u[i]);
+                float a = room / d; // room and d share a sign, so a >= 0
+                if (a < alpha) {
+                    alpha = a;
+                }
+            }
+            if (alpha < 0.0f) {
+                alpha = 0.0f;
+            }
+            for (int i = 0; i < 4; i++) {
+                u[i] += alpha * sign[i] * gain;
+            }
+        }
+
         std::unique_ptr<Motor::Motorboard> motorboard_;
         rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher_;
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
@@ -421,18 +507,36 @@ class Controller : public rclcpp::Node {
         std::optional<geometry_msgs::msg::Quaternion> orientation_target_;
         const double error_threshold = 0.005;
 
-        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 
-        int dvl_first_;
-        int timer_first_;
-        int state_;
-    	float pitch;
-    	float yaw;
-    	float roll;
-    	float x;
-    	float y;
-    	float current_depth;
+        // First-sample flags: seed each PID target from the first reading it gets.
+        int dvl_first_ = 0;
+        int depth_first_ = 0;
+        int flag_ = 0; // first yaw reference from the IMU
+
+        // Latest sensor values, updated by the subscription callbacks.
+        // Initialized to 0 so that before any sensor data arrives, error == target
+        // (also 0) and no thrust is commanded -- fail-safe on startup.
+        float pitch = 0.0f;
+        float yaw = 0.0f;
+        float roll = 0.0f;
+        float x = 0.0f;
+        float y = 0.0f;
+        float current_depth = 0.0f;
+
+        // Last PID outputs, cached each cycle for logControlDebug().
+        float z_thrust_ = 0.0f;
+        float roll_thrust_ = 0.0f;
+        float pitch_thrust_ = 0.0f;
+        float yaw_thrust_ = 0.0f;
+
+        // Open-loop surge/sway setpoints (percent, -100..100), set by "drive" tasks
+        // and applied straight to the forward/lateral thrusters while depth + heading
+        // hold. Auto-zeroed by the deadman in timer_callback after drive_timeout_ s.
+        float open_surge_ = 0.0f;
+        float open_sway_ = 0.0f;
+        rclcpp::Time last_drive_cmd_time_;
+        const double drive_timeout_ = 3.0; // s; open-loop drive auto-stops if not refreshed
 };
 
 

@@ -19,6 +19,7 @@ class PID {
         PID(float Kp, float Ki, float Kd); // Constructor
         void set_target(float target);
         float update(float current); // Return the magnitude of movement
+        float get_target() const { return target_; } // For debug/tuning readouts
 };
 
 #endif
