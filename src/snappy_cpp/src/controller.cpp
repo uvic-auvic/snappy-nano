@@ -43,12 +43,12 @@ using std::placeholders::_1;
 class Controller : public rclcpp::Node {
     public:
         Controller() : Node("controller"),
-            pid_x_(0.5f, 0.0f, 0.1f),
-            pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(0.7f, 0.3f, 5.0f),
-            pid_roll_(0.5f, 0.0f, 0.1f),
-            pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.15f, 0.0f, 5.0f)
+            pid_x_(0.0f, 0.0f, 0.0f),
+            pid_y_(0.0f, 0.0f, 0.0f),
+            pid_z_(0.0f, 0.0f, 0.0f),
+            pid_roll_(0.0f, 0.0f, 0.0f),
+            pid_pitch_(0.0f, 0.0f, 0.0f),
+            pid_yaw_(0.0f, 0.0f, 0.0f)
          {
             //publish motor command
             // Match the STM32 micro-ROS subscription: same type AND best-effort QoS.
