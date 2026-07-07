@@ -1,15 +1,15 @@
 repositories:
-  src/xsens_mti_ros2_driver:
+  xsens_mti_ros2_driver:
     type: git
-    url: https://github.com/your-org/Xsens_MTi_ROS_Driver_and_Ntrip_Client.git
+    url: https://github.com/uvic-auvic/Xsens_MTi_ROS_Driver_and_Ntrip_Client.git
     version: d6b87ec 
 
-  src/realsense-ros:
+  realsense-ros:
     type: git
-    url: https://github.com/your-org/realsense-ros.git
+    url: https://github.com/uvic-auvic/realsense-ros.git
     version: 775b167
 
-  src/waterlinked_dvl:
+  waterlinked_dvl:
     type: git
     url: https://github.com/uvic-auvic/waterlinked_dvl.git
     version: 1653c12 

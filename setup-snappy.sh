@@ -3,33 +3,30 @@ set -e
 
 echo "=== Snappy Nano Setup ==="
 
-# Build and start the container
-
-echo "=== Get Container & Build ==="
+echo "=== Pulling container ==="
 docker pull nil2thrill/snappy-ros:humble
+
+echo "=== Starting container ==="
 docker compose up -d
 
-# Import all repos into src/
-echo "=== Get Container & Build ==="
+echo "=== Running setup inside container ==="
 docker compose exec snappy-nano bash -c "
+  set -e &&
   cd /ros2_ws &&
-  vcs import < snappy.repos &&
-  rosdep update &&
-  rosdep install --from-paths src --ignore-src -y
-"
-
-echo "=== Build The Project ==="
-# Build the workspace
-docker compose exec snappy-nano bash -c "
+  echo '--- Importing repos ---' &&
+  vcs import src < snappy.repos &&
+  vcs import src < src/waterlinked_dvl/ros2.repos &&
+  echo '--- Installing dependencies ---' &&
+  apt-get update -q &&
+  apt-get install -y nlohmann-json3-dev &&
+  rosdep update --rosdistro humble &&
+  rosdep install --from-paths src --ignore-src -y --skip-keys 'nlohmann_json' &&
+  echo '--- Building workspace ---' &&
   source /opt/ros/humble/setup.bash &&
-  cd /ros2_ws &&
-  colcon build --packages-ignore micro_ros_setup &&
+  colcon build &&
   source install/local_setup.bash &&
-  colcon build --packages-select micro_ros_setup &&
-  source install/local_setup.bash &&
-  ros2 run micro_ros_setup create_agent_ws.sh &&
-  ros2 run micro_ros_setup build_agent.sh
+  echo '=== Setup complete! ==='
 "
 
-echo "=== Setup complete! ==="
-echo "Run: docker compose exec snappy-nano bash"
+echo "=== Dropping you into the container ==="
+docker compose exec snappy-nano bash
