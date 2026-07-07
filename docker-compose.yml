@@ -1,0 +1,11 @@
+services:
+  snappy-nano:
+    image: nil2thrill/snappy-ros:humble
+    container_name: snappy-nano
+    volumes:
+      - .:/ros2_ws
+      - /dev:/dev
+    privileged: true
+    network_mode: host
+    stdin_open: true
+    tty: true
