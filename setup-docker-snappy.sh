@@ -9,6 +9,12 @@ docker pull nil2thrill/snappy-ros:humble
 echo "=== Starting container ==="
 docker compose up -d
 
+  echo "=== Cleaning stale build artifacts ==="
+docker compose exec snappy-nano bash -c "
+  cd /ros2_ws &&
+  rm -rf build/ install/ log/
+"	
+
 echo "=== Running setup inside container ==="
 docker compose exec snappy-nano bash -c "
   set -e &&
