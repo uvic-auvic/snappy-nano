@@ -6,12 +6,13 @@
 #include <NvInfer.h>
 #include <cuda_runtime.h>
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/image_encodings.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
-
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cmath>
 #include <condition_variable>
 #include <cstdint>
@@ -25,6 +26,10 @@
 #include <thread>
 #include <type_traits>
 #include <vector>
+#include <algorithm>
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 
 #include "snappy_cpp/msg/detection_array.hpp"
 #include "snappy_cpp/msg/object_detection.hpp"
@@ -56,11 +61,17 @@ public:
 
         init_tensorrt();
 
-        // Subscribe to D405 color feed
-        color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/d405/color/image_rect_raw",
-            rclcpp::SensorDataQoS(),
-            std::bind(&BottomCameraVision::color_callback, this, std::placeholders::_1));
+        // Subscribe to D405 color and aligned depth feeds together so objects get range estimate from the same frame
+        color_sub_.subscribe(
+            this, "/d405/color/image_rect_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
+        depth_sub_.subscribe(
+            this, "/d405/aligned_depth_to_color/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
+
+        sync_ = std::make_shared<SyncPolicy>(10);
+        sync_->connectInput(color_sub_, depth_sub_);
+        sync_->registerCallback(
+            std::bind(&BottomCameraVision::image_callback, this,
+                      std::placeholders::_1, std::placeholders::_2));
 
         // Publish detections
         detection_pub_ = this->create_publisher<snappy_cpp::msg::DetectionArray>(
@@ -98,6 +109,8 @@ private:
 
     struct InferenceJob {
         cv::Mat image;
+        cv::Mat depth_image;
+        std::string depth_encoding;
         rclcpp::Time timestamp;
     };
 
@@ -105,6 +118,7 @@ private:
         float x1, y1, x2, y2;
         float confidence;
         int class_id;
+        float distance_m = -1.0f;
         std::vector<cv::Point2f> mask_polygon;
     };
 
@@ -117,7 +131,13 @@ private:
 
     // ---- ROS callbacks -----------------------------------------------------
 
-    void color_callback(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
+    using SyncPolicy = message_filters::sync_policies::ApproximateTime<
+        sensor_msgs::msg::Image,
+        sensor_msgs::msg::Image>;
+
+    void color_callback(
+        const sensor_msgs::msg::Image::ConstSharedPtr & color_msg,
+        const sensor_msgs::msg::Image::ConstSharedPtr & depth_msg)
     {
         const auto now = this->get_clock()->now();
         if (last_inference_time_.has_value()) {
@@ -129,11 +149,14 @@ private:
         last_inference_time_ = now;
 
         try {
-            auto cv_ptr = cv_bridge::toCvShare(msg, "bgr8");
+            auto color_ptr = cv_bridge::toCvShare(color_msg, "bgr8");
+            auto depth_ptr = cv_bridge::toCvShare(depth_msg);
 
             InferenceJob job;
-            job.image = cv_ptr->image.clone();
-            job.timestamp = rclcpp::Time(msg->header.stamp.sec, msg->header.stamp.nanosec);
+            job.image = color_ptr->image.clone();
+            job.depth_image = depth_ptr->image.clone();
+            job.depth_encoding = depth_msg->encoding;
+            job.timestamp = rclcpp::Time(color_msg->header.stamp.sec, color_msg->header.stamp.nanosec);
 
             {
                 std::lock_guard<std::mutex> lock(queue_mutex_);
@@ -169,6 +192,11 @@ private:
 
             float inference_ms = 0.0f;
             auto detections = run_inference(job.image, inference_ms);
+
+            // depth/distance of object calculated by a median of the depth pixels within the segmented object
+            for (auto & det : detections) {
+                det.distance_m = estimate_distance_m(job.depth_image, job.depth_encoding, det);
+            }
             // Save a frame for later review, at most once every 5 seconds.
             const double frame_s = job.timestamp.seconds();
             if (frame_s - last_save_s_ >= 5.0) {
@@ -411,6 +439,84 @@ private:
         return (union_area > 0.0f) ? (inter / union_area) : 0.0f;
     }
 
+    float estimate_distance_m(
+        const cv::Mat & depth_image,
+        const std::string & depth_encoding,
+        const Detection & det) const
+    {
+        if (depth_image.empty()) {
+            return -1.0f;
+        }
+
+        cv::Rect box(
+            static_cast<int>(std::floor(det.x1)),
+            static_cast<int>(std::floor(det.y1)),
+            static_cast<int>(std::ceil(det.x2 - det.x1)),
+            static_cast<int>(std::ceil(det.y2 - det.y1)));
+        box &= cv::Rect(0, 0, depth_image.cols, depth_image.rows);
+        if (box.width <= 0 || box.height <= 0) {
+            return -1.0f;
+        }
+
+        cv::Mat object_mask = cv::Mat::zeros(depth_image.size(), CV_8UC1);
+        if (det.mask_polygon.size() >= 3) {
+            std::vector<cv::Point> contour;
+            contour.reserve(det.mask_polygon.size());
+            for (const auto & pt : det.mask_polygon) {
+                contour.emplace_back(
+                    static_cast<int>(std::lround(pt.x)),
+                    static_cast<int>(std::lround(pt.y)));
+            }
+            const cv::Point * pts = contour.data();
+            int npts = static_cast<int>(contour.size());
+            cv::fillPoly(object_mask, &pts, &npts, 1, cv::Scalar(255));
+        } else {
+            object_mask(box).setTo(255);
+        }
+
+        std::vector<float> samples;
+        samples.reserve(static_cast<size_t>(box.width * box.height));
+
+        const cv::Mat depth_roi = depth_image(box);
+        const cv::Mat mask_roi = object_mask(box);
+
+        if (depth_encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
+            for (int y = 0; y < depth_roi.rows; ++y) {
+                const auto * depth_row = depth_roi.ptr<uint16_t>(y);
+                const auto * mask_row = mask_roi.ptr<uint8_t>(y);
+                for (int x = 0; x < depth_roi.cols; ++x) {
+                    const uint16_t depth_mm = depth_row[x];
+                    if (mask_row[x] != 0 && depth_mm > 0) {
+                        samples.push_back(static_cast<float>(depth_mm) * 0.001f);
+                    }
+                }
+            }
+        } else if (depth_encoding == sensor_msgs::image_encodings::TYPE_32FC1) {
+            for (int y = 0; y < depth_roi.rows; ++y) {
+                const auto * depth_row = depth_roi.ptr<float>(y);
+                const auto * mask_row = mask_roi.ptr<uint8_t>(y);
+                for (int x = 0; x < depth_roi.cols; ++x) {
+                    const float depth_m = depth_row[x];
+                    if (mask_row[x] != 0 && depth_m > 0.0f && std::isfinite(depth_m)) {
+                        samples.push_back(depth_m);
+                    }
+                }
+            }
+        } else {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+                "Unsupported depth encoding for range estimate: %s", depth_encoding.c_str());
+            return -1.0f;
+        }
+
+        if (samples.empty()) {
+            return -1.0f;
+        }
+
+        auto middle = samples.begin() + static_cast<std::ptrdiff_t>(samples.size() / 2);
+        std::nth_element(samples.begin(), middle, samples.end());
+        return *middle;
+    }
+
     // ---- Publishing --------------------------------------------------------
 
     void publish_detections(const std::vector<Detection> & detections,
@@ -427,7 +533,7 @@ private:
             snappy_cpp::msg::ObjectDetection obj;
             obj.confidence = det.confidence;
             obj.object_class = class_name_for(det.class_id);
-            obj.distance_m = -1.0f;  // not computed in this node
+            obj.distance_m = det.distance_m;
             obj.timestamp = timestamp;
 
             snappy_cpp::msg::BoundingBox2D bbox;
@@ -560,7 +666,9 @@ private:
     // ---- Members -----------------------------------------------------------
 
     // ROS
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr color_sub_;
+    message_filters::Subscriber<sensor_msgs::msg::Image> color_sub_;
+    message_filters::Subscriber<sensor_msgs::msg::Image> depth_sub_;
+    std::shared_ptr<SyncPolicy> sync_;
     rclcpp::Publisher<snappy_cpp::msg::DetectionArray>::SharedPtr detection_pub_;
 
     // TensorRT / CUDA
