@@ -74,17 +74,22 @@ def generate_launch_description():
         output="screen",
     )
 
-    parameters_file_path = Path(
+    xsens_parameters_file_path = Path(
         get_package_share_directory("xsens_mti_ros2_driver"),
         "param",
         "xsens_mti_node.yaml",
+    )
+    controller_parameters_file_path = Path(
+        get_package_share_directory("snappy_cpp"),
+        "config",
+        "controller_params.yaml",
     )
     xsens_mti_node = Node(
         package="xsens_mti_ros2_driver",
         executable="xsens_mti_node",
         name="xsens_mti_node",
         output="screen",
-        parameters=[parameters_file_path],
+        parameters=[xsens_parameters_file_path],
         arguments=[],
     )
 
@@ -96,6 +101,7 @@ def generate_launch_description():
                 executable="controller",
                 name="controller",
                 output="screen",
+                parameters=[controller_parameters_file_path]
             )
         ],
     )

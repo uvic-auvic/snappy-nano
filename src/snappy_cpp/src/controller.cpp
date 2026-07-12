@@ -44,13 +44,17 @@ class Controller : public rclcpp::Node {
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.15f, 0.0f, 5.0f)
          {
-             target_position = Eigen::Vector3d(0.0, 10.0, 0.0);
-             target_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+             declare_parameter("target_position", std::vector<double>{0.0, 10.0, 0.0});
+             declare_parameter("target_roll", 0.0);
+             declare_parameter("target_pitch", 0.0);
+             declare_parameter("target_yaw", 0.0);
 
-            // For testing, set the target orientation
-             double roll = 0;
-             double pitch = 0;
-             double yaw = 0;
+             std::vector<double> target_position_vec = get_parameter("target_position").as_double_array();
+             target_position = Eigen::Vector3d(target_position_vec[0], target_position_vec[1], target_position_vec[2]);
+
+             double roll = get_parameter("target_roll").as_double();
+             double pitch = get_parameter("target_pitch").as_double();
+             double yaw = get_parameter("target_yaw").as_double();
 
              target_orientation = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX())
                  * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
