@@ -1,12 +1,13 @@
 services:
   snappy-nano:
-    image: nil2thrill/snappy-ros:humble
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: snappy-nano:local-arm64
     container_name: snappy-nano
     volumes:
       - .:/ros2_ws
-      - /dev:/dev
     privileged: true
-    network_mode: host
     stdin_open: true
     tty: true
     command: /bin/bash

@@ -3,17 +3,14 @@ set -e
 
 echo "=== Snappy Nano Setup ==="
 
-echo "=== Pulling container ==="
-docker pull nil2thrill/snappy-ros:humble
+echo "=== Building and Starting container ==="
+docker compose up -d --build
 
-echo "=== Starting container ==="
-docker compose up -d
-
-  echo "=== Cleaning stale build artifacts ==="
+echo "=== Cleaning stale build artifacts ==="
 docker compose exec snappy-nano bash -c "
   cd /ros2_ws &&
   rm -rf build/ install/ log/
-"	
+"
 
 echo "=== Running setup inside container ==="
 docker compose exec snappy-nano bash -c "
