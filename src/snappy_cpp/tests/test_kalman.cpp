@@ -201,7 +201,7 @@ public:
     void dvl_callback(const CsvRow& row)
     {
         if (!frame_initialized_) return;
-        const float epsilon = 1e-6f;
+        //const float epsilon = 1e-6f;
         Vector3d v_body(row.v[0], row.v[1], -row.v[2]);
         //if (!v_body.allFinite()) return;
         

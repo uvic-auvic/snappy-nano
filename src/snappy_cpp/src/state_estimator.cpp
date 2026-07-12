@@ -67,7 +67,7 @@ public:
 
         // Primary: unified IMU topic (gyro + accel combined) from camera
         imu_sub1_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/camera/camera/imu",
+            "/d455/camera/camera/imu",
             qos,
             std::bind(&StateEstimator::imu1_callback, this, _1));
 
@@ -89,7 +89,8 @@ public:
 
 
         // need to update for imu2,
-        accel_bias_init_ << 0, 0, 0;
+        // May want to get better values here
+        accel_bias_init_ << -0.5, 0.5, 0.2;
 
         // Default state before frame initialization fires (filter not yet active)
         VectorXd x0 = VectorXd::Zero(13);
@@ -110,7 +111,6 @@ public:
         Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-6;   // accel bias random walk
         kf.setProcessNoise(Q_init);
 
-        // To get better R_ vaules, should take stationary data and compute standard deviation
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
         MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.01; // depth sensor noise
@@ -126,7 +126,7 @@ public:
         kf.setIMU2ToBodyRotation(q_imu2_to_body_node_);
 
 
-        // kf.setIMU1ToBodyRotation(Quaterniond::Identity());  // no mount rotation
+        // IMU1: z points UP, gotta flip it 
         kf.setIMU1ToBodyRotation(Quaterniond(0, 1, 0, 0));
 
         kf.reset(x0, P_init_);
@@ -135,12 +135,6 @@ public:
 
         publisher_ = this->create_publisher<snappy_cpp::msg::Pose>(
             "state_estimator/state", 10
-        );
-        orientation_publisher_ = this->create_publisher<std_msgs::msg::String>(
-            "state_estimator/orientation", 10
-        );
-        depth_publisher_ = this->create_publisher<std_msgs::msg::String>(
-            "state_estimator/depth", 10
         );
 
         RCLCPP_INFO(this->get_logger(), "State Estimator subscribed to:");
@@ -193,7 +187,7 @@ private:
                 << msg->linear_acceleration.x << ","
                 << msg->linear_acceleration.y << ","
                 << msg->linear_acceleration.z << ","
-            << msg->angular_velocity.x << ","
+                << msg->angular_velocity.x << ","
                 << msg->angular_velocity.y << ","
                 << msg->angular_velocity.z << std::endl;
 
@@ -250,6 +244,8 @@ private:
         pose.orientation.y = kf.getOrientation().y();
         pose.orientation.z = kf.getOrientation().z();
 
+        publisher_->publish(pose);
+        
         // Print combined IMU data every 20 messages
         if (imu2_count_ % 20 == 0) {
             RCLCPP_INFO(this->get_logger(),
@@ -262,14 +258,6 @@ private:
                 kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
                 kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w());
         }
-
-        publisher_->publish(pose);
-        auto orient_msg = std_msgs::msg::String();
-        orient_msg.data = std::to_string(pose.orientation.w) + "," +
-                          std::to_string(pose.orientation.x) + "," +
-                          std::to_string(pose.orientation.y) + "," +
-                          std::to_string(pose.orientation.z);
-        orientation_publisher_->publish(orient_msg);
 
         // Write all data to file
         imu2_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
@@ -313,10 +301,6 @@ private:
             return;
         }
         kf.updateDepth(depth_data);
-
-        auto depth_msg = std_msgs::msg::String();
-        depth_msg.data = std::to_string(depth_data);
-        depth_publisher_->publish(depth_msg);
 
         // Write depth data to file (std_msgs::Float32 carries no header stamp)
         depth_file << depth_data << std::endl;
@@ -430,10 +414,6 @@ private:
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr dvl_subscription_;
     rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr publisher_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr orientation_publisher_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr depth_publisher_;
-    //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub_;
-    //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub_;
     rclcpp::TimerBase::SharedPtr check_timer_;
 
     bool imu_received_ = false;
