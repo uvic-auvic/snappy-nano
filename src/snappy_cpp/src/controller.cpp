@@ -39,24 +39,24 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.0f, 0.0f, 0.0f),
             pid_y_(0.0f, 0.0f, 0.0f),
-            pid_z_(8.0f, 1.0f, 4.0f),
-            pid_roll_(0.0f, 0.0f, 0.0f),
-            pid_pitch_(0.0f, 0.0f, 0.0f),
-            pid_yaw_(0.3f, 0.0f, 0.0f)
+            pid_z_(6.0f, 0.5f, 0.0f),
+            pid_roll_(1.0f, 0.0f, 0.0f),
+            pid_pitch_(1.0f, 0.0f, 0.0f),
+            pid_yaw_(2.0f, 0.0f, 0.0f)
          {
-             target_position = Eigen::Vector3d(0.0, 0.0, 1.0);
+             target_position = Eigen::Vector3d(0.0, 0.0, 0.5);
              target_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
 
             // For testing, set the target orientation
-             double roll = 0;
-             double pitch = 0;
-             double yaw = 0;
+             double target_roll = 0;
+             double target_pitch = 0;
+             double target_yaw = 0;
 
              flag_ = 0;
 
-             target_orientation = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX())
-                 * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
-                 * Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
+             target_orientation = Eigen::AngleAxisd(target_roll, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(target_pitch, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(target_yaw, Eigen::Vector3d::UnitZ());
 
             // Configuration of motors on the AUV
             // Rows: Fx, Fy, Fz, Tx, Ty, Tz
@@ -124,11 +124,11 @@ class Controller : public rclcpp::Node {
         void timer_callback() {
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> trajectory = generate_trajectory();
 
-            Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(0, 1, 2);
 
             //this is used to calculate the w value needed
-            RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, Y, P, R]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
-                trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[2], euler[1], euler[0]);
+            RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, R, P, Y]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+                trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[0], euler[1], euler[2]);
 
             // this is w aka the wrench value, it is a 6x1 vector
             Eigen::VectorXd wrench = generate_wrench(trajectory.first, trajectory.second);
@@ -165,7 +165,7 @@ class Controller : public rclcpp::Node {
 
         // Given the relative position and orientation of the target, generate the wrench to move in that direction
         Eigen::VectorXd generate_wrench(Eigen::Vector3d relative_position, Eigen::Quaterniond relative_orientation) {
-            Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             float roll = euler[0];
             float pitch = euler[1];
@@ -196,7 +196,7 @@ class Controller : public rclcpp::Node {
             float thrust_y = pid_y_.update(-relative_position[1]);
             float thrust_z = pid_z_.update(-relative_position[2]);
 
-            float thrust_yaw = pid_yaw_.update(-yaw);
+            float thrust_yaw = pid_yaw_.update(yaw);
             float thrust_pitch = pid_pitch_.update(-pitch);
             float thrust_roll = pid_roll_.update(-roll);
 
@@ -278,7 +278,7 @@ class Controller : public rclcpp::Node {
         }
 
         void set_yaw(float yaw, bool absolute = false) {
-            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             if (absolute) {
                 euler[2] = yaw;
@@ -286,7 +286,7 @@ class Controller : public rclcpp::Node {
                 euler[2] += yaw;
             }
 
-            Eigen::Quaterniond target_orientation =
+            target_orientation =
                 Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()) *
                 Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
                 Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ());
@@ -296,7 +296,7 @@ class Controller : public rclcpp::Node {
         }
 
         void set_pitch(float pitch, bool absolute = false) {
-            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             if (absolute) {
                 euler[1] = pitch;
@@ -304,7 +304,7 @@ class Controller : public rclcpp::Node {
                 euler[1] += pitch;
             }
 
-            Eigen::Quaterniond target_orientation =
+            target_orientation =
                 Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()) *
                 Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
                 Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ());
@@ -314,7 +314,7 @@ class Controller : public rclcpp::Node {
         }
 
         void set_roll(float roll, bool absolute = false) {
-            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             if (absolute) {
                 euler[0] = roll;
@@ -322,7 +322,7 @@ class Controller : public rclcpp::Node {
                 euler[0] += roll;
             }
 
-            Eigen::Quaterniond target_orientation =
+            target_orientation =
                 Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()) *
                 Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
                 Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ());
@@ -332,21 +332,25 @@ class Controller : public rclcpp::Node {
         }
 
         void depth_callback(const std_msgs::msg::Float32 & msg) {
-    	    current_depth = msg.data;
+	    if(msg.data < 0){
+		return;
+	    }else {
+		    current_depth = msg.data;
+	    }
         }
 
         void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
             //RCLCPP_INFO(this->get_logger(), "Received IMU data: roll=%.2f, pitch=%.2f, yaw=%.2f", msg.vector.x, msg.vector.y, msg.vector.z);
             //rollroll
-    	    //roll = msg.vector.x;
+    	    roll = msg.vector.x * EIGEN_PI / 180;
             //pitch
-            //pitch = msg.vector.y;
+            pitch = msg.vector.y * EIGEN_PI / 180;
             //yaw
             yaw = msg.vector.z * EIGEN_PI / 180;
     	    if (flag_ == 0) {
                 flag_ = 1;
     		// // first reference of yaw
-    		    //pid_yaw_.set_target(yaw);
+    		//pid_yaw_.set_target(yaw);
                 set_yaw(yaw);
           }
         }
@@ -379,14 +383,14 @@ class Controller : public rclcpp::Node {
 
             Eigen::Vector3d euler = R.eulerAngles(2,1,0);
 
-            yaw = euler[0];
-       	    if (dvl_first_ == 0) {
-          		dvl_first_ = 1;
+            //yaw = euler[0];
+       	    //if (dvl_first_ == 0) {
+          		//dvl_first_ = 1;
           		// first reference of yaw
-          		pid_yaw_.set_target(yaw);
-          		pid_y_.set_target(y);
-          		pid_x_.set_target(x);
-            }
+          		//set_yaw(yaw);
+          		//pid_y_.set_target(y);
+          		//pid_x_.set_target(x);
+            //}
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;

@@ -138,11 +138,11 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            xsens_mti_node,
             snappyComputerVision,
             dvl,
             serial_dev_arg,
             micro_ros_agent,
-            xsens_mti_node,
             pressure_sensor_node,
             planner_node,
             controller_node,
