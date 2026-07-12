@@ -75,6 +75,9 @@ if(WITH_CUDA)
   find_package(rosbridge_suite REQUIRED)
   find_package(CUDA REQUIRED)
   find_package(message_filters REQUIRED)
+  # The CUDA nodes publish snappy_cpp::msg::DetectionArray (the type the
+  # planner subscribes to), so they need snappy_cpp's generated headers.
+  find_package(snappy_cpp REQUIRED)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
 
   # Compile the fused preprocessing kernel (.cu) with nvcc. Orin Nano is Ampere
@@ -101,7 +104,7 @@ if(WITH_CUDA)
   set_target_properties(front_camera_vision PROPERTIES
     CUDA_STANDARD 17
     CUDA_STANDARD_REQUIRED ON)
-  ament_target_dependencies(front_camera_vision rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
+  ament_target_dependencies(front_camera_vision rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters snappy_cpp)
   # Link to generated message library
   add_dependencies(front_camera_vision ${PROJECT_NAME})
   target_link_libraries(front_camera_vision
@@ -122,7 +125,7 @@ if(WITH_CUDA)
   set_target_properties(bottom_camera_vision PROPERTIES
     CUDA_STANDARD 17
     CUDA_STANDARD_REQUIRED ON)
-  ament_target_dependencies(bottom_camera_vision rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters)
+  ament_target_dependencies(bottom_camera_vision rclcpp std_msgs sensor_msgs cv_bridge ament_index_cpp message_filters snappy_cpp)
 
   add_dependencies(bottom_camera_vision ${PROJECT_NAME})
   target_link_libraries(bottom_camera_vision
@@ -142,7 +145,7 @@ if(WITH_CUDA)
   set_target_properties(displayFeed PROPERTIES
     CUDA_STANDARD 17
     CUDA_STANDARD_REQUIRED ON)
-  ament_target_dependencies(displayFeed rclcpp sensor_msgs cv_bridge message_filters OpenCV)
+  ament_target_dependencies(displayFeed rclcpp sensor_msgs cv_bridge message_filters OpenCV snappy_cpp)
   add_dependencies(displayFeed ${PROJECT_NAME})
 target_link_libraries(displayFeed
     ${PROJECT_NAME}__rosidl_typesupport_cpp
