@@ -16,6 +16,13 @@ def generate_launch_description():
 
     default_world = os.path.join(package_share, 'worlds', 'kraken.sdf')
     simulation_launch = os.path.join(package_share, 'launch', 'simulation.launch.py')
+   
+    #Liam added for testing
+    config_file = os.path.join(
+        get_package_share_directory('snappy_cpp'),
+        'config',
+        'controller_params.yaml'
+    )
 
     world = LaunchConfiguration('world')
     headless = LaunchConfiguration('headless')
@@ -71,11 +78,13 @@ def generate_launch_description():
         }.items(),
     )
 
+    #Liam update for testing
     controller_node = Node(
         package='snappy_cpp',
         executable='controller',
         name='controller',
         output='screen',
+        parameters=[config_file],  # <-- Add this line
         condition=IfCondition(start_controller),
     )
 
