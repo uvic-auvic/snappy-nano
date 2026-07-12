@@ -66,6 +66,12 @@ add_executable(state_estimator src/state_estimator.cpp src/include/src/kalman.cp
 ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs nav_msgs tf2)
 target_link_libraries(state_estimator Eigen3::Eigen)
 
+# Offline KalmanFilter replay test (no ROS): replays recorded CSVs from a
+# state_estimator_outputs folder through the filter and compares against the
+# recorded kalman_*.csv. Run: test_kalman [path/to/state_estimator_outputs]
+add_executable(test_kalman tests/test_kalman.cpp src/include/src/kalman.cpp)
+target_link_libraries(test_kalman Eigen3::Eigen)
+
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 add_dependencies(planner ${PROJECT_NAME})
@@ -113,6 +119,7 @@ install(TARGETS
   controller
   sensorTest
   state_estimator
+  test_kalman
   planner
   DESTINATION lib/${PROJECT_NAME})
 

@@ -99,8 +99,8 @@ public:
         // Error-state covariance: [δp(3), δv(3), δθ(3), δb_a(3)] = 12 dims
 
         P_init_ = MatrixXd::Identity(12, 12);
-        P_init_.block<3,3>(0,0) *= 0.1;  // position uncertainty of initial guess
-        P_init_.block<3,3>(3,3) *= 0.1;   // velocity uncertainty of initial guess
+        P_init_.block<3,3>(0,0) *= 0.01;  // position uncertainty of initial guess
+        P_init_.block<3,3>(3,3) *= 0.01;   // velocity uncertainty of initial guess
         P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty of initial guess
         P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty of initial guess
 
@@ -113,8 +113,8 @@ public:
         // To get better R_ vaules, should take stationary data and compute standard deviation
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
-        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.05; // depth sensor noise
-        MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * 0.01; // DVL velocity measurement noise, high trust
+        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.01; // depth sensor noise
+        MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * 0.09; // DVL velocity measurement noise, high trust
 
         kf.setIMU1MeasurementNoise(R_imu1_init);
         kf.setDepthMeasurementNoise(R_depth_init);
@@ -216,6 +216,7 @@ private:
         if (!imu2_initialized_) {
             imu2_initialized_ = true;
             last_time_imu2_sec_ = now_sec;
+
         }
 
         // wait until we have received the first IMU2 message to initialize the filter to set the right starting frame
@@ -223,9 +224,14 @@ private:
             init_imu2_quat_ = Quaterniond(msg->orientation.w, msg->orientation.x,
                                           msg->orientation.y, msg->orientation.z);
             init_imu2_ready_ = true;
+            
             try_initialize();
         }
 
+        if (!frame_initialized_) {
+            RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
+            return;
+        }
         const double dt = now_sec - last_time_imu2_sec_;
         last_time_imu2_sec_ = now_sec;
 
@@ -293,7 +299,6 @@ private:
    void depth_callback(const std_msgs::msg::Float32 & msg)
     {
         float depth_data = msg.data;
-        RCLCPP_INFO(this->get_logger(), "HIIIIITTTTT");
         RCLCPP_INFO(this->get_logger(), "Depth data received: %f", depth_data);
 
         // Buffer first depth to seed z0 for world frame initialization
@@ -303,15 +308,17 @@ private:
             try_initialize();
         }
 
-        if(frame_initialized_)
-        {
-            kf.updateDepth(depth_data);
+        if (!frame_initialized_) {
+            RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
+            return;
         }
+        kf.updateDepth(depth_data);
+
         auto depth_msg = std_msgs::msg::String();
         depth_msg.data = std::to_string(depth_data);
         depth_publisher_->publish(depth_msg);
 
-        // Write depth data to file
+        // Write depth data to file (std_msgs::Float32 carries no header stamp)
         depth_file << depth_data << std::endl;
     }
 
@@ -322,16 +329,16 @@ private:
             dvl_received_ = true;
         }
         dvl_count_++;
-
         if (!frame_initialized_) return;
-
-
+        // Test this - on the z of the DVL in test_kalman it fixed the x,y postion 
+        // Should maybe flip this with a rotation matrix
         Vector3d v_body(msg->twist.twist.linear.x,
                         msg->twist.twist.linear.y,
-                        msg->twist.twist.linear.z);
+                        -msg->twist.twist.linear.z);
 
         // Skip bad samples, assuming dvl publishes NaN when bad vaules
         // if this doesnt work must look at our orientation and stop reading vaules when the dvl is not facing down
+        // This should check if all values are 0s
         if (!v_body.allFinite()) return;
 
         kf.updateDVLVelocity(v_body);
@@ -392,7 +399,7 @@ private:
 
         kf.reset(x0, P_init_);
         frame_initialized_ = true;
-
+        
         RCLCPP_INFO(this->get_logger(),
             "KF world frame initialized: pos=(0, 0, %.3f) m  [depth=%.3f m, yaw0=%.1f deg]",
             z0, init_depth_, yaw0 * 180.0 / M_PI);

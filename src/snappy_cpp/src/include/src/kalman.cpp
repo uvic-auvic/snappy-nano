@@ -5,6 +5,8 @@
 
 
 /*
+    ENU -- East-North-Up ()
+    NED -- North-East-Down
     ---- Frame conventions ----
     World frame: Depth below the surface maps to POSITIVE world z: moving 2 m down => z = +2.
     Example: (1.0, 2.0, 9.0) = 9 m below the surface, and we moved 1 m forward and 2 m right from starting measurement.
@@ -12,6 +14,7 @@
      - World frame: Position (0, 0, depth) at t = 0 (depth sensor value)
      - World frame: Orientation (0, 0, y) at t = 0, with y being the yaw from IMU2's first measurement 
     Body frame: +x forward, +y right, +z down (matches the world when level).
+
 
     The IMU2/Xsens quaternion is referenced to an ENU (z-up) world, so predict()
     converts it with the fixed rotation q_enu_to_world_ (180 deg about the x+y
@@ -21,12 +24,9 @@
         - physically mounted upside down: rotate 180 deg about the Y axis to reach the
           body frame (x fwd, y right, z down): q_imu2_to_body = (w=0, x=0, y=1, z=0)
 
-    - IMU1: sensor z points UP (verified: src/imu1_stationary.csv reads +9.6 m/s^2 on +z
-      at rest), so it needs 180 deg about the X axis: q_imu1_to_body = (w=0, x=1, y=0, z=0)
+    - IMU1: sensor z points UP, so it needs 180 deg about the X axis: q_imu1_to_body = (w=0, x=1, y=0, z=0)
 
-    - DVL: assumed to already match the body frame (+x forward, +y right, +z down) — no
-      rotation applied. No recorded capture verifies this; see dvl_callback() in
-      state_estimator.cpp.
+    - DVL: is (+x forward, +y right, -z down) so just flipping the z sign :)
 
 */
 
