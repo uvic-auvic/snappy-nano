@@ -123,9 +123,9 @@ class Controller : public rclcpp::Node {
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
                "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
 
-            // Receive dpeth value from pressure node
-            // depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-            //   "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+             //Receive dpeth value from pressure node
+             depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+              "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
 
             //get yaw info from the imu
             // imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -176,7 +176,7 @@ class Controller : public rclcpp::Node {
 
         // Given the target and current poses in global space, determine the vector between them in local space
         std::pair<Eigen::Vector3d, Eigen::Quaterniond> generate_trajectory() {
-            //Eigen::Vector3d current_position(x, y, current_depth);
+            Eigen::Vector3d current_position(x, y, current_depth);
             //Eigen::Quaterniond current_orientation;
             //current_orientation =
                 //Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
@@ -428,10 +428,10 @@ class Controller : public rclcpp::Node {
         }
 
         void state_callback(const snappy_cpp::msg::Pose & msg) {
-            current_position = Eigen::Vector3d(
-                msg.position.x,
-                msg.position.y,
-                msg.position.z);
+            // current_position = Eigen::Vector3d(
+            //     msg.position.x,
+            //     msg.position.y,
+            //     msg.position.z);
 
             current_orientation = Eigen::Quaterniond(
                 msg.orientation.w,
@@ -478,12 +478,12 @@ class Controller : public rclcpp::Node {
         int timer_first_;
         int state_;
 
-    	float pitch;
-    	float yaw;
-    	float roll;
-    	float x;
-    	float y;
-    	float current_depth;
+    	float pitch = 0.0f;
+    	float yaw = 0.0f;
+    	float roll = 0.0f;
+    	float x = 0.0f;
+    	float y = 0.0f;
+    	float current_depth = 0.0f;
 
         Eigen::Vector3d current_position;
         Eigen::Quaterniond current_orientation;
