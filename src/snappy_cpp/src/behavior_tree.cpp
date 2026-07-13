@@ -2,8 +2,7 @@
 //
 // Sequencing only: this node publishes Task setpoints/toggles on
 // /planner/task and never touches /motor_cmd or runs control loops. The
-// depth/heading hold and the visual servo live in the controller; the 3 s
-// drive deadman there is the independent safety layer under this process.
+// depth/heading hold and the visual servo live in the controller;
 //
 // The only three things that can autonomously abort a run and surface the
 // sub (all log at ERROR when they do):
@@ -19,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "ament_index_cpp/get_package_share_directory.hpp"
 #include "behaviortree_cpp/bt_factory.h"
 #include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -29,7 +29,6 @@
 #include "bt/actuator_nodes.hpp"
 #include "bt/bt_context.hpp"
 #include "bt/condition_nodes.hpp"
-#include "bt/mission_tree.hpp"
 #include "bt/motion_nodes.hpp"
 #include "bt/vision_nodes.hpp"
 
@@ -87,10 +86,15 @@ public:
         snappy::bt::registerActuatorNodes(factory_, ctx_);
 
         // Loading the XML validates every node name and port at startup —
-        // fail here on the bench, not mid-run.
-        const auto tree_file = get_parameter("tree_file").as_string();
-        tree_ = tree_file.empty() ? factory_.createTreeFromText(snappy::bt::kMissionXml)
-                                  : factory_.createTreeFromFile(tree_file);
+        // fail here on the bench, not mid-run. Default mission lives in
+        // bt_trees/mission.xml (installed to the package share dir); the
+        // tree_file parameter points at any other mission file.
+        auto tree_file = get_parameter("tree_file").as_string();
+        if (tree_file.empty()) {
+            tree_file = ament_index_cpp::get_package_share_directory("snappy_cpp")
+                        + "/bt_trees/mission.xml";
+        }
+        tree_ = factory_.createTreeFromFile(tree_file);
 
         start_time_ = Clock::now();
         timer_ = create_wall_timer(100ms, [this]() { tick(); });
@@ -99,8 +103,7 @@ public:
                     ctx_->role.c_str(),
                     ctx_->mission_time_s > 0 ? "on" : "off",
                     ctx_->guards_enabled ? "armed" : "WARN-ONLY",
-                    start_delay_s_,
-                    tree_file.empty() ? "<built-in mission>" : tree_file.c_str());
+                    start_delay_s_, tree_file.c_str());
     }
 
 private:

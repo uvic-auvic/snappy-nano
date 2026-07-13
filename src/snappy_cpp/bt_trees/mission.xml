@@ -1,37 +1,32 @@
-#pragma once
-// Default competition mission (RoboSub 2026 "Restore and Recovery").
-//
-// Shape:
-//   - Root Fallback: run the guarded mission; if it fails for ANY reason,
-//     EmergencySurface takes over. Fallback has memory in BT.CPP v4, so an
-//     aborted mission is never re-entered — the sub cannot re-submerge to
-//     re-run a mission it just aborted.
-//   - ReactiveSequence re-checks the safety guards every tick and halts the
-//     running leaf when one trips (each leaf's onHalted() shuts off whatever
-//     it turned on).
-//   - Per-task skip Fallbacks: competition is scored per task, so a failed
-//     task latches <task>_skipped and the run continues to the next one.
-//   - Every leaf that is not self-bounded sits under a Timeout decorator;
-//     timeout means the task FAILED and the skip pattern moves on.
-//
-// Every thrust/duration marked TUNE is a placeholder for pool testing. Test
-// on the bench first: run scripts/fake_sensors.py and watch
-// `ros2 topic echo /planner/task` — never in the water before the controller
-// consumes this contract correctly.
-//
-// Override at runtime with the `tree_file` ROS parameter to iterate on the
-// mission without recompiling.
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Default competition mission (RoboSub 2026 "Restore and Recovery").
+  Loaded by the behavior_tree node from the installed share directory;
+  point the `tree_file` ROS parameter at another file to run a different
+  mission without rebuilding.
 
-namespace snappy::bt
-{
+  Shape:
+    - Root Fallback: run the guarded mission; if it fails for ANY reason,
+      EmergencySurface takes over. Fallback has memory in BT.CPP v4, so an
+      aborted mission is never re-entered.
+    - ReactiveSequence re-checks the safety guards every tick and halts the
+      running leaf when one trips (each leaf's onHalted() shuts off whatever
+      it turned on).
+    - Per-task skip Fallbacks: competition is scored per task, so a failed
+      task latches <task>_skipped and the run continues to the next one.
+    - Every leaf that is not self-bounded sits under a Timeout decorator;
+      timeout means the task FAILED and the skip pattern moves on.
 
-inline constexpr const char* kMissionXml = R"(
+  Every thrust/duration marked TUNE is a placeholder for pool testing. Bench
+  test first: run scripts/fake_sensors.py and watch
+  `ros2 topic echo /planner/task`.
+-->
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
 
   <BehaviorTree ID="MainTree">
     <Fallback name="MissionWithAbort">
       <ReactiveSequence name="GuardedMission">
-        <SensorsFreshOK max_age_s="1.5"/>
+        <SensorsFreshOK/>  <!-- abort threshold = code default (see condition_nodes.hpp) -->
         <DepthEnvelopeOK max_depth_m="4.0"/>
         <MissionTimeLeft/>
         <!-- KillSwitchOK / BatteryOK: add when those signals exist on a topic -->
@@ -45,7 +40,7 @@ inline constexpr const char* kMissionXml = R"(
     <Sequence name="MissionSequence">
 
       <!-- Rules require submerging before leaving the start zone, and the
-           coin flip means the initial heading is unknown — so dive first,
+           coin flip means the initial heading is unknown - so dive first,
            search for the gate second. Not skippable: if we cannot even
            submerge, abort the run. -->
       <Timeout msec="30000">
@@ -58,7 +53,7 @@ inline constexpr const char* kMissionXml = R"(
       </Fallback>
 
       <!-- The gate->slalom path marker would guide this transition, but the
-           down-camera model has no path-marker class yet — dead-reckoned. -->
+           down-camera model has no path-marker class yet - dead-reckoned. -->
 
       <Fallback>
         <SubTree ID="SlalomTask"/>
@@ -86,7 +81,7 @@ inline constexpr const char* kMissionXml = R"(
       </Fallback>
 
       <!-- End the run on the surface either way. A timeout here fails the
-           mission and falls through to EmergencySurface — also acceptable. -->
+           mission and falls through to EmergencySurface - also acceptable. -->
       <Timeout msec="60000">
         <Surface/>
       </Timeout>
@@ -97,7 +92,7 @@ inline constexpr const char* kMissionXml = R"(
   <!-- Rotate-and-search: 12 x 30 deg = one full revolution. Each turn settles
        before Locate re-checks, or the camera sweeps past the object mid-turn
        and the debounce never accumulates. Weak for the down camera (a yaw
-       spin never changes what is underneath) — replace with a lawnmower
+       spin never changes what is underneath) - replace with a lawnmower
        pattern once closed-loop strafing exists. -->
   <BehaviorTree ID="SearchAndAlign">
     <Sequence>
@@ -120,7 +115,7 @@ inline constexpr const char* kMissionXml = R"(
 
   <!-- Gate: find our role's divider icon, latch which side it is on (every
        later task reads it), save the approach heading for ReturnHome, then
-       pass under with a 360 roll — a continuous roll is the max-style move,
+       pass under with a 360 roll - a continuous roll is the max-style move,
        a 90-and-back wobble scores zero. -->
   <BehaviorTree ID="GateTask">
     <Sequence>
@@ -165,7 +160,7 @@ inline constexpr const char* kMissionXml = R"(
   </BehaviorTree>
 
   <!-- Torpedoes: "circle" is the opening class. Large-then-small sequencing
-       needs per-opening classes the model does not have — both torpedoes go
+       needs per-opening classes the model does not have - both torpedoes go
        through the best-aligned opening. Stand-off distance is the
        controller-side tracker's job via distance_m. -->
   <BehaviorTree ID="TorpedoTask">
@@ -184,7 +179,7 @@ inline constexpr const char* kMissionXml = R"(
        dead-reckon from bins. Surfacing INSIDE the ring is a controlled
        mission Surface (not the emergency ascent), the run continues, and we
        re-submerge for ReturnHome. Claw/basket manipulation is a stretch goal
-       — not in the default tree. -->
+       - not in the default tree. -->
   <BehaviorTree ID="OctagonTask">
     <Sequence>
       <SaveHeading key="pre_octagon"/>
@@ -201,7 +196,7 @@ inline constexpr const char* kMissionXml = R"(
 
   <!-- Return home: reciprocal of the saved gate heading, re-acquire the gate
        visually if possible (any icon side counts on the way back), and pass
-       through underwater. A failed re-acquire does not abort the leg — the
+       through underwater. A failed re-acquire does not abort the leg - the
        dead-reckon fallback must exist. -->
   <BehaviorTree ID="ReturnHome">
     <Sequence>
@@ -220,6 +215,3 @@ inline constexpr const char* kMissionXml = R"(
   </BehaviorTree>
 
 </root>
-)";
-
-}  // namespace snappy::bt

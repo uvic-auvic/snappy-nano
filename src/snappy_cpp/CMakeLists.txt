@@ -78,9 +78,13 @@ ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
 add_dependencies(planner ${PROJECT_NAME})
 
 # Behaviour tree mission planner (publishes Task commands on /planner/task).
+# The default mission is bt_trees/mission.xml, loaded from the share dir.
 add_executable(behavior_tree src/behavior_tree.cpp)
-ament_target_dependencies(behavior_tree behaviortree_cpp rclcpp std_msgs geometry_msgs)
+ament_target_dependencies(behavior_tree behaviortree_cpp rclcpp std_msgs geometry_msgs ament_index_cpp)
 add_dependencies(behavior_tree ${PROJECT_NAME})
+
+install(DIRECTORY bt_trees
+  DESTINATION share/${PROJECT_NAME})
 
 add_executable(sensorTest
     src/sensorTest.cpp)
