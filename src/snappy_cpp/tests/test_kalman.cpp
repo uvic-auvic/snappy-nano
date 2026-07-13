@@ -104,12 +104,12 @@ public:
         P_init_.block<3,3>(0,0) *= 0.01;   // position uncertainty of initial guess
         P_init_.block<3,3>(3,3) *= 0.01;   // velocity uncertainty of initial guess
         P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty of initial guess
-        P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty of initial guess
+        P_init_.block<3,3>(9,9) *= 0.25;  // accel bias uncertainty of initial guess (loose: bias is a rough guess)
 
         // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
         MatrixXd Q_init = MatrixXd::Zero(6, 6);
         Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.1;    // accel noise → velocity growth
-        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-6;   // accel bias random walk
+        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-5;   // accel bias random walk
         kf.setProcessNoise(Q_init);
 
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 update noise (low trust)
@@ -129,22 +129,11 @@ public:
         kf.reset(x0, P_init_);
     }
 
-    // imu1 CSV columns after timestamp: accel_x..z, gyro_x..z
+    // IMU1 (RealSense) no longer feeds the filter — the node only logs it
+    // (KNOWN_ISSUES K1). Kept as a no-op so the replay timeline stays identical.
     void imu1_callback(const CsvRow& row)
     {
-        const double now_sec = row.t_ns * 1e-9;
-        if (!imu1_initialized_) {
-            imu1_initialized_ = true;
-            last_time_imu1_sec_ = now_sec;
-        }
-        const double dt = now_sec - last_time_imu1_sec_;
-        last_time_imu1_sec_ = now_sec;
-        if (dt > 0.001 && frame_initialized_)
-        {
-            Vector3d accel(row.v[0], row.v[1], row.v[2]);
-            Vector3d gyro(row.v[3], row.v[4], row.v[5]);
-            kf.updateIMU1(accel, gyro, dt);
-        }
+        (void)row;
     }
 
     // imu2 CSV columns after timestamp: accel_x..z, quat_x, quat_y, quat_z, quat_w.
@@ -197,17 +186,17 @@ public:
         }
     }
 
-    // dvl CSV columns after timestamp: v_x, v_y, v_z (body frame)
+    // dvl CSV columns after timestamp: v_x, v_y, v_z. NOTE: the node logs v_body
+    // AFTER applying its axis signs, so the replay applies the shared defaults to
+    // reconstruct the raw measurement path only for raw recordings; CSVs recorded
+    // by the current node are already in the body frame and the identity default
+    // makes this a pass-through either way.
     void dvl_callback(const CsvRow& row)
     {
         if (!frame_initialized_) return;
-        //const float epsilon = 1e-6f;
-        Vector3d v_body(row.v[0], row.v[1], -row.v[2]);
-        //if (!v_body.allFinite()) return;
-        
-        // Should test this next pool test, may crate better results hard to tell
-        //if (abs(v_body.x()) < epsilon && abs(v_body.y()) < epsilon && abs(v_body.z()) < epsilon) return; // skip bad samples
-        
+        Vector3d v_body = KalmanFilter::dvl_axis_signs_default.cwiseProduct(
+            Vector3d(row.v[0], row.v[1], row.v[2]));
+        if (!v_body.allFinite()) return;
 
         kf.updateDVLVelocity(v_body);
     }
@@ -249,9 +238,7 @@ private:
         frame_initialized_ = true;
     }
 
-    double last_time_imu1_sec_ = 0.0;
     double last_time_imu2_sec_ = 0.0;
-    bool imu1_initialized_ = false;
     bool imu2_initialized_ = false;
     bool frame_initialized_ = false;
     bool init_depth_ready_  = false;

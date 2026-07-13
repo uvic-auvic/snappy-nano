@@ -30,7 +30,11 @@
 
     - IMU1: sensor z points UP, so it needs 180 deg about the X axis: q_imu1_to_body = (w=0, x=1, y=0, z=0)
 
-    - DVL: is (+x forward, +y right, -z down) so just flipping the z sign :)
+    - DVL: WaterLinked reports velocity in x forward (toward the status LED),
+      y starboard, z DOWN toward the transducers — already the body frame for a
+      forward-aligned mount (no sign flips; see dvl_axis_signs_default in kalman.h).
+      The old "-z is down so flip z" comment here was wrong and caused the
+      runaway-descent pool failure: flipping z made descent read as ascent.
 
 */
 
@@ -175,14 +179,19 @@ void KalmanFilter::updateDepth(double depth_measured)
     VectorXd residual(1);
     residual << (depth_measured - x(2));
 
-    // if the residual is too large, ignore the depth measurement (likely a bad reading) 
-    if (residual(0) > 0.5 || residual(0) < -0.5)
+    MatrixXd H = MatrixXd::Zero(1, 12);
+    H(0, 2) = 1.0;
+
+    // Outlier gate on the innovation covariance (3-sigma Mahalanobis), NOT a fixed
+    // band: a fixed ±0.5 m band locked out every later depth fix once the estimate
+    // drifted past it, leaving z on accel integration forever (KNOWN_ISSUES K2).
+    // With S = P_zz + R the gate widens as unaccepted-depth uncertainty grows, so
+    // the filter always recovers its ability to accept the Bar02 again.
+    const double S = P(2, 2) + R_depth(0, 0);
+    if (residual(0) * residual(0) > 9.0 * S)
     {
         return;
     }
-
-    MatrixXd H = MatrixXd::Zero(1, 12);
-    H(0, 2) = 1.0;
 
     updateErrorState(residual, H, R_depth);
 }

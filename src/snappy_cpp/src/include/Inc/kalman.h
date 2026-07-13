@@ -34,20 +34,14 @@ public:
     // Predict step: propagate pos/vel from IMU2 accel, update orientation from IMU2 quat.
     void predict(const Eigen::Vector3d& accel, const Eigen::Quaterniond& quat_imu2, double dt);
 
-    // IMU1 combined low-trust predict+update: dead-reckons candidate position/
-    // velocity (accel kinematics) and orientation (gyro integration) over dt,
-    // then applies their residuals as ONE weak measurement update with large R
-    // (small Kalman gain). IMU2/DVL/depth remain the strong corrections.
+    // DO NOT CALL on the live path (KNOWN_ISSUES K1): this builds its residual from
+    // the filter's own state, so it acts as a second predict that confirms the
+    // current dead-reckoning while shrinking covariance, starving DVL/depth of gain.
+    // Kept only as a starting point for a future gravity-vector attitude update.
     void updateIMU1(const Vector3d& accel, const Vector3d& gyro, double dt);
 
     // Update step: correct state estimate using depth sensor
     void updateDepth(double depth_measured);
-
-    // Update step: DVL velocity + position update.
-    // v_measured: DVL body-frame velocity. p_measured: world-frame position.
-    // R_vel / R_pos: 3x3 noise covariances for velocity and position respectively.
-    void updateDVL(const Vector3d& v_measured, const Vector3d& p_measured,
-                   const Matrix3d& R_vel, const Matrix3d& R_pos);
 
     // Update step: DVL velocity only (frame-safe). v_measured is the DVL/body-frame
     // velocity; it is rotated into the world frame by the current attitude and used
@@ -97,6 +91,15 @@ public:
     // can never disagree about the world frame.
     inline static const Quaterniond q_enu_to_world_ = Quaterniond(
         0.0, 0.7071067811865476, 0.7071067811865476, 0.0);  // (w, x, y, z)
+
+    // Default raw-DVL -> body axis signs, shared by the state_estimator node and
+    // the offline replay test so the two can never silently disagree (the old
+    // pool-test failure mode: node ran (-x,+y,-z) while the test blessed (+x,+y,-z)).
+    // The WaterLinked DVL reports velocity in a frame that is x forward (toward the
+    // status LED), y starboard, z down toward the transducers — identical to the
+    // filter body frame for a forward-aligned mount, hence identity. The node
+    // exposes dvl_sign_x/y/z ROS parameters to absorb a rotated mount.
+    inline static const Vector3d dvl_axis_signs_default = Vector3d(1.0, 1.0, 1.0);
 
     // Mission-frame alignment, assigned once by try_initialize(): Rz(-yaw0),
     // so world +x = vehicle heading at frame init, +y right of it, +z down.
@@ -148,7 +151,7 @@ private:
     // Computes error-state transition Jacobian F
     MatrixXd computeF(double dt, const Vector3d& accel) const;
 
-    // Computes process noise mapping G (15x12)
+    // Computes process noise mapping G (12x6)
     MatrixXd computeG() const;
 
     // Normalize quaternion in state vector

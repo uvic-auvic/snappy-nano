@@ -41,7 +41,6 @@ public:
 
 
     //change in time between imu messages
-    double last_time_imu1_sec_ = 0.0;
     double last_time_imu2_sec_ = 0.0;
     KalmanFilter kf;
 
@@ -88,6 +87,16 @@ public:
             std::bind(&StateEstimator::dvl_callback, this, _1));
 
 
+        // DVL raw frame (WaterLinked docs: +x forward toward the LED, +y starboard,
+        // +z down toward the transducers) already matches the filter body frame when
+        // the DVL is mounted forward-aligned, so the default signs are identity.
+        // A rotated mount can be corrected here without a rebuild (e.g. connector
+        // aft with no mounting_rotation_offset set in the DVL GUI → x=-1, y=-1).
+        dvl_sign_ = Vector3d(
+            declare_parameter("dvl_sign_x", KalmanFilter::dvl_axis_signs_default.x()),
+            declare_parameter("dvl_sign_y", KalmanFilter::dvl_axis_signs_default.y()),
+            declare_parameter("dvl_sign_z", KalmanFilter::dvl_axis_signs_default.z()));
+
         // need to update for imu2,
         // May want to get better values here
         accel_bias_init_ << -0.5, 0.5, 0.2;
@@ -103,12 +112,15 @@ public:
         P_init_.block<3,3>(0,0) *= 0.01;  // position uncertainty of initial guess
         P_init_.block<3,3>(3,3) *= 0.01;   // velocity uncertainty of initial guess
         P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty of initial guess
-        P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty of initial guess
+        // Accel bias σ≈0.5 m/s² — the hardcoded guess above is itself that rough, so
+        // the filter must be free to pull the bias via the DVL/depth corrections
+        // (nothing observes bias directly; the dv/db_a coupling in F is the only path).
+        P_init_.block<3,3>(9,9) *= 0.25;  // accel bias uncertainty of initial guess
 
         // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
         MatrixXd Q_init = MatrixXd::Zero(6, 6);
         Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.1;    // accel noise → velocity growth
-        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-6;   // accel bias random walk
+        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-5;   // accel bias random walk
         kf.setProcessNoise(Q_init);
 
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
@@ -142,6 +154,8 @@ public:
         RCLCPP_INFO(this->get_logger(), "  - /imu/data");
         RCLCPP_INFO(this->get_logger(), "  - depth_data");
         RCLCPP_INFO(this->get_logger(), "  - /waterlinked_dvl_driver/odom");
+        RCLCPP_INFO(this->get_logger(), "DVL axis signs (raw->body): [%.0f, %.0f, %.0f]",
+                    dvl_sign_.x(), dvl_sign_.y(), dvl_sign_.z());
         RCLCPP_INFO(this->get_logger(), "Waiting for IMU data...");
 
         // Timer to check status
@@ -151,28 +165,18 @@ public:
     }
 
 private:
+    // IMU1 = the RealSense D455 camera IMU. It is logged for offline analysis only
+    // and does NOT feed the filter: its old updateIMU1() fusion built the residual
+    // from the filter's own state, so it confirmed the current dead-reckoning while
+    // shrinking covariance, starving the real corrections (DVL/depth) of gain
+    // (KNOWN_ISSUES K1). IMU2 (Xsens MTi) remains the predict-step backbone.
     void imu1_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         if (!imu_received_) {
             RCLCPP_INFO(this->get_logger(), "✅ First IMU1 message received!");
             imu_received_ = true;
         }
-        const double now_sec = rclcpp::Time(msg->header.stamp).seconds();
-        if (!imu1_initialized_) {
-            imu1_initialized_ = true;
-            last_time_imu1_sec_ = now_sec;
-        }
         imu_count_++;
-
-        const double dt = now_sec - last_time_imu1_sec_;
-        last_time_imu1_sec_ = now_sec;
-        if(dt > 0.001 && frame_initialized_)
-        {
-            Vector3d accel(msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
-            Vector3d gyro(msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
-            kf.updateIMU1(accel, gyro, dt);
-        }
-
 
         // Print combined IMU data every 20 messages
         if (imu_count_ % 20 == 0) {
@@ -314,11 +318,12 @@ private:
         }
         dvl_count_++;
         if (!frame_initialized_) return;
-        // Test this - on the z of the DVL in test_kalman it fixed the x,y postion 
-        // Should maybe flip this with a rotation matrix
-        Vector3d v_body(-msg->twist.twist.linear.x,
-                        msg->twist.twist.linear.y,
-                        -msg->twist.twist.linear.z);
+        // DVL raw frame == body frame for a forward-aligned mount (see dvl_sign_
+        // declaration); the parameters exist to absorb a rotated mount only.
+        Vector3d v_body = dvl_sign_.cwiseProduct(
+            Vector3d(msg->twist.twist.linear.x,
+                     msg->twist.twist.linear.y,
+                     msg->twist.twist.linear.z));
 
         // Skip bad samples, assuming dvl publishes NaN when bad vaules
         // if this doesnt work must look at our orientation and stop reading vaules when the dvl is not facing down
@@ -438,7 +443,6 @@ private:
     rclcpp::TimerBase::SharedPtr check_timer_;
 
     bool imu_received_ = false;
-    bool imu1_initialized_ = false;
     bool imu2_initialized_ = false;
     bool gyro_received_ = false;
     bool accel_received_ = false;
@@ -457,6 +461,7 @@ private:
     Quaterniond init_imu2_quat_;
     Quaterniond q_imu2_to_body_node_;      // local copy for try_initialize()
     Vector3d accel_bias_init_ = Vector3d::Zero();
+    Vector3d dvl_sign_ = KalmanFilter::dvl_axis_signs_default;  // raw DVL -> body axis signs (ROS params)
     MatrixXd P_init_;                      // initial error-state covariance, built once in the constructor
 };
 
