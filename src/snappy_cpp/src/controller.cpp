@@ -80,7 +80,7 @@ class Controller : public rclcpp::Node {
              double yaw = get_parameter("target_yaw").as_double();
 
              current_position = Eigen::Vector3d(0.0, 0.0, 0.0);
-             current_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+             current_orientation = Eigen::Quaterniond::Identity();
 
              flag_ = 0;
 
@@ -153,17 +153,28 @@ class Controller : public rclcpp::Node {
 
     private:
         void timer_callback() {
-            std::pair<Eigen::Vector3d, Eigen::Quaterniond> trajectory = generate_trajectory();
+            // No state estimate yet — keep the thrusters stopped rather than
+            // steering off a made-up pose.
+            if (!state_received_) {
+                motorboard_->stop();
+                return;
+            }
 
-            Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(0, 1, 2);
+            std::pair<Eigen::Vector3d, Eigen::Quaterniond> trajectory = generate_trajectory();
 
             //this is used to calculate the w value needed
             RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, R, P, Y]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
-                trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[0], euler[1], euler[2]);
+                trajectory.first[0], trajectory.first[1], trajectory.first[2],
+                getRoll(trajectory.second), getPitch(trajectory.second), getYaw(trajectory.second));
 
             // this is w aka the wrench value, it is a 6x1 vector
             Eigen::VectorXd wrench = generate_wrench(trajectory.first, trajectory.second);
-            RCLCPP_INFO(this->get_logger(), "Wrench     [X, Y, Z, Y, P, R]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+            if (!wrench.allFinite()) {
+                RCLCPP_WARN(this->get_logger(), "Non-finite wrench, stopping thrusters");
+                motorboard_->stop();
+                return;
+            }
+            RCLCPP_INFO(this->get_logger(), "Wrench     [X, Y, Z, R, P, Y]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
                 wrench[0], wrench[1], wrench[2], wrench[3], wrench[4], wrench[5]);
 
             // this calculates the thrust that gets sent to every thruster
@@ -183,8 +194,12 @@ class Controller : public rclcpp::Node {
                 //Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
                 // Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
 
-            Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
-            Eigen::Quaterniond relative_orientation = target_orientation * current_orientation.inverse();
+            // current_orientation is body->world (as published by the state
+            // estimator), so the world-frame error must be rotated by its
+            // inverse to land in the body frame the thrusters act in.
+            Eigen::Vector3d relative_position = current_orientation.conjugate() * (target_position - current_position);
+            // Body-frame (right) orientation error: q_target = q_current * q_err
+            Eigen::Quaterniond relative_orientation = current_orientation.conjugate() * target_orientation;
 
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> result;
 
@@ -196,31 +211,12 @@ class Controller : public rclcpp::Node {
 
         // Given the relative position and orientation of the target, generate the wrench to move in that direction
         Eigen::VectorXd generate_wrench(Eigen::Vector3d relative_position, Eigen::Quaterniond relative_orientation) {
-            Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
-
-            float roll = euler[0];
-            float pitch = euler[1];
-            float yaw = euler[2];
-
-            double pi = EIGEN_PI;
-
-            if(yaw < -pi) {
-                yaw += 2*pi;
-            }else if (yaw > pi) {
-                yaw -= 2*pi;
-            }
-
-            if(pitch < -pi) {
-                pitch += 2*pi;
-            }else if (pitch > pi) {
-                pitch -= 2*pi;
-            }
-
-            if(roll < -pi) {
-                roll += 2*pi;
-            }else if (roll > pi) {
-                roll -= 2*pi;
-            }
+            // atan2/asin extraction stays in [-pi, pi] / [-pi/2, pi/2], unlike
+            // Eigen's eulerAngles(0,1,2) whose first angle lives in [0, pi] and
+            // flips small errors into near-pi triples.
+            float roll = getRoll(relative_orientation);
+            float pitch = getPitch(relative_orientation);
+            float yaw = getYaw(relative_orientation);
 
             // Relative position of AUV from target is negated
             float thrust_x = pid_x_.update(-relative_position[0]);
@@ -233,9 +229,22 @@ class Controller : public rclcpp::Node {
 
             // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << 2.0, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
+            wrench << thrust_x, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
+        }
+
+        static double getYaw(const Eigen::Quaterniond& q) {
+            return std::atan2(2.0 * (q.w() * q.z() + q.x() * q.y()),
+                              1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
+        }
+        static double getPitch(const Eigen::Quaterniond& q) {
+            double s = 2.0 * (q.w() * q.y() - q.z() * q.x());
+            return std::asin(std::clamp(s, -1.0, 1.0));
+        }
+        static double getRoll(const Eigen::Quaterniond& q) {
+            return std::atan2(2.0 * (q.w() * q.x() + q.y() * q.z()),
+                              1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y()));
         }
 
         std::vector<int8_t> allocate_thrusters(Eigen::VectorXd wrench) {
@@ -438,6 +447,15 @@ class Controller : public rclcpp::Node {
                 msg.orientation.x,
                 msg.orientation.y,
                 msg.orientation.z);
+
+            if (!current_position.allFinite() || !current_orientation.coeffs().allFinite()
+                || current_orientation.norm() < 1e-6) {
+                RCLCPP_WARN(this->get_logger(), "Ignoring invalid state estimate");
+                current_orientation = Eigen::Quaterniond::Identity();
+                return;
+            }
+            current_orientation.normalize();
+            state_received_ = true;
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;
@@ -474,16 +492,17 @@ class Controller : public rclcpp::Node {
 
         int flag_;
 
-        int dvl_first_;
-        int timer_first_;
-        int state_;
+        int dvl_first_ = 0;
+        int timer_first_ = 0;
+        int state_ = 0;
+        bool state_received_ = false;
 
-    	float pitch;
-    	float yaw;
-    	float roll;
-    	float x;
-    	float y;
-    	float current_depth;
+    	float pitch = 0.0f;
+    	float yaw = 0.0f;
+    	float roll = 0.0f;
+    	float x = 0.0f;
+    	float y = 0.0f;
+    	float current_depth = 0.0f;
 
         Eigen::Vector3d current_position;
         Eigen::Quaterniond current_orientation;

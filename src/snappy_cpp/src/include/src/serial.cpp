@@ -3,7 +3,7 @@
 using namespace std;
 using namespace boost;
 
-serial::serial(): _serial(_io), _portname("/dev/ttyTHS1"), _baud_rate(115200)
+serial::serial(): _serial(_io), _portname("/dev/ttyTHS1"), _baud_rate(921600)
 {
     _serial.open(_portname);
     // Set the baud rate

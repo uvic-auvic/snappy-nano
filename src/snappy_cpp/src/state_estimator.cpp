@@ -213,12 +213,18 @@ private:
 
         }
 
+        // Always track dt, even while waiting for frame init — otherwise the
+        // first predict() after initialization sees a dt spanning the whole
+        // wait for the first depth message and integrates one giant garbage step.
+        const double dt = now_sec - last_time_imu2_sec_;
+        last_time_imu2_sec_ = now_sec;
+
         // wait until we have received the first IMU2 message to initialize the filter to set the right starting frame
         if (!init_imu2_ready_) {
             init_imu2_quat_ = Quaterniond(msg->orientation.w, msg->orientation.x,
                                           msg->orientation.y, msg->orientation.z);
             init_imu2_ready_ = true;
-            
+
             try_initialize();
         }
 
@@ -226,8 +232,6 @@ private:
             RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
             return;
         }
-        const double dt = now_sec - last_time_imu2_sec_;
-        last_time_imu2_sec_ = now_sec;
 
         if (dt > 0.001 && frame_initialized_)
         {
