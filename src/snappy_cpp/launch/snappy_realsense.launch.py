@@ -23,6 +23,7 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
+
 def generate_launch_description():
 
     snappyComputerVision = IncludeLaunchDescription(
@@ -145,6 +146,7 @@ def generate_launch_description():
             micro_ros_agent,
             pressure_sensor_node,
             planner_node,
-            controller_node,
+            # controller_node,
+            state_estimator_node,
         ]
     )

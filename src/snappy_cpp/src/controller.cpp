@@ -47,6 +47,9 @@ class Controller : public rclcpp::Node {
              target_position = Eigen::Vector3d(0.0, 0.0, 0.5);
              target_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
 
+             current_position = Eigen::Vector3d(0.0, 0.0, 0.0);
+             current_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+
             // For testing, set the target orientation
              double target_roll = 0;
              double target_pitch = 0;
@@ -78,6 +81,7 @@ class Controller : public rclcpp::Node {
             motor_publisher_ = create_publisher<snappy_interfaces::msg::ThrusterCommand>(
                 "/motor_cmd", rclcpp::QoS(10).best_effort());
             motorboard_ = std::make_unique<Motor::Motorboard>(motor_publisher_);
+
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
 
@@ -89,24 +93,24 @@ class Controller : public rclcpp::Node {
             //    "/planner/task", 10, std::bind(&Controller::task_callback, this, _1));
 
             // Receive states from state estimator
-            //state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
-            //    "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
+            state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
+               "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
 
             // Receive dpeth value from pressure node
-            depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-              "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+            // depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+            //   "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
 
             //get yaw info from the imu
-            imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
-                "/filter/euler", 200, std::bind(&Controller::imu_callback, this, _1));
+            // imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
+            //     "/filter/euler", 200, std::bind(&Controller::imu_callback, this, _1));
             //currently state estimator does not publish state. maybe parse through IMU..
 
             // imu_d455_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
             //   "/d455/imu", 10, std::bind(&Controller::imu_d455_subscription_callback, this, _1));
 
             // Receive DVL pose
-            dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
-                "/waterlinked_dvl_driver/odom", 10, std::bind(&Controller::dvl_callback, this, _1));
+            // dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+            //     "/waterlinked_dvl_driver/odom", 10, std::bind(&Controller::dvl_callback, this, _1));
 
             // Publish every 100ms ??
             //status_timer_ = this->create_wall_timer(
@@ -145,12 +149,12 @@ class Controller : public rclcpp::Node {
 
         // Given the target and current poses in global space, determine the vector between them in local space
         std::pair<Eigen::Vector3d, Eigen::Quaterniond> generate_trajectory() {
-            Eigen::Vector3d current_position(x, y, current_depth);
-            Eigen::Quaterniond current_orientation;
-            current_orientation =
-                Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
-                Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
-                Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+            //Eigen::Vector3d current_position(x, y, current_depth);
+            //Eigen::Quaterniond current_orientation;
+            //current_orientation =
+                //Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
+                //Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+                // Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
 
             Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
             Eigen::Quaterniond relative_orientation = target_orientation * current_orientation.inverse();
@@ -347,6 +351,9 @@ class Controller : public rclcpp::Node {
             pitch = msg.vector.y * EIGEN_PI / 180;
             //yaw
             yaw = msg.vector.z * EIGEN_PI / 180;
+
+
+
     	    if (flag_ == 0) {
                 flag_ = 1;
     		// // first reference of yaw
@@ -393,6 +400,19 @@ class Controller : public rclcpp::Node {
             //}
         }
 
+        void state_callback(const snappy_cpp::msg::Pose & msg) {
+            current_position = Eigen::Vector3d(
+                msg.position.x,
+                msg.position.y,
+                msg.position.z);
+
+            current_orientation = Eigen::Quaterniond(
+                msg.orientation.w,
+                msg.orientation.x,
+                msg.orientation.y,
+                msg.orientation.z);
+        }
+
         std::unique_ptr<Motor::Motorboard> motorboard_;
         rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher_;
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
@@ -437,6 +457,9 @@ class Controller : public rclcpp::Node {
     	float x;
     	float y;
     	float current_depth;
+
+        Eigen::Vector3d current_position;
+        Eigen::Quaterniond current_orientation;
 
     	Eigen::Vector3d target_position;
     	Eigen::Quaterniond target_orientation;
