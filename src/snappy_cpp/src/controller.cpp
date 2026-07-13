@@ -37,12 +37,12 @@ using std::placeholders::_1;
 class Controller : public rclcpp::Node {
     public:
         Controller() : Node("controller"),
-            pid_x_(0.5f, 0.0f, 0.1f),
-            pid_y_(0.5f, 0.0f, 0.1f),
-            pid_z_(3.0f, 1.0f, 1.0f),
-            pid_roll_(0.5f, 0.0f, 0.1f),
-            pid_pitch_(0.5f, 0.0f, 0.1f),
-            pid_yaw_(0.15f, 0.0f, 5.0f)
+            pid_x_(0.0f, 0.0f, 0.0f),
+            pid_y_(0.0f, 0.0f, 0.0f),
+            pid_z_(6.0f, 0.5f, 0.0f),
+            pid_roll_(0.0f, 0.0f, 0.0f),
+            pid_pitch_(0.0f, 0.0f, 0.0f),
+            pid_yaw_(0.5f, 0.0f, 0.5f)
          {
              declare_parameter("target_position", std::vector<double>{0.0, 0.0, 0.0});
              declare_parameter("target_roll", 0.0);
@@ -79,6 +79,11 @@ class Controller : public rclcpp::Node {
              double pitch = get_parameter("target_pitch").as_double();
              double yaw = get_parameter("target_yaw").as_double();
 
+             current_position = Eigen::Vector3d(0.0, 0.0, 0.0);
+             current_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+
+             flag_ = 0;
+
              target_orientation = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX())
                  * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
                  * Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
@@ -103,6 +108,7 @@ class Controller : public rclcpp::Node {
             motor_publisher_ = create_publisher<snappy_interfaces::msg::ThrusterCommand>(
                 "/motor_cmd", rclcpp::QoS(10).best_effort());
             motorboard_ = std::make_unique<Motor::Motorboard>(motor_publisher_);
+
             // Publish state status to planner
             status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
 
@@ -114,24 +120,24 @@ class Controller : public rclcpp::Node {
             //    "/planner/task", 10, std::bind(&Controller::task_callback, this, _1));
 
             // Receive states from state estimator
-            //state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
-            //    "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
+            state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
+               "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
 
             // Receive dpeth value from pressure node
-            depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-              "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+            // depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+            //   "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
 
             //get yaw info from the imu
-            imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
-                "/filter/euler", 200, std::bind(&Controller::imu_callback, this, _1));
+            // imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
+            //     "/filter/euler", 200, std::bind(&Controller::imu_callback, this, _1));
             //currently state estimator does not publish state. maybe parse through IMU..
 
             // imu_d455_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
             //   "/d455/imu", 10, std::bind(&Controller::imu_d455_subscription_callback, this, _1));
 
             // Receive DVL pose
-            dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
-                "/waterlinked_dvl_driver/odom", 10, std::bind(&Controller::dvl_callback, this, _1));
+            // dvl_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+            //     "/waterlinked_dvl_driver/odom", 10, std::bind(&Controller::dvl_callback, this, _1));
 
             // Publish every 100ms ??
             //status_timer_ = this->create_wall_timer(
@@ -149,11 +155,11 @@ class Controller : public rclcpp::Node {
         void timer_callback() {
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> trajectory = generate_trajectory();
 
-            Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(0, 1, 2);
 
             //this is used to calculate the w value needed
-            RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, Y, P, R]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
-                trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[2], euler[1], euler[0]);
+            RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, R, P, Y]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+                trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[0], euler[1], euler[2]);
 
             // this is w aka the wrench value, it is a 6x1 vector
             Eigen::VectorXd wrench = generate_wrench(trajectory.first, trajectory.second);
@@ -170,12 +176,12 @@ class Controller : public rclcpp::Node {
 
         // Given the target and current poses in global space, determine the vector between them in local space
         std::pair<Eigen::Vector3d, Eigen::Quaterniond> generate_trajectory() {
-            Eigen::Vector3d current_position(x, y, current_depth);
-            Eigen::Quaterniond current_orientation;
-            current_orientation =
-                Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
-                Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
-                Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+            //Eigen::Vector3d current_position(x, y, current_depth);
+            //Eigen::Quaterniond current_orientation;
+            //current_orientation =
+                //Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
+                //Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+                // Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
 
             Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
             Eigen::Quaterniond relative_orientation = target_orientation * current_orientation.inverse();
@@ -190,7 +196,7 @@ class Controller : public rclcpp::Node {
 
         // Given the relative position and orientation of the target, generate the wrench to move in that direction
         Eigen::VectorXd generate_wrench(Eigen::Vector3d relative_position, Eigen::Quaterniond relative_orientation) {
-            Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             float roll = euler[0];
             float pitch = euler[1];
@@ -227,7 +233,7 @@ class Controller : public rclcpp::Node {
 
             // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << thrust_x, thrust_y, thrust_z, thrust_yaw, thrust_pitch, thrust_roll;
+            wrench << 2.0, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }
@@ -303,7 +309,7 @@ class Controller : public rclcpp::Node {
         }
 
         void set_yaw(float yaw, bool absolute = false) {
-            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             if (absolute) {
                 euler[2] = yaw;
@@ -311,7 +317,7 @@ class Controller : public rclcpp::Node {
                 euler[2] += yaw;
             }
 
-            Eigen::Quaterniond target_orientation =
+            target_orientation =
                 Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()) *
                 Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
                 Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ());
@@ -321,7 +327,7 @@ class Controller : public rclcpp::Node {
         }
 
         void set_pitch(float pitch, bool absolute = false) {
-            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             if (absolute) {
                 euler[1] = pitch;
@@ -329,7 +335,7 @@ class Controller : public rclcpp::Node {
                 euler[1] += pitch;
             }
 
-            Eigen::Quaterniond target_orientation =
+            target_orientation =
                 Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()) *
                 Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
                 Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ());
@@ -339,7 +345,7 @@ class Controller : public rclcpp::Node {
         }
 
         void set_roll(float roll, bool absolute = false) {
-            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(2, 1, 0);
+            Eigen::Vector3d euler = target_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
             if (absolute) {
                 euler[0] = roll;
@@ -347,7 +353,7 @@ class Controller : public rclcpp::Node {
                 euler[0] += roll;
             }
 
-            Eigen::Quaterniond target_orientation =
+            target_orientation =
                 Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()) *
                 Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
                 Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ());
@@ -357,22 +363,30 @@ class Controller : public rclcpp::Node {
         }
 
         void depth_callback(const std_msgs::msg::Float32 & msg) {
-    	    current_depth = msg.data;
+	    if(msg.data < 0){
+		return;
+	    }else {
+		    current_depth = msg.data;
+	    }
         }
 
         void imu_callback(const geometry_msgs::msg::Vector3Stamped & msg) {
             //RCLCPP_INFO(this->get_logger(), "Received IMU data: roll=%.2f, pitch=%.2f, yaw=%.2f", msg.vector.x, msg.vector.y, msg.vector.z);
             //rollroll
-    	    roll = msg.vector.x;
+    	    roll = msg.vector.x * EIGEN_PI / 180;
             //pitch
-            pitch = msg.vector.y;
+            pitch = msg.vector.y * EIGEN_PI / 180;
             //yaw
-      //       yaw = msg.vector.z;
-    	 //    if (flag_ == 0) {
-    		// flag_ = 1;
+            yaw = msg.vector.z * EIGEN_PI / 180;
+
+
+
+    	    if (flag_ == 0) {
+                flag_ = 1;
     		// // first reference of yaw
-    		// pid_yaw_.set_target(yaw);
-    	 //    }
+    		//pid_yaw_.set_target(yaw);
+                set_yaw(yaw);
+          }
         }
 
 
@@ -403,14 +417,27 @@ class Controller : public rclcpp::Node {
 
             Eigen::Vector3d euler = R.eulerAngles(2,1,0);
 
-            yaw = euler[0];
-       	    if (dvl_first_ == 0) {
-          		dvl_first_ = 1;
+            //yaw = euler[0];
+       	    //if (dvl_first_ == 0) {
+          		//dvl_first_ = 1;
           		// first reference of yaw
-          		pid_yaw_.set_target(yaw);
-          		pid_y_.set_target(y);
-          		pid_x_.set_target(x);
-            }
+          		//set_yaw(yaw);
+          		//pid_y_.set_target(y);
+          		//pid_x_.set_target(x);
+            //}
+        }
+
+        void state_callback(const snappy_cpp::msg::Pose & msg) {
+            current_position = Eigen::Vector3d(
+                msg.position.x,
+                msg.position.y,
+                msg.position.z);
+
+            current_orientation = Eigen::Quaterniond(
+                msg.orientation.w,
+                msg.orientation.x,
+                msg.orientation.y,
+                msg.orientation.z);
         }
 
         std::unique_ptr<Motor::Motorboard> motorboard_;
@@ -445,6 +472,8 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
 
+        int flag_;
+
         int dvl_first_;
         int timer_first_;
         int state_;
@@ -455,6 +484,9 @@ class Controller : public rclcpp::Node {
     	float x;
     	float y;
     	float current_depth;
+
+        Eigen::Vector3d current_position;
+        Eigen::Quaterniond current_orientation;
 
     	Eigen::Vector3d target_position;
     	Eigen::Quaterniond target_orientation;
