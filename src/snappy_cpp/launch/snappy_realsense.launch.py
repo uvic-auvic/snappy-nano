@@ -23,7 +23,22 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
+
 def generate_launch_description():
+
+    snappyComputerVision = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("snappy_computer_vision"),
+                        "launch",
+                        "snappy_computer_vision.launch.py",
+                    ]
+                )
+            ]
+        ),
+    )
 
     dvl = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -59,98 +74,35 @@ def generate_launch_description():
         ],
         output="screen",
     )
-    # Launch arguments for serial numbers (with defaults)
-    # Serial numbers must be wrapped in single quotes for RealSense parameter type handling
-    serial_no_d455_arg = DeclareLaunchArgument(
-        "serial_no_d455",
-        default_value="'239222301226'",
-        description="Serial number of D455 camera",
-    )
 
-    serial_no_d405_arg = DeclareLaunchArgument(
-        "serial_no_d405",
-        default_value="'230422271334'",
-        description="Serial number of D405 camera",
-    )
-
-    # Get launch configuration
-    serial_no_d455 = LaunchConfiguration("serial_no_d455")
-    serial_no_d405 = LaunchConfiguration("serial_no_d405")
-
-    # D455 Front Camera
-    d455_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [FindPackageShare("realsense2_camera"), "launch", "rs_launch.py"]
-                )
-            ]
-        ),
-        launch_arguments={
-            "camera_namespace": "d455",
-            "camera_name": "d455",
-            "serial_no": serial_no_d455,
-            "json_file_path": PathJoinSubstitution(
-                [FindPackageShare("snappy_cpp"), "config", "d455_underwater.json"]
-            ),
-            # "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test455.json"]),
-            "rgb_camera.color_profile": "848x480x30",
-            "enable_gyro": "true",
-            "enable_accel": "true",
-            "unite_imu_method": "2",
-            "enable_sync": "true",
-            "align_depth.enable": "true",
-        }.items(),
-    )
-
-    # D405 Bottom Camera
-    d405_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [FindPackageShare("realsense2_camera"), "launch", "rs_launch.py"]
-                )
-            ]
-        ),
-        launch_arguments={
-            "camera_namespace": "d405",
-            "camera_name": "d405",
-            "serial_no": serial_no_d405,
-            "json_file_path": PathJoinSubstitution(
-                [FindPackageShare("snappy_cpp"), "config", "d405_underwater.json"]
-            ),
-            # "json_file_path": PathJoinSubstitution([FindPackageShare("snappy_cpp"), "config", "test405.json"]),
-            "rgb_camera.color_profile": "848x480x30",
-            "enable_gyro": "false",  # D405 does not include IMU
-            "enable_accel": "false",
-            "unite_imu_method": "0",
-            "enable_sync": "true",
-            "align_depth.enable": "true",
-        }.items(),
-    )
-
-    parameters_file_path = Path(
+    xsens_parameters_file_path = Path(
         get_package_share_directory("xsens_mti_ros2_driver"),
         "param",
         "xsens_mti_node.yaml",
+    )
+    controller_parameters_file_path = Path(
+        get_package_share_directory("snappy_cpp"),
+        "config",
+        "controller_params.yaml",
     )
     xsens_mti_node = Node(
         package="xsens_mti_ros2_driver",
         executable="xsens_mti_node",
         name="xsens_mti_node",
         output="screen",
-        parameters=[parameters_file_path],
+        parameters=[xsens_parameters_file_path],
         arguments=[],
     )
 
     controller_node = TimerAction(
-        period=5.0,
+        period=8.0,
         actions=[
             Node(
                 package="snappy_cpp",
                 executable="controller",
                 name="controller",
                 output="screen",
+                parameters=[controller_parameters_file_path]
             )
         ],
     )
@@ -191,49 +143,16 @@ def generate_launch_description():
         ],
     )
 
-    # Single shared TensorRT inference node serving both cameras (D455 front,
-    # D405 bottom). Replaces the former front_cam + bottom_cam processes: one
-    # CUDA context / engine for all cameras. Add a camera by appending its
-    # namespace to camera_namespaces.
-    #
-    front_camera_vision = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="front_camera_vision",
-                name="front_camera_vision",
-                output="screen",
-            )
-        ],
-    )
-
-    bottom_camera_vision = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package="snappy_cpp",
-                executable="bottom_camera_vision",
-                name="bottom_camera_vision",
-                output="screen",
-            )
-        ],
-    )
-
     return LaunchDescription(
         [
+            xsens_mti_node,
+            snappyComputerVision,
             dvl,
             serial_dev_arg,
             micro_ros_agent,
-            serial_no_d455_arg,
-            serial_no_d405_arg,
-            d455_launch,
-            d405_launch,
-            xsens_mti_node,
             pressure_sensor_node,
-            front_camera_vision,
-            bottom_camera_vision,
             planner_node,
+            state_estimator_node,
             controller_node,
         ]
     )

@@ -65,71 +65,6 @@ def generate_launch_description():
         output="screen",
     )
 
-    serial_no_d455_arg = DeclareLaunchArgument(
-        "serial_no_d455",
-        default_value="'239222301226'",
-        description="Serial number of D455 camera",
-    )
-
-    serial_no_d405_arg = DeclareLaunchArgument(
-        "serial_no_d405",
-        default_value="'230422271334'",
-        description="Serial number of D405 camera",
-    )
-
-    serial_no_d455 = LaunchConfiguration("serial_no_d455")
-    serial_no_d405 = LaunchConfiguration("serial_no_d405")
-
-    # D455 Front Camera
-    d455_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [FindPackageShare("realsense2_camera"), "launch", "rs_launch.py"]
-                )
-            ]
-        ),
-        launch_arguments={
-            "camera_namespace": "d455",
-            "camera_name": "d455",
-            "serial_no": serial_no_d455,
-            "json_file_path": PathJoinSubstitution(
-                [FindPackageShare("snappy_cpp"), "config", "d455_underwater.json"]
-            ),
-            "rgb_camera.color_profile": "848x480x30",
-            "enable_gyro": "true",
-            "enable_accel": "true",
-            "unite_imu_method": "2",
-            "enable_sync": "true",
-            "align_depth.enable": "true",
-        }.items(),
-    )
-
-    # D405 Bottom Camera
-    d405_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [FindPackageShare("realsense2_camera"), "launch", "rs_launch.py"]
-                )
-            ]
-        ),
-        launch_arguments={
-            "camera_namespace": "d405",
-            "camera_name": "d405",
-            "serial_no": serial_no_d405,
-            "json_file_path": PathJoinSubstitution(
-                [FindPackageShare("snappy_cpp"), "config", "d405_underwater.json"]
-            ),
-            "rgb_camera.color_profile": "848x480x30",
-            "enable_gyro": "false",  # D405 does not include IMU
-            "enable_accel": "false",
-            "unite_imu_method": "0",
-            "enable_sync": "true",
-            "align_depth.enable": "true",
-        }.items(),
-    )
-
     parameters_file_path = Path(
         get_package_share_directory("xsens_mti_ros2_driver"),
         "param",
@@ -187,10 +122,6 @@ def generate_launch_description():
             dvl,
             serial_dev_arg,
             micro_ros_agent,
-            serial_no_d455_arg,
-            serial_no_d405_arg,
-            d455_launch,
-            d405_launch,
             xsens_mti_node,
             pressure_sensor_node,
             sensor_test_timer,

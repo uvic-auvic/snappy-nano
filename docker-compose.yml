@@ -1,0 +1,66 @@
+services:
+  # x86_64 laptop development (unchanged workflow): docker compose up -d
+  snappy-nano:
+    image: nil2thrill/snappy-ros:humble
+    container_name: snappy-nano
+    volumes:
+      - .:/ros2_ws
+      - /dev:/dev
+    privileged: true
+    network_mode: host
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # Jetson Orin (ARM64, JetPack 6.x): docker compose --profile jetson up -d
+  # The profile keeps plain `docker compose up` behaving exactly as before on
+  # laptops, where this service (and its arm64-only base image) cannot run.
+  snappy-jetson:
+    profiles: ["jetson"]
+    build:
+      context: .
+      dockerfile: Dockerfile.jetson
+    image: snappy-nano:humble-jetson
+    container_name: snappy-jetson
+    # Injects the Tegra driver stack: libcuda, GPU/DLA device nodes, multimedia
+    # and EGL libs. Required for CUDA/TensorRT even though the host makes
+    # nvidia the default runtime — be explicit so it works everywhere.
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - .:/ros2_ws
+      # Full /dev passthrough (with privileged) covers GPIO (/dev/gpiochip*),
+      # I2C (/dev/i2c-*), SPI (/dev/spidev*), UART (/dev/ttyTHS*), USB serial
+      # (/dev/ttyUSB*, /dev/ttyACM*), cameras (/dev/video*), and hot-plugged
+      # USB devices appearing after container start.
+      - /dev:/dev
+      # X11 passthrough for GUI tools (rqt/RViz) when the Jetson runs a desktop.
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # nvargus socket for CSI cameras (no-op if only USB cameras are used).
+      - /tmp/argus_socket:/tmp/argus_socket
+    # privileged + host networking: GPIO/PWM sysfs access, SocketCAN (can0),
+    # and ROS 2 DDS discovery with nodes on the host or other machines.
+    privileged: true
+    network_mode: host
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    command: /bin/bash
+
+# For Apple users only
+  snappy-mac:
+    profiles: ["mac"]
+    build:
+      context: .
+      dockerfile: Dockerfile.jetson
+    image: snappy-nano:local-mac-arm64
+    container_name: snappy-mac
+    volumes:
+      - .:/ros2_ws
+    privileged: true
+    stdin_open: true
+    tty: true
+    command: /bin/bash
