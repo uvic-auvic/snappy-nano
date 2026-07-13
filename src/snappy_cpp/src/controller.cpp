@@ -44,17 +44,17 @@ class Controller : public rclcpp::Node {
             pid_pitch_(0.5f, 0.0f, 0.1f),
             pid_yaw_(0.15f, 0.0f, 5.0f)
          {
-             declare_parameter("target_position", std::vector<double>{0.0, 10.0, 0.0});
+             declare_parameter("target_position", std::vector<double>{0.0, 0.0, 0.0});
              declare_parameter("target_roll", 0.0);
              declare_parameter("target_pitch", 0.0);
              declare_parameter("target_yaw", 0.0);
              // 1. Declare the PID parameters with fallback defaults
-             declare_parameter("pid_x", std::vector<double>{0.5, 0.0, 0.1});
-             declare_parameter("pid_y", std::vector<double>{0.5, 0.0, 0.1});
-             declare_parameter("pid_z", std::vector<double>{3.0, 1.0, 1.0});
-             declare_parameter("pid_roll", std::vector<double>{0.5, 0.0, 0.1});
-             declare_parameter("pid_pitch", std::vector<double>{0.5, 0.0, 0.1});
-             declare_parameter("pid_yaw", std::vector<double>{0.15, 0.0, 5.0});
+             declare_parameter("pid_x", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_y", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_z", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_roll", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_pitch", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_yaw", std::vector<double>{0.0, 0.0, 0.0});
 
              // 2. Retrieve the arrays from the YAML file
              std::vector<double> px = get_parameter("pid_x").as_double_array();
