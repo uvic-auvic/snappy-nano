@@ -47,7 +47,20 @@ services:
     network_mode: host
     stdin_open: true
     tty: true
-    # Auto-start the same container after a Jetson reboot (docker.service is
-    # enabled at boot). `docker compose --profile jetson stop` still wins.
     restart: unless-stopped
+    command: /bin/bash
+
+# For Apple users only
+  snappy-mac:
+    profiles: ["mac"]
+    build:
+      context: .
+      dockerfile: Dockerfile.jetson
+    image: snappy-nano:local-mac-arm64
+    container_name: snappy-mac
+    volumes:
+      - .:/ros2_ws
+    privileged: true
+    stdin_open: true
+    tty: true
     command: /bin/bash

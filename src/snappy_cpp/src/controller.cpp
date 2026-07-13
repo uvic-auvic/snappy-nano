@@ -44,22 +44,49 @@ class Controller : public rclcpp::Node {
             pid_pitch_(0.0f, 0.0f, 0.0f),
             pid_yaw_(0.5f, 0.0f, 0.5f)
          {
-             target_position = Eigen::Vector3d(0.0, 0.0, 0.5);
-             target_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+             declare_parameter("target_position", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("target_roll", 0.0);
+             declare_parameter("target_pitch", 0.0);
+             declare_parameter("target_yaw", 0.0);
+             // 1. Declare the PID parameters with fallback defaults
+             declare_parameter("pid_x", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_y", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_z", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_roll", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_pitch", std::vector<double>{0.0, 0.0, 0.0});
+             declare_parameter("pid_yaw", std::vector<double>{0.0, 0.0, 0.0});
+
+             // 2. Retrieve the arrays from the YAML file
+             std::vector<double> px = get_parameter("pid_x").as_double_array();
+             std::vector<double> py = get_parameter("pid_y").as_double_array();
+             std::vector<double> pz = get_parameter("pid_z").as_double_array();
+             std::vector<double> proll = get_parameter("pid_roll").as_double_array();
+             std::vector<double> ppitch = get_parameter("pid_pitch").as_double_array();
+             std::vector<double> pyaw = get_parameter("pid_yaw").as_double_array();
+
+             // 3. Re-instantiate the PID objects with the live YAML values
+             pid_x_ = PID(px[0], px[1], px[2]);
+             pid_y_ = PID(py[0], py[1], py[2]);
+             pid_z_ = PID(pz[0], pz[1], pz[2]);
+             pid_roll_ = PID(proll[0], proll[1], proll[2]);
+             pid_pitch_ = PID(ppitch[0], ppitch[1], ppitch[2]);
+             pid_yaw_ = PID(pyaw[0], pyaw[1], pyaw[2]);
+
+             std::vector<double> target_position_vec = get_parameter("target_position").as_double_array();
+             target_position = Eigen::Vector3d(target_position_vec[0], target_position_vec[1], target_position_vec[2]);
+
+             double roll = get_parameter("target_roll").as_double();
+             double pitch = get_parameter("target_pitch").as_double();
+             double yaw = get_parameter("target_yaw").as_double();
 
              current_position = Eigen::Vector3d(0.0, 0.0, 0.0);
              current_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
 
-            // For testing, set the target orientation
-             double target_roll = 0;
-             double target_pitch = 0;
-             double target_yaw = 0;
-
              flag_ = 0;
 
-             target_orientation = Eigen::AngleAxisd(target_roll, Eigen::Vector3d::UnitX())
-                 * Eigen::AngleAxisd(target_pitch, Eigen::Vector3d::UnitY())
-                 * Eigen::AngleAxisd(target_yaw, Eigen::Vector3d::UnitZ());
+             target_orientation = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
 
             // Configuration of motors on the AUV
             // Rows: Fx, Fy, Fz, Tx, Ty, Tz
