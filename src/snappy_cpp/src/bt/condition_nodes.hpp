@@ -26,7 +26,7 @@ public:
 
     static BT::PortsList providedPorts()
     {
-        return {BT::InputPort<double>("max_age_s", 1.5, "max sensor age before abort")};
+        return {BT::InputPort<double>("max_age_s", 4.5, "max sensor age before abort")};
     }
 
     BT::NodeStatus tick() override
