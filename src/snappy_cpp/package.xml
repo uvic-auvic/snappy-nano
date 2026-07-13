@@ -21,6 +21,7 @@
   <depend>cv_bridge</depend>
   <depend>realsense2_camera</depend>
   <depend>builtin_interfaces</depend>
+  <depend>behaviortree_cpp</depend>
 
   <member_of_group>rosidl_interface_packages</member_of_group>
 

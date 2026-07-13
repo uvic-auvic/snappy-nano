@@ -33,6 +33,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
 # ThrusterCommand now lives in the shared snappy_interfaces package so the
 # Jetson publisher and the STM32 micro-ROS subscriber register the SAME type.
 find_package(snappy_interfaces REQUIRED)
@@ -92,6 +93,10 @@ target_link_libraries(planner
 
 add_executable(counter_publisher src/counter_publisher.cpp)
 ament_target_dependencies(counter_publisher rclcpp std_msgs)
+
+add_executable(behavior_tree src/behavior_tree.cpp)
+ament_target_dependencies(behavior_tree behaviortree_cpp rclcpp std_msgs geometry_msgs)
+add_dependencies(behavior_tree ${PROJECT_NAME})
 
 if(WITH_CUDA)
   find_package(rosbridge_suite REQUIRED)
@@ -218,6 +223,7 @@ target_link_libraries(controller "${cpp_typesupport_target}")
 target_link_libraries(sensorTest "${cpp_typesupport_target}")
 target_link_libraries(state_estimator "${cpp_typesupport_target}")
 target_link_libraries(planner "${cpp_typesupport_target}")
+target_link_libraries(behavior_tree "${cpp_typesupport_target}")
 #target_link_libraries(helloWorld "${cpp_typesupport_target}")
 # install(TARGETS
 #   helloWorld
@@ -234,6 +240,7 @@ install(TARGETS
   state_estimator
   planner
   counter_publisher
+  behavior_tree
   DESTINATION lib/${PROJECT_NAME})
 
 if(WITH_CUDA)
