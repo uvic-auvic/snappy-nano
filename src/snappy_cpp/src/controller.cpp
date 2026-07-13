@@ -80,7 +80,7 @@ class Controller : public rclcpp::Node {
              double yaw = get_parameter("target_yaw").as_double();
 
              current_position = Eigen::Vector3d(0.0, 0.0, 0.0);
-             current_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+             current_orientation = Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0);
 
              flag_ = 0;
 
