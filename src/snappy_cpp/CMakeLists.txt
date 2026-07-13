@@ -11,6 +11,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/include/Inc)
 
 install(DIRECTORY config/
 	DESTINATION share/${PROJECT_NAME}/config
@@ -24,6 +26,7 @@ find_package(nav_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -59,8 +62,15 @@ ament_target_dependencies(serial_lib rclcpp std_msgs)
 add_executable(pressureSensor src/pressure_sensor.cpp)
 ament_target_dependencies(pressureSensor rclcpp std_msgs)
 
-add_executable(state_estimator src/state_estimator.cpp)
-ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs)
+add_executable(state_estimator src/state_estimator.cpp src/include/src/kalman.cpp)
+ament_target_dependencies(state_estimator rclcpp std_msgs geometry_msgs sensor_msgs nav_msgs tf2)
+target_link_libraries(state_estimator Eigen3::Eigen)
+
+# Offline KalmanFilter replay test (no ROS): replays recorded CSVs from a
+# state_estimator_outputs folder through the filter and compares against the
+# recorded kalman_*.csv. Run: test_kalman [path/to/state_estimator_outputs]
+add_executable(test_kalman tests/test_kalman.cpp src/include/src/kalman.cpp)
+target_link_libraries(test_kalman Eigen3::Eigen)
 
 add_executable(planner src/planner.cpp)
 ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
@@ -78,6 +88,7 @@ ament_target_dependencies(sensorTest
   tf2_geometry_msgs
   snappy_interfaces
 )
+
 
 add_executable(controller
   src/controller.cpp
@@ -108,6 +119,7 @@ install(TARGETS
   controller
   sensorTest
   state_estimator
+  test_kalman
   planner
   DESTINATION lib/${PROJECT_NAME})
 
