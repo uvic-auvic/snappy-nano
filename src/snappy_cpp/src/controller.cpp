@@ -151,13 +151,16 @@ class Controller : public rclcpp::Node {
 
             Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(2, 1, 0);
 
+            //this is used to calculate the w value needed
             RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, Y, P, R]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
                 trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[2], euler[1], euler[0]);
 
+            // this is w aka the wrench value, it is a 6x1 vector
             Eigen::VectorXd wrench = generate_wrench(trajectory.first, trajectory.second);
             RCLCPP_INFO(this->get_logger(), "Wrench     [X, Y, Z, Y, P, R]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
                 wrench[0], wrench[1], wrench[2], wrench[3], wrench[4], wrench[5]);
 
+            // this calculates the thrust that gets sent to every thruster
             std::vector<int8_t> allocation = allocate_thrusters(wrench);
             RCLCPP_INFO(this->get_logger(), "Allocation [ Thrusters  1-8 ]: %d, %d, %d, %d, %d, %d, %d, %d",
                 allocation[0], allocation[1], allocation[2], allocation[3], allocation[4], allocation[5], allocation[6], allocation[7]);
@@ -445,18 +448,19 @@ class Controller : public rclcpp::Node {
         int dvl_first_;
         int timer_first_;
         int state_;
-	float pitch;
-	float yaw;
-	float roll;
-	float x;
-	float y;
-	float current_depth;
 
-	Eigen::Vector3d target_position;
-	Eigen::Quaterniond target_orientation;
+    	float pitch;
+    	float yaw;
+    	float roll;
+    	float x;
+    	float y;
+    	float current_depth;
 
-	Eigen::MatrixXd configuration;
-	ThrusterAllocator thruster_allocator;
+    	Eigen::Vector3d target_position;
+    	Eigen::Quaterniond target_orientation;
+
+    	Eigen::MatrixXd configuration;
+    	ThrusterAllocator thruster_allocator;
 };
 
 

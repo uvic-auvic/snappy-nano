@@ -2,6 +2,10 @@
 
 - this is a c++ ros2 project that is going to be used to run AUVIC's submarine for this years competition cycle
 
+> **Running on the Jetson Orin Nano?** The laptop Docker image is amd64-only.
+> Use `./setup-docker-snappy-jetson.sh` and see [jetson-docker.md](jetson-docker.md)
+> for the ARM64/GPU/GPIO container workflow.
+
 ### Subsystem: [Planner, State Estimator, Controller, Simulation]
 
 ### Overview
