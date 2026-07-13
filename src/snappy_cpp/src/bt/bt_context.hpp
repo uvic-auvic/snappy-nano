@@ -67,6 +67,7 @@ inline constexpr double kDeg2Rad = M_PI / 180.0;
 // Wrap an angle into (-pi, pi].
 inline double wrapToPi(double a) { return std::atan2(std::sin(a), std::cos(a)); }
 
+// How many seconds ago `t` happened — used for sensor ages and leaf timers.
 inline double secondsSince(Clock::time_point t)
 {
     return std::chrono::duration<double>(Clock::now() - t).count();
@@ -98,6 +99,7 @@ struct CameraModel
 // life-ring class, and the bin-icon mapping (tools vs medical) is a best
 // guess against kBottomDetectionClasses — neither is confirmed.
 // ---------------------------------------------------------------------------
+// The gate-divider icon classes that belong to a role ("restore"/"recovery").
 inline const std::vector<std::string>& roleGateIcons(const std::string& role)
 {
     static const std::vector<std::string> restore{"compass", "hammer_and_wrench"};
@@ -105,6 +107,7 @@ inline const std::vector<std::string>& roleGateIcons(const std::string& role)
     return role == "recovery" ? recovery : restore;
 }
 
+// The bin-lid icon classes that match a role (which bin we should drop into).
 inline const std::vector<std::string>& roleBinIcons(const std::string& role)
 {
     static const std::vector<std::string> restore{"nut_and_bolt", "plug"};
@@ -112,6 +115,7 @@ inline const std::vector<std::string>& roleBinIcons(const std::string& role)
     return role == "recovery" ? recovery : restore;
 }
 
+// The opposing role — used to find the OTHER side's icons at the gate.
 inline std::string otherRole(const std::string& role)
 {
     return role == "recovery" ? "restore" : "recovery";
@@ -145,6 +149,8 @@ public:
     };
 
     // --- sensor cache -------------------------------------------------------
+
+    // Called by the depth_data subscription: store the newest depth reading.
     void updateDepth(double metres)
     {
         std::lock_guard lk(mu_);
@@ -152,6 +158,7 @@ public:
         depth_stamp_ = Clock::now();
     }
 
+    // Called by the IMU subscription: store the newest yaw (radians, wrapped).
     void updateHeading(double rad)
     {
         std::lock_guard lk(mu_);
@@ -159,12 +166,14 @@ public:
         heading_stamp_ = Clock::now();
     }
 
+    // Called by a camera subscription: replace that camera's detection list.
     void updateDetections(const std::string& camera, std::vector<DetectionSnapshot> dets)
     {
         std::lock_guard lk(mu_);
         detections_[camera] = std::move(dets);
     }
 
+    // Latest depth (metres, +down) and how old it is; empty until the first message.
     std::optional<Sample> depth() const
     {
         std::lock_guard lk(mu_);
@@ -172,6 +181,7 @@ public:
         return Sample{*depth_, secondsSince(depth_stamp_)};
     }
 
+    // Latest yaw (radians) and how old it is; empty until the first IMU message.
     std::optional<Sample> heading() const
     {
         std::lock_guard lk(mu_);
@@ -179,6 +189,8 @@ public:
         return Sample{*heading_, secondsSince(heading_stamp_)};
     }
 
+    // Detections from one camera that are recent enough, confident enough,
+    // and of one of the wanted classes — what every vision leaf filters on.
     std::vector<DetectionSnapshot> freshDetections(const std::string& camera,
                                                    const std::vector<std::string>& classes,
                                                    double max_age_s, double min_confidence) const
@@ -195,6 +207,7 @@ public:
         return out;
     }
 
+    // Pick the highest-confidence detection from a list (empty if the list is).
     static std::optional<DetectionSnapshot> best(const std::vector<DetectionSnapshot>& dets)
     {
         auto it = std::max_element(dets.begin(), dets.end(),
@@ -204,24 +217,30 @@ public:
     }
 
     // --- mission state (one writer each) -------------------------------------
+
+    // Record which side of the gate we passed ("left"/"right"); first write wins.
     void latchGateSide(const std::string& side)
     {
         std::lock_guard lk(mu_);
         if (!gate_side_) gate_side_ = side;  // written once, never re-derived
     }
 
+    // The latched gate side, or empty if the gate task never classified one.
     std::optional<std::string> gateSide() const
     {
         std::lock_guard lk(mu_);
         return gate_side_;
     }
 
+    // Remember the current heading under a name (e.g. "gate") so a later leg
+    // can turn back to it (ReturnHome uses the reciprocal of "gate").
     void saveHeading(const std::string& key, double rad)
     {
         std::lock_guard lk(mu_);
         saved_headings_[key] = wrapToPi(rad);
     }
 
+    // Look up a heading saved earlier; empty if that name was never saved.
     std::optional<double> savedHeading(const std::string& key) const
     {
         std::lock_guard lk(mu_);
@@ -232,12 +251,14 @@ public:
 
     // Fired-latches: a retried branch must never double-fire an actuator
     // with a consumable budget (2 markers, 2 torpedoes).
+    // Has this one-shot actuator (e.g. "marker_left") already fired this run?
     bool alreadyFired(const std::string& key) const
     {
         std::lock_guard lk(mu_);
         return fired_.count(key) > 0;
     }
 
+    // Record that a one-shot actuator fired, so a retried branch can't re-fire it.
     void markFired(const std::string& key)
     {
         std::lock_guard lk(mu_);
@@ -245,12 +266,16 @@ public:
     }
 
     // --- mission clock --------------------------------------------------------
+
+    // Start the run clock at the first real tick; calling again does nothing.
     void startMissionClock()
     {
         std::lock_guard lk(mu_);
         if (!mission_start_) mission_start_ = Clock::now();
     }
 
+    // Seconds since the mission started ticking (0 until it does) — feeds the
+    // MissionTimeLeft guard.
     double missionElapsedS() const
     {
         std::lock_guard lk(mu_);
@@ -275,6 +300,10 @@ private:
 // The wire contract — the only functions in the codebase allowed to build a
 // Task message for the tree.
 // ---------------------------------------------------------------------------
+// Fill in and send one Task message to the controller. Every cmd* helper
+// below funnels through here; `absolute` distinguishes absolute vs relative
+// setpoints for "move" commands (it means nothing for the other verbs, where
+// we pass true by convention).
 inline void publishTask(BTContext& ctx, const std::string& type, const std::string& direction,
                         double magnitude, bool absolute)
 {
@@ -287,53 +316,74 @@ inline void publishTask(BTContext& ctx, const std::string& type, const std::stri
     ctx.task_pub->publish(msg);
 }
 
+// Tell the controller to go to (and then hold) `metres` below the surface.
 inline void cmdDepth(BTContext& ctx, double metres)
 {
     publishTask(ctx, "move", "z", metres, true);
 }
 
+// Tell the controller to turn to (and then hold) an absolute heading, radians.
 inline void cmdHeadingAbs(BTContext& ctx, double yaw_rad)
 {
     publishTask(ctx, "move", "yaw", wrapToPi(yaw_rad), true);
 }
 
+// Tell the controller to turn BY delta_rad from wherever it is now
+// (absolute=false → the controller adds the delta to its own heading).
 inline void cmdTurnRel(BTContext& ctx, double delta_rad)
 {
     publishTask(ctx, "move", "yaw", delta_rad, false);
 }
 
+// Open-loop translate: direction is "forward"/"backward"/"left"/"right",
+// thrust_pct is how hard to push as a % of thruster power. The caller picks
+// the speed (mission XML uses ~30-35); the clamp(|pct|, 0, 100) only CAPS a
+// bad value into the legal 0..100 range — it does not command full speed.
+// The controller's 3 s deadman stops the sub if these commands stop coming.
 inline void cmdDrive(BTContext& ctx, const std::string& direction, double thrust_pct)
 {
     publishTask(ctx, "drive", direction, std::clamp(std::abs(thrust_pct), 0.0, 100.0), true);
 }
 
+// Kill all open-loop translation immediately (thrust 0).
 inline void cmdDriveStop(BTContext& ctx)
 {
     publishTask(ctx, "drive", "stop", 0.0, true);
 }
 
+// Command a continuous body rotation ("roll" or "pitch") at rate_dps deg/s;
+// signed for direction, 0 stops it and hands back to the stabiliser.
 inline void cmdSpin(BTContext& ctx, const std::string& axis, double rate_dps)
 {
     publishTask(ctx, "spin", axis, rate_dps, true);
 }
 
+// Stop any roll/pitch rotation (rate 0 on both axes) — used by the abort path.
 inline void cmdSpinStopAll(BTContext& ctx)
 {
     cmdSpin(ctx, "roll", 0.0);
     cmdSpin(ctx, "pitch", 0.0);
 }
 
+// Turn ON the controller's camera-tracking servo for one object class.
+// magnitude carries the mode: 1 = keep it centred AHEAD (front camera),
+// 2 = keep it centred BELOW (down camera). The tree only enables/monitors;
+// the actual steering loop runs in the controller.
 inline void cmdTrack(BTContext& ctx, const std::string& camera, const std::string& object_class)
 {
-    const double mode = (camera == "down") ? 2.0 : 1.0;  // center-over vs center-ahead
+    const double mode = (camera == "down") ? 2.0 : 1.0;
     publishTask(ctx, "track", object_class, mode, true);
 }
 
+// Turn the tracking servo OFF (mode 0); the controller must then re-hold its
+// current depth/heading as its setpoints.
 inline void cmdTrackOff(BTContext& ctx)
 {
     publishTask(ctx, "track", "", 0.0, true);
 }
 
+// Pulse a solenoid for pulse_s seconds: actuator is "marker_left",
+// "torpedo_right", "claw_open", etc.
 inline void cmdActuate(BTContext& ctx, const std::string& actuator, double pulse_s)
 {
     publishTask(ctx, "actuate", actuator, pulse_s, true);
@@ -383,8 +433,11 @@ T expect(BT::Expected<T> value, const std::string& node_name, const std::string&
 class SettleTracker
 {
 public:
+    // Forget any progress — call whenever a new target is commanded.
     void reset() { settled_since_.reset(); }
 
+    // Feed one tick's "am I within tolerance" answer; returns true once the
+    // error has stayed inside the band for settle_s continuous seconds.
     bool update(bool in_band, double settle_s)
     {
         if (!in_band) {
