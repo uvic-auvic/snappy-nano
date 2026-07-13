@@ -11,6 +11,7 @@ class PID {
         float target_;
         float integral_;
         float prev_err_;
+        bool first_update_;
         std::chrono::steady_clock::time_point prev_time_;
         float MIN;
         float MAX;
