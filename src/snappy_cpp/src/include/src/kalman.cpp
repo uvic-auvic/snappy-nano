@@ -8,17 +8,21 @@
     ENU -- East-North-Up ()
     NED -- North-East-Down
     ---- Frame conventions ----
-    World frame: Depth below the surface maps to POSITIVE world z: moving 2 m down => z = +2.
-    Example: (1.0, 2.0, 9.0) = 9 m below the surface, and we moved 1 m forward and 2 m right from starting measurement.
+    World frame = MISSION frame, anchored at frame init:
+      +x = vehicle heading at init, +y = right of that, +z down.
+    Depth below the surface maps to POSITIVE world z: moving 2 m down => z = +2.
+    Example: (1.0, 2.0, 9.0) = 1 m forward and 2 m right of the starting pose, 9 m below the surface.
 
      - World frame: Position (0, 0, depth) at t = 0 (depth sensor value)
-     - World frame: Orientation (0, 0, y) at t = 0, with y being the yaw from IMU2's first measurement 
-    Body frame: +x forward, +y right, +z down (matches the world when level).
+     - World frame: Orientation yaw = 0 at t = 0 by construction (roll/pitch as measured)
+    Body frame: +x forward, +y right, +z down (matches the world at init when level).
 
 
     The IMU2/Xsens quaternion is referenced to an ENU (z-up) world, so predict()
-    converts it with the fixed rotation q_enu_to_world_ (180 deg about the x+y
-    diagonal: ENU east->world y, north->x, up->-z) before fusing.
+    re-references it with two world-side rotations before fusing:
+      1. q_enu_to_world_ (fixed): ENU -> z-down NED (east->world y, north->x, up->-z)
+      2. q_ned_to_world_ (Rz(-yaw0), set once at frame init): NED -> mission frame.
+         This also absorbs any constant compass offset in the Xsens yaw.
 
     - IMU2 orientation:
         - physically mounted upside down: rotate 180 deg about the Y axis to reach the
@@ -100,10 +104,12 @@ void KalmanFilter::predict(const Eigen::Vector3d& accel, const Eigen::Quaternion
     P = 0.5 * (P + P.transpose());
 
     // Since quaternion is a direct measurement, use an update step here. (May want to split this later)
-    // Chain: q_world<-body = q_world<-enu * q_enu<-imu2 * q_imu2<-body.
+    // Chain: q_world<-body = q_ned_to_world_ * q_enu_to_world_ * q_enu<-imu2 * q_imu2<-body.
     // The Xsens quaternion is body-in-ENU (z-up); q_enu_to_world_ converts its
-    // reference into the filter's z-down world.
-    Quaterniond q_meas = (q_enu_to_world_ * quat_imu2.normalized()
+    // reference into z-down NED, then q_ned_to_world_ (Rz(-yaw0), set at frame
+    // init) re-references NED into the mission frame (+x = heading at init).
+    
+    Quaterniond q_meas = (q_ned_to_world_ * q_enu_to_world_ * quat_imu2.normalized()
                           * q_imu2_to_body_.conjugate()).normalized();
 
     updateOrientation(q_meas, R_imu2_orient_);

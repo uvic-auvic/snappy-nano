@@ -86,17 +86,24 @@ public:
     // Reset/reinitialize the filter
     void reset(const VectorXd& x0, const MatrixXd& P0);
 
-    // Fixed rotation from the Xsens ENU (z-up) reference into the filter's
-    // z-down world (x north, y east, z down): 180 deg about the x+y diagonal
+    // Fixed rotation from the Xsens ENU (z-up) reference into z-down NED
+    // (x north, y east, z down): 180 deg about the x+y diagonal
     // (east->world y, north->world x, up->world -z). This is NOT a mounting
     // rotation: the Xsens quaternion RELATES its sensor frame to an ENU world,
     // and this constant re-references its world side. q_imu2_to_body_ fixes
     // the sensor/mount side. Both are needed:
-    //   q_world<-body = q_enu_to_world_ * q_enu<-imu2 * q_imu2<-body^-1
+    //   q_world<-body = q_ned_to_world_ * q_enu_to_world_ * q_enu<-imu2 * q_imu2<-body^-1
     // Public and shared so predict() and try_initialize() (state_estimator.cpp)
     // can never disagree about the world frame.
     inline static const Quaterniond q_enu_to_world_ = Quaterniond(
         0.0, 0.7071067811865476, 0.7071067811865476, 0.0);  // (w, x, y, z)
+
+    // Mission-frame alignment, assigned once by try_initialize(): Rz(-yaw0),
+    // so world +x = vehicle heading at frame init, +y right of it, +z down.
+    // predict() applies it on the world side of every IMU2 fusion, so a
+    // constant compass offset in the Xsens yaw cancels out of the filter.
+    // Identity until frame init = world stays NED.
+    Quaterniond q_ned_to_world_ = Quaterniond::Identity();
 
 private:
     // State vector
