@@ -253,10 +253,11 @@ private:
                 msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
 
-            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f]",
+            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f], Pitch=%.2f, Roll=%.2f, Yaw=%.2f",
                 kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
                 kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
-                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w());
+                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w(),
+                getPitch(kf.getOrientation()), getRoll(kf.getOrientation()), getYaw(kf.getOrientation()));
         }
 
         // Write all data to file
@@ -268,7 +269,6 @@ private:
                 << msg->orientation.y << ","
                 << msg->orientation.z << ","
                 << msg->orientation.w << std::endl;
-
 
          kalman_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
                     << kf.getPosition().x() << ","
@@ -350,7 +350,8 @@ private:
         // May need to apply a sin(pitch) to the depth measurement if the vehicle is not level
         double z0 = init_depth_;
 
-        // Initial orientation(roll, pitch,yaw) = (0, 0, yaw0), with yaw0 taken from the IMU2 on first message
+        // Initial orientation: yaw = 0 in the mission frame (+x = starting
+        // heading). yaw0 below is measured only so it can be cancelled.
 
         // The Xsens quaternion answers "how is the SENSOR rotated relative to an
         // ENU (z-up) world?" — our filter world is z-DOWN, so BOTH sides of that
@@ -370,12 +371,20 @@ private:
             2.0 * (q_body0.w() * q_body0.z() + q_body0.x() * q_body0.y()),
             1.0 - 2.0 * (q_body0.y() * q_body0.y() + q_body0.z() * q_body0.z()));
 
-        // Save quaternion for yaw = yaw0 (radians, from atan2), roll, pitch = 0.0
-        Quaterniond q0 = getQuaternionFromYawPitchRollRadians(yaw0, 0.0, 0.0);
+        // Mission frame: Rz(-yaw0) cancels the starting NED yaw, so world
+        // +x = vehicle heading at init, +y right of it, +z down. predict()
+        // applies the same rotation to every later IMU2 fusion via
+        // kf.q_ned_to_world_, so a constant compass offset cancels everywhere.
+        const Quaterniond q_align(AngleAxisd(-yaw0, Vector3d::UnitZ()));
+        kf.q_ned_to_world_ = q_align;
+
+        // Startup attitude in the mission frame: yaw exactly 0, roll/pitch as
+        // measured (the first IMU2 fusion in predict() would snap them in anyway).
+        Quaterniond q0 = (q_align * q_body0).normalized();
 
         VectorXd x0 = VectorXd::Zero(13);
         x0(2) = z0;           // depth at startup: (0, 0, depth)
-        x0(6) = q0.w();       // yaw-only startup quaternion [w, x, y, z]
+        x0(6) = q0.w();       // yaw-zero startup quaternion [w, x, y, z]
         x0(7) = q0.x();
         x0(8) = q0.y();
         x0(9) = q0.z();
@@ -385,7 +394,7 @@ private:
         frame_initialized_ = true;
         
         RCLCPP_INFO(this->get_logger(),
-            "KF world frame initialized: pos=(0, 0, %.3f) m  [depth=%.3f m, yaw0=%.1f deg]",
+            "KF mission frame initialized: pos=(0, 0, %.3f) m, +x = initial heading  [depth=%.3f m, NED yaw0=%.1f deg]",
             z0, init_depth_, yaw0 * 180.0 / M_PI);
     }
 
@@ -407,6 +416,18 @@ private:
                 "✅ Receiving - IMU:%d Gyro:%d Accel:%d msgs",
                 imu_count_, gyro_count_, accel_count_);
         }
+    }
+
+    double getYaw(const Quaterniond& q) {
+        return std::atan2(2.0 * (q.w() * q.z() + q.x() * q.y()),
+                          1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
+    }
+    double getPitch(const Quaterniond& q) {
+        return std::asin(2.0 * (q.w() * q.y() - q.z() * q.x()));
+    }
+    double getRoll(const Quaterniond& q) {
+        return std::atan2(2.0 * (q.w() * q.x() + q.y() * q.z()),
+                          1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y()));
     }
 
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub1_;

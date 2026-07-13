@@ -14,9 +14,14 @@ Works with either output format produced in this repo (both are 11 columns):
 Quaternions are (w, x, y, z) and are converted to roll/pitch/yaw (deg) with the
 aerospace ZYX (yaw-pitch-roll) convention -- the same yaw definition the filter uses.
 
+Position labels assume the mission frame (world X = forward at init, Y = right,
+Z = down). For recordings made before the mission-frame change, world X/Y are
+North/East instead.
+
 Examples:
-    ./plot_kalman.py snappy-nano/state_estimator_outputs/kalman_1783280617402906537.csv
-    ./plot_kalman.py kalman_*.csv --trajectory          # overlay several runs
+    ./plot_kalman.py                                     # newest run in state_estimator_outputs/
+    ./plot_kalman.py state_estimator_outputs             # same, explicit folder
+    ./plot_kalman.py kalman_*.csv --trajectory           # overlay several runs
     ./plot_kalman.py filter_output.csv -o out.png        # save instead of show
 """
 
@@ -121,6 +126,23 @@ def load_run(path: str, trim_preinit: bool = False, unwrap: bool = False) -> Run
     )
 
 
+def newest_run_csv(directory: str) -> str:
+    """Newest kalman_<run>.csv in a directory (kalman_replay_* excluded)."""
+    candidates = [
+        os.path.join(directory, name)
+        for name in os.listdir(directory)
+        if name.startswith("kalman_") and name.endswith(".csv")
+        and not name.startswith("kalman_replay_")
+    ]
+    if not candidates:
+        raise ValueError(f"{directory}: no kalman_*.csv found")
+    newest = max(candidates, key=os.path.getmtime)
+    if len(candidates) > 1:
+        print(f"note: {len(candidates)} runs in {directory}, plotting newest: "
+              f"{os.path.basename(newest)}", file=sys.stderr)
+    return newest
+
+
 def assign_labels(runs: list[Run]) -> None:
     """Give each run a unique legend label; fall back to the full path on basename clashes."""
     from collections import Counter
@@ -141,7 +163,7 @@ def plot_state(runs: list[Run], title: str | None) -> plt.Figure:
     """3x2 grid: left column = position X/Y/Z [m], right column = roll/pitch/yaw [deg]."""
     fig, axes = plt.subplots(3, 2, figsize=(13, 8), sharex=True)
 
-    pos_labels = ("North  (world X) [m]", "East  (world Y) [m]", "Down  (world Z) [m]")
+    pos_labels = ("Forward  (world X) [m]", "Right  (world Y) [m]", "Down  (world Z) [m]")
     rpy_labels = ("Roll [deg]", "Pitch [deg]", "Yaw [deg]")
 
     for r_i, run in enumerate(runs):
@@ -179,23 +201,24 @@ def plot_state(runs: list[Run], title: str | None) -> plt.Figure:
 
 
 def plot_trajectory(runs: list[Run]) -> plt.Figure:
-    """North-up top-down path (equal aspect) plus depth over time.
+    """Top-down path (equal aspect) plus depth over time.
 
-    World frame is NED (world X = North, world Y = East, Z = Down), so the map
-    puts East on the horizontal axis and North on the vertical axis.
+    World frame is the mission frame (X = forward at init, Y = right, Z = down),
+    so the map draws the initial heading up the page: world Y on the horizontal
+    axis, world X on the vertical axis.
     """
     fig, (ax_xy, ax_z) = plt.subplots(1, 2, figsize=(13, 5.5))
 
     for r_i, run in enumerate(runs):
         color = PALETTE[r_i % len(PALETTE)]
-        east, north = run.pos[:, 1], run.pos[:, 0]
-        ax_xy.plot(east, north, color=color, linewidth=1.2, label=run.label)
-        ax_xy.plot(east[0], north[0], "o", color=color, markersize=7)  # start
+        right, fwd = run.pos[:, 1], run.pos[:, 0]
+        ax_xy.plot(right, fwd, color=color, linewidth=1.2, label=run.label)
+        ax_xy.plot(right[0], fwd[0], "o", color=color, markersize=7)  # start
         ax_z.plot(run.t, run.pos[:, 2], color=color, linewidth=1.2, label=run.label)
 
-    ax_xy.set_title("Top-down path (start = dot)")
-    ax_xy.set_xlabel("East  (world Y) [m]")
-    ax_xy.set_ylabel("North  (world X) [m]")
+    ax_xy.set_title("Top-down path (start = dot, initial heading = up)")
+    ax_xy.set_xlabel("Right  (world Y) [m]")
+    ax_xy.set_ylabel("Forward  (world X) [m]")
     ax_xy.set_aspect("equal", adjustable="datalim")
     _style_axis(ax_xy)
 
@@ -215,8 +238,9 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("files", nargs="+",
-                        help="one or more Kalman output CSV files (overlaid together)")
+    parser.add_argument("files", nargs="*",
+                        help="Kalman output CSVs and/or run directories (overlaid together). "
+                             "With no arguments, plots the newest run in state_estimator_outputs/")
     parser.add_argument("-o", "--output",
                         help="save the figure to this path instead of showing it "
                              "(e.g. out.png). A trajectory figure is saved as *_traj.png")
@@ -229,21 +253,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--title", help="figure title (default: filename for a single run)")
     args = parser.parse_args(argv)
 
+    # Resolve arguments to CSV paths: no args = newest run in the default output
+    # folder; a directory argument = the newest run inside it.
     runs: list[Run] = []
-    for path in args.files:
-        try:
+    try:
+        paths = ([newest_run_csv("state_estimator_outputs")] if not args.files else
+                 [newest_run_csv(p) if os.path.isdir(p) else p for p in args.files])
+        for path in paths:
             runs.append(load_run(path, trim_preinit=args.trim, unwrap=args.unwrap))
-        except (OSError, ValueError) as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     if any(run.t.size == 0 for run in runs):
         print("error: a file has no rows to plot (all trimmed?)", file=sys.stderr)
         return 1
 
     # Warn when two arguments resolve to the same file (e.g. overlapping globs like
     # kalman_*.csv and kalman_replay_*.csv) -- otherwise the lines silently overlap.
-    real = [os.path.realpath(p) for p in args.files]
-    dup_paths = sorted({p for p in args.files if real.count(os.path.realpath(p)) > 1})
+    real = [os.path.realpath(p) for p in paths]
+    dup_paths = sorted({p for p in paths if real.count(os.path.realpath(p)) > 1})
     if dup_paths:
         print("warning: the same file was passed more than once, so its lines overlap "
               "(only the top color shows):\n  " + "\n  ".join(dup_paths), file=sys.stderr)

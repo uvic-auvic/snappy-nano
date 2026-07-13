@@ -230,9 +230,12 @@ private:
 
         
 
-        // Yaw-only startup quaternion. Equivalent to tf2 setRPY(0, 0, yaw0),
-        // without needing tf2 here.
-        Quaterniond q0(AngleAxisd(yaw0, Vector3d::UnitZ()));
+        // Mission frame (same as state_estimator.cpp): Rz(-yaw0) cancels the
+        // starting NED yaw, so world +x = initial heading, +y right of it.
+        // Startup yaw is exactly 0; roll/pitch as measured.
+        const Quaterniond q_align(AngleAxisd(-yaw0, Vector3d::UnitZ()));
+        kf.q_ned_to_world_ = q_align;
+        Quaterniond q0 = (q_align * q_body0).normalized();
 
         VectorXd x0 = VectorXd::Zero(13);
         x0(2) = z0;
@@ -346,6 +349,20 @@ static CompareStats compare(const std::vector<CsvRow>& replay, const std::vector
     return s;
 }
 
+// Frame-invariant speed error (|v| vs |v|) for the DVL offset scan: old
+// reference recordings are in the NED frame while replays now use the mission
+// frame, so vector comparisons are off by a constant rotation — speed is not.
+static double rmsSpeedError(const std::vector<CsvRow>& replay, const std::vector<CsvRow>& ref)
+{
+    double sum = 0;
+    for (size_t i = 0; i < ref.size(); ++i) {
+        const double d = Vector3d(replay[i].v[3], replay[i].v[4], replay[i].v[5]).norm()
+                       - Vector3d(ref[i].v[3],    ref[i].v[4],    ref[i].v[5]).norm();
+        sum += d * d;
+    }
+    return std::sqrt(sum / double(ref.size()));
+}
+
 int main(int argc, char* argv[])
 {
     const fs::path dir = (argc > 1) ? fs::path(argv[1]) : fs::path("state_estimator_outputs");
@@ -419,8 +436,9 @@ int main(int argc, char* argv[])
     }
 
     // DVL clock offset: use the value from the command line, or estimate it by
-    // scanning (coarse then fine) for the offset whose velocity best matches
-    // the reference — velocity is what the DVL directly corrects.
+    // scanning (coarse then fine) for the offset whose SPEED profile best
+    // matches the reference — the DVL directly corrects velocity, and speed
+    // stays comparable even when the world frame changed between recordings.
     double dvl_offset = 0.0;
     if (argc > 2) {
         dvl_offset = std::stod(argv[2]);
@@ -436,16 +454,16 @@ int main(int argc, char* argv[])
             const double step       = (pass == 0) ? 0.25 : 0.05;
             const double center     = dvl_offset;
             for (double off = center - half_range; off <= center + half_range + 1e-9; off += step) {
-                const CompareStats s = compare(runReplay(in, off), ref);
-                if (best_rms < 0 || s.rms_dv < best_rms) {
-                    best_rms = s.rms_dv;
+                const double e = rmsSpeedError(runReplay(in, off), ref);
+                if (best_rms < 0 || e < best_rms) {
+                    best_rms = e;
                     dvl_offset = off;
                 }
             }
         }
         std::cout.rdbuf(cout_buf);
         std::cout << "DVL offset (estimated): " << dvl_offset
-                  << " s (rms velocity error " << best_rms << " m/s)" << std::endl;
+                  << " s (rms speed error " << best_rms << " m/s)" << std::endl;
     }
 
     // ---- Final replay, output CSV, and report ----
@@ -471,6 +489,9 @@ int main(int argc, char* argv[])
     // Regression bounds. DVL/depth arrival times are reconstructed, so the
     // replay cannot be bit-exact — these bounds catch changes to the filter
     // math itself, which shift the trajectory far more than event timing does.
+    // NOTE: references recorded before the mission-frame change / DVL z-sign
+    // fix are in a different world frame, so this comparison will FAIL against
+    // them — record a fresh reference run to re-arm this check.
     const bool pass = s.rms_dp < 0.05 && s.rms_dv < 0.05 && s.rms_dang < 1.0;
     std::cout << (pass ? "PASS" : "FAIL")
               << " (bounds: rms position < 0.05 m, rms velocity < 0.05 m/s, rms orientation < 1 deg)"
