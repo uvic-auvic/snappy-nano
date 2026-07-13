@@ -21,15 +21,15 @@ Tick the box when fixed and note the commit.
 The current controller is the old `rewrite-controller` pipeline merged to main with YAML gains.
 Its architecture (trajectory → wrench → allocation) is sound; the math inside has the following bugs.
 
-- [ ] 🔴 **C1 — Surge is hardcoded to a constant 2.0 kgf** (`controller.cpp:236`)
+- [x] 🔴 **C1 — Surge is hardcoded to a constant 2.0 kgf** (`controller.cpp:236`) — fixed in `2509365`
   `wrench << 2.0, thrust_y, ...` discards `thrust_x` (computed at line 226 — the compiler even
   warns "unused variable"). The sub is commanded +2 kgf forward every 200 ms tick, forever,
   regardless of error, sensors, or task. It can never hold station and will drive forward on the
   bench the moment the node starts.
   **Fix:** `wrench << thrust_x, ...` — this was clearly a pool-test hack that got merged.
 
-- [ ] 🔴 **C2 — `current_orientation` initialised to the zero quaternion → NaN motor commands**
-  (`controller.cpp:83`)
+- [x] 🔴 **C2 — `current_orientation` initialised to the zero quaternion → NaN motor commands**
+  (`controller.cpp:83`) — fixed in `2509365` (C4's output gating still open)
   `Quaterniond(0,0,0,0)` has `squaredNorm()==0`, so `.inverse()` in `generate_trajectory` is
   0/0 = NaN. NaN flows through eulerAngles → PIDs (the ±100 clamps don't catch NaN) → the whole
   wrench → the allocator (all NaN comparisons are false, so no scaling) → `static_cast<int8_t>(NaN)`
@@ -88,13 +88,14 @@ Its architecture (trajectory → wrench → allocation) is sound; the math insid
 
 ## 2. PID (`src/snappy_cpp/src/include/src/pid.cpp`)
 
-- [ ] 🟠 **P1 — Integral clamped in error·seconds units, before Ki** (`pid.cpp:36–41`)
+- [x] 🟠 **P1 — Integral clamped in error·seconds units, before Ki** (`pid.cpp:36–41`) — fixed in `f81bc6d`
+  (post-Ki clamp with back-calculation; saturation-aware anti-windup via T3 still open)
   `integral_` is clamped to ±100 **before** multiplying by Ki, so the effective integral
   authority scales with Ki (pid_z Ki=1.0 → i_term up to ±100 "kgf" against ±5 kgf thrusters).
   Massive windup and overshoot. **Fix:** clamp `i_term` (or scale the bound by 1/Ki), and add
   saturation-aware anti-windup (see T3).
 
-- [ ] 🟠 **P2 — First-update transient** (`pid.cpp:26, 45`)
+- [x] 🟠 **P2 — First-update transient** (`pid.cpp:26, 45`) — fixed in `f81bc6d` (first call is P-only)
   `prev_time_` is set at construction, so the first `update()` uses dt = time since node startup
   (can be seconds): oversized integral step + derivative kick from `prev_err_ = 0`
   (pid_yaw Kd=5.0 → large transient thruster command on the first control cycle).
@@ -142,7 +143,10 @@ Its architecture (trajectory → wrench → allocation) is sound; the math insid
 
 ## 4. State estimator (`src/snappy_cpp/src/state_estimator.cpp`)
 
-- [ ] 🔴 **E1 — NEW regression: DVL forward axis negated** (`state_estimator.cpp:319`)
+- [x] 🔴 **E1 — NEW regression: DVL forward axis negated** (`state_estimator.cpp:319`) — fixed in `4eee463`.
+  Pool test 12 Jul + WaterLinked docs settled it: the DVL raw frame is x-fwd/y-stbd/z-DOWN, i.e.
+  already the body frame — the z flip (not just x) was wrong and caused the runaway descent.
+  Signs are now identity by default and exposed as `dvl_sign_x/y/z` params for rotated mounts.
   `v_body(-x, +y, -z)` — but the frame convention (kalman.cpp:33 comment: "just flipping the z
   sign") and the offline test (`test_kalman.cpp:205`, `(+x, +y, -z)`) both say only z flips.
   The in-code comment literally says "Test this … Should maybe flip this with a rotation matrix".
@@ -162,7 +166,9 @@ Its architecture (trajectory → wrench → allocation) is sound; the math insid
   silently stops the filter while the node **keeps publishing** a fresh-looking pose.
   Warn on repeated rejections and/or stop publishing when predict hasn't run.
 
-- [ ] 🟠 **E4 — Hardcoded accel bias with a frozen bias state** (`state_estimator.cpp:93`)
+- [x] 🟠 **E4 — Hardcoded accel bias with a frozen bias state** (`state_estimator.cpp:93`) — improved in
+  `4eee463` (bias P 0.01→0.25, random walk 1e-6→1e-5 so the filter can correct the guess); re-deriving
+  the init value from a stationary capture is still worth doing.
   Initial bias (−0.5, 0.5, 0.2) is injected with tiny covariance (×0.01) and near-zero random
   walk (Q=1e-6), and no measurement observes bias — the filter can never correct a wrong value,
   giving steady velocity ramp / quadratic position drift between DVL fixes. Re-derive from a
@@ -181,28 +187,31 @@ Its architecture (trajectory → wrench → allocation) is sound; the math insid
 
 ## 5. Kalman filter (`src/snappy_cpp/src/include/src/kalman.cpp`, `Inc/kalman.h`)
 
-- [ ] 🟠 **K1 — `updateIMU1` is a second predict disguised as a measurement** (`kalman.cpp:141`,
-  called from `state_estimator.cpp:173`)
+- [x] 🟠 **K1 — `updateIMU1` is a second predict disguised as a measurement** (`kalman.cpp:141`,
+  called from `state_estimator.cpp:173`) — fixed in `4eee463` (call removed from node + test; the
+  RealSense IMU is still CSV-logged; the function remains with a DO-NOT-CALL note)
   Its residual is built **from the current state** (v·dt + ½a·dt², a·dt, ω·dt), so it confirms
   the filter's own dead-reckoning while shrinking covariance — real corrections (DVL/depth) get
   ever-smaller gains — and raw RealSense accel is used with no bias handling.
   **Fix:** delete the call (one line; the MTi-620 outclasses the RealSense IMU), or replace with
   a proper gravity-vector attitude update.
 
-- [ ] 🟠 **K2 — Depth gate is a lockout, not an outlier filter** (`kalman.cpp:179`)
+- [x] 🟠 **K2 — Depth gate is a lockout, not an outlier filter** (`kalman.cpp:179`) — fixed in `4eee463`
+  (3-sigma Mahalanobis gate on P_zz + R; widens as rejections accumulate, so the filter recovers)
   `if (residual > 0.5 || residual < -0.5) return;` — once estimated z drifts > 0.5 m from the
   Bar02, **every** subsequent depth measurement is rejected forever and z rides accel
   integration alone. Gate on innovation covariance (Mahalanobis), or widen/disable while P is
   large so the filter can recover.
 
-- [ ] 🟡 **K3 — `updateDVL()` declared but never defined** (`kalman.h:49–50`)
-  Linker trap for the first caller (only `updateDVLVelocity` exists). Delete or implement.
+- [x] 🟡 **K3 — `updateDVL()` declared but never defined** (`kalman.h:49–50`) — fixed in `4eee463` (deleted)
 
-- [ ] 🟡 **K4 — Stale dimension comment** (`kalman.h:152`)
-  Says G is "(15x12)"; actual is 12×6.
+- [x] 🟡 **K4 — Stale dimension comment** (`kalman.h:152`) — fixed in `4eee463`
 
-- [ ] 🟠 **K5 — `test_kalman` has drifted from the node it exists to protect**
-  (`tests/test_kalman.cpp:205–209`)
+- [x] 🟠 **K5 — `test_kalman` has drifted from the node it exists to protect**
+  (`tests/test_kalman.cpp:205–209`) — fixed in `4eee463`: node and test now share
+  `KalmanFilter::dvl_axis_signs_default`, the test's NaN gate is restored, and its config mirrors the
+  node. NOTE: the checked-in reference recording predates the mission-frame change (constant ~90°
+  offset, failed before and after this fix) — record a fresh reference run to re-arm the bounds check.
   The offline replay uses `(+x, +y, -z)` DVL convention (node uses `-x`, see E1) and its NaN
   gate is commented out — CI validates behaviour the vehicle doesn't run, and green-lights
   exactly the bug class it exists to catch. Extract the callback math into a shared function
