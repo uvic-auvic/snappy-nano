@@ -40,9 +40,9 @@ class Controller : public rclcpp::Node {
             pid_x_(0.0f, 0.0f, 0.0f),
             pid_y_(0.0f, 0.0f, 0.0f),
             pid_z_(6.0f, 0.5f, 0.0f),
-            pid_roll_(1.0f, 0.0f, 0.0f),
-            pid_pitch_(1.0f, 0.0f, 0.0f),
-            pid_yaw_(2.0f, 0.0f, 0.0f)
+            pid_roll_(0.0f, 0.0f, 0.0f),
+            pid_pitch_(0.0f, 0.0f, 0.0f),
+            pid_yaw_(0.5f, 0.0f, 0.5f)
          {
              target_position = Eigen::Vector3d(0.0, 0.0, 0.5);
              target_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
@@ -200,13 +200,13 @@ class Controller : public rclcpp::Node {
             float thrust_y = pid_y_.update(-relative_position[1]);
             float thrust_z = pid_z_.update(-relative_position[2]);
 
-            float thrust_yaw = pid_yaw_.update(yaw);
+            float thrust_yaw = pid_yaw_.update(-yaw);
             float thrust_pitch = pid_pitch_.update(-pitch);
             float thrust_roll = pid_roll_.update(-roll);
 
             // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << thrust_x, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
+            wrench << 2.0, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }

@@ -90,7 +90,7 @@ def generate_launch_description():
     )
 
     controller_node = TimerAction(
-        period=5.0,
+        period=8.0,
         actions=[
             Node(
                 package="snappy_cpp",
@@ -146,7 +146,7 @@ def generate_launch_description():
             micro_ros_agent,
             pressure_sensor_node,
             planner_node,
-            # controller_node,
             state_estimator_node,
+            controller_node,
         ]
     )

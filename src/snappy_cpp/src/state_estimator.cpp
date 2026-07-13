@@ -316,7 +316,7 @@ private:
         if (!frame_initialized_) return;
         // Test this - on the z of the DVL in test_kalman it fixed the x,y postion 
         // Should maybe flip this with a rotation matrix
-        Vector3d v_body(msg->twist.twist.linear.x,
+        Vector3d v_body(-msg->twist.twist.linear.x,
                         msg->twist.twist.linear.y,
                         -msg->twist.twist.linear.z);
 
