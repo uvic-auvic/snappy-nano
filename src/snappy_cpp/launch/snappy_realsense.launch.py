@@ -23,6 +23,7 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
+
 def generate_launch_description():
 
     snappyComputerVision = IncludeLaunchDescription(
@@ -89,7 +90,7 @@ def generate_launch_description():
     )
 
     controller_node = TimerAction(
-        period=5.0,
+        period=8.0,
         actions=[
             Node(
                 package="snappy_cpp",
@@ -138,13 +139,14 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            xsens_mti_node,
             snappyComputerVision,
             dvl,
             serial_dev_arg,
             micro_ros_agent,
-            xsens_mti_node,
             pressure_sensor_node,
             planner_node,
+            state_estimator_node,
             controller_node,
         ]
     )
