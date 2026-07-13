@@ -1,10 +1,48 @@
 services:
   snappy-nano:
+    image: nil2thrill/snappy-ros:humble
+    container_name: snappy-nano
+    volumes:
+      - .:/ros2_ws
+      - /dev:/dev
+    privileged: true
+    network_mode: host
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  snappy-jetson:
+    profiles: ["jetson"]
     build:
       context: .
-      dockerfile: Dockerfile
-    image: snappy-nano:local-arm64
-    container_name: snappy-nano
+      dockerfile: Dockerfile.jetson
+    image: snappy-nano:humble-jetson
+    container_name: snappy-jetson
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - .:/ros2_ws
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/argus_socket:/tmp/argus_socket
+    privileged: true
+    network_mode: host
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    command: /bin/bash
+
+# For Apple users only
+  snappy-mac:
+    profiles: ["mac"]
+    build:
+      context: .
+      dockerfile: Dockerfile.jetson
+    image: snappy-nano:local-mac-arm64
+    container_name: snappy-mac
     volumes:
       - .:/ros2_ws
     privileged: true
