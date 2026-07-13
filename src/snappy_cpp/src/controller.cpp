@@ -80,7 +80,10 @@ class Controller : public rclcpp::Node {
              double yaw = get_parameter("target_yaw").as_double();
 
              current_position = Eigen::Vector3d(0.0, 0.0, 0.0);
-             current_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+             // Identity, NOT the zero quaternion: inverse() of a zero quaternion is
+            // 0/0 = NaN, which flowed through the PIDs (clamps don't catch NaN) into
+            // int8 motor commands on every tick before the first state arrived.
+            current_orientation = Eigen::Quaterniond::Identity();
 
              flag_ = 0;
 
@@ -233,7 +236,7 @@ class Controller : public rclcpp::Node {
 
             // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << 2.0, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
+            wrench << thrust_x, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }
