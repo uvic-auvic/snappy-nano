@@ -10,14 +10,14 @@ mission:
   defaults:
     timeout: 40.0
     on_fail: abort
-    depth_tolerance: 0.25
+    xy_tolerance: 0.10
+    z_tolerance: 0.10
     yaw_tolerance_deg: 10.0
-    xy_tolerance: 0.3
 
   steps:
     - name: dive            # held for the rest of the mission
-      type: depth
-      depth: 0.5
+      type: z
+      meters: 0.5
       timeout: 50
 
     - name: set_x_2         # set x target 2 m
@@ -31,25 +31,25 @@ mission:
     # A single "turn by 360" is a no-op (the target orientation is identical),
     # so spin in four 90-degree quarters.
     - name: spin_quarter_1
-      type: heading
+      type: yaw
       yaw_deg: 90.0
       absolute: false
       timeout: 20
 
     - name: spin_quarter_2
-      type: heading
+      type: yaw
       yaw_deg: 90.0
       absolute: false
       timeout: 20
 
     - name: spin_quarter_3
-      type: heading
+      type: yaw
       yaw_deg: 90.0
       absolute: false
       timeout: 20
 
     - name: spin_quarter_4
-      type: heading
+      type: yaw
       yaw_deg: 90.0
       absolute: false
       timeout: 20
@@ -61,6 +61,3 @@ mission:
     - name: over_y_2        # set y -2
       type: y
       meters: -2.0
-    
-    - name: abort_test
-      type: abort 
