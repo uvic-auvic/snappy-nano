@@ -88,9 +88,8 @@ public:
             std::bind(&StateEstimator::dvl_callback, this, _1));
 
 
-        // need to update for imu2,
-        // May want to get better values here
-        accel_bias_init_ << -0.5, 0.5, 0.2;
+
+        accel_bias_init_ << 0.0, 0.0, 0.0;
 
         // Default state before frame initialization fires (filter not yet active)
         VectorXd x0 = VectorXd::Zero(13);
@@ -107,26 +106,22 @@ public:
 
         // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
         MatrixXd Q_init = MatrixXd::Zero(6, 6);
-        Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.1;    // accel noise → velocity growth
-        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-6;   // accel bias random walk
+        Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.01;   // accel noise → velocity growth
+        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-5;   // accel bias random walk (fast enough to converge in-run)
         kf.setProcessNoise(Q_init);
 
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
-        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.01; // depth sensor noise
-        MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * 0.09; // DVL velocity measurement noise, high trust
+        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 2.5e-3; // depth sensor noise
+        MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * 0.01; // DVL velocity noise
 
         kf.setIMU1MeasurementNoise(R_imu1_init);
         kf.setDepthMeasurementNoise(R_depth_init);
         kf.setDVLVelocityMeasurementNoise(R_dvl_vel_);
 
-        // IMU2 is mounted upside-down
-        // must roate IMU2 around y axis 180 degrees
         q_imu2_to_body_node_ = Quaterniond(0, 0, 1, 0);  // w, x, y, z; 180° around y
         kf.setIMU2ToBodyRotation(q_imu2_to_body_node_);
 
-
-        // IMU1: z points UP, gotta flip it 
         kf.setIMU1ToBodyRotation(Quaterniond(0, 1, 0, 0));
 
         kf.reset(x0, P_init_);
@@ -222,12 +217,14 @@ private:
             try_initialize();
         }
 
+        
+        const double dt = now_sec - last_time_imu2_sec_;
+        last_time_imu2_sec_ = now_sec;
+
         if (!frame_initialized_) {
             RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
             return;
         }
-        const double dt = now_sec - last_time_imu2_sec_;
-        last_time_imu2_sec_ = now_sec;
 
         if (dt > 0.001 && frame_initialized_)
         {
@@ -253,12 +250,13 @@ private:
                 msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
                 msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
 
-            RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f], Pitch=%.2f, Roll=%.2f, Yaw=%.2f",
-                kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
-                kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
-                kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w(),
-                getPitch(kf.getOrientation()), getRoll(kf.getOrientation()), getYaw(kf.getOrientation()));
+        RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f], Pitch=%.2f, Roll=%.2f, Yaw=%.2f",
+            kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
+            kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
+            kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w(),
+            getPitch(kf.getOrientation()), getRoll(kf.getOrientation()), getYaw(kf.getOrientation()));
         }
+
 
         // Write all data to file
         imu2_file << rclcpp::Time(msg->header.stamp).nanoseconds() << ","
@@ -314,17 +312,16 @@ private:
         }
         dvl_count_++;
         if (!frame_initialized_) return;
-        // Test this - on the z of the DVL in test_kalman it fixed the x,y postion 
-        // Should maybe flip this with a rotation matrix
+
+        const float epsilon = 1e-6f;
+        
+
+
         Vector3d v_body(-msg->twist.twist.linear.x,
                         msg->twist.twist.linear.y,
                         -msg->twist.twist.linear.z);
 
-        // Skip bad samples, assuming dvl publishes NaN when bad vaules
-        // if this doesnt work must look at our orientation and stop reading vaules when the dvl is not facing down
-        // This should check if all values are 0s
-        if (!v_body.allFinite()) return;
-
+        if (abs(v_body.x()) < epsilon && abs(v_body.y()) < epsilon && abs(v_body.z()) < epsilon) return; // skip bad samples
         kf.updateDVLVelocity(v_body);
 
         if (dvl_count_ % 20 == 0) {

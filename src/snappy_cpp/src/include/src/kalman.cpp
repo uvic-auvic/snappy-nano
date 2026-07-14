@@ -30,7 +30,8 @@
 
     - IMU1: sensor z points UP, so it needs 180 deg about the X axis: q_imu1_to_body = (w=0, x=1, y=0, z=0)
 
-    - DVL: is (+x forward, +y right, -z down) so just flipping the z sign :)
+    - DVL: the driver reports velocity with fully negated sign; the node negates
+      all three components to get body FRD (verified in-water 2026-07-13).
 
 */
 
@@ -175,10 +176,8 @@ void KalmanFilter::updateDepth(double depth_measured)
     VectorXd residual(1);
     residual << (depth_measured - x(2));
 
-    // if the residual is too large, ignore the depth measurement (likely a bad reading) 
-    if (residual(0) > 0.5 || residual(0) < -0.5)
-    {
-        return;
+    if (depth_measured < -0.2) {
+       return;
     }
 
     MatrixXd H = MatrixXd::Zero(1, 12);
