@@ -45,3 +45,5 @@ src/snappy_cpp/worlds/raw_parts/
 # === IDE/Editor Specific ===
 
 # VS C
+models/*.engine
+snappy_inference/
