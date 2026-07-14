@@ -48,25 +48,21 @@ private:
             msg->detections.size(), msg->inference_time_ms);
 
         for (const auto& detection : msg->detections) {
-            std::string quadrants_str;
-            if (!detection.quadrants.empty()) {
-                quadrants_str = "[";
-                for (size_t i = 0; i < detection.quadrants.size(); ++i) {
-                    if (i > 0) {
-                        quadrants_str += ",";
-                    }
-                    quadrants_str += std::to_string(static_cast<int>(detection.quadrants[i]));
+            std::string cells_str = "[";
+            for (size_t i = 0; i < detection.quadrants.size(); ++i) {
+                if (i > 0) {
+                    cells_str += ",";
                 }
-                quadrants_str += "]";
-            } else {
-                quadrants_str = "[]";
+                cells_str += "(" + std::to_string(detection.quadrants[i].row) + "," +
+                    std::to_string(detection.quadrants[i].column) + ")";
             }
+            cells_str += "]";
             RCLCPP_DEBUG(this->get_logger(),
-                "  - Object: %s | Confidence: %.2f | Distance: %.2fm | Quadrants: %s | Box: (%.0f, %.0f, %.0f, %.0f)",
+                "  - Object: %s | Confidence: %.2f | Distance: %.2fm | Cells: %s | Box: (%.0f, %.0f, %.0f, %.0f)",
                 detection.object_class.c_str(),
                 detection.confidence,
                 detection.distance_m,
-                quadrants_str.c_str(),
+                cells_str.c_str(),
                 detection.bounding_box.x,
                 detection.bounding_box.y,
                 detection.bounding_box.width,

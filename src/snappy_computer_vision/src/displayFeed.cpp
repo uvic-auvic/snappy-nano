@@ -137,15 +137,12 @@ private:
                 std::string distance_str = (d.distance_m > 0.0f)
                     ? std::to_string(static_cast<int>(d.distance_m * 100.0f)) + "cm"
                     : "N/A";
-                std::string quadrants_str;
-                if (!d.quadrants.empty()) {
-                    quadrants_str = " Q:";
-                    for (size_t i = 0; i < d.quadrants.size(); ++i) {
-                        if (i > 0) {
-                            quadrants_str += ",";
-                        }
-                        quadrants_str += std::to_string(static_cast<int>(d.quadrants[i]));
+                std::string quadrants_str = " Q:";
+                for (size_t i = 0; i < d.quadrants.size(); ++i) {
+                    if (i > 0) {
+                        quadrants_str += ",";
                     }
+                    quadrants_str += "(" + std::to_string(d.quadrants[i].row) + "," + std::to_string(d.quadrants[i].column) + ")";
                 }
                 std::string label = d.object_class + " " +
                     std::to_string(static_cast<int>(d.confidence * 100.0f)) + "% [" + distance_str + "]" + quadrants_str;
