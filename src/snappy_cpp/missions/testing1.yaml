@@ -10,8 +10,8 @@ mission:
   defaults:
     timeout: 40.0
     on_fail: abort
-    depth_tolerance: 0.15
-    yaw_tolerance_deg: 7.0
+    depth_tolerance: 0.25
+    yaw_tolerance_deg: 10.0
     xy_tolerance: 0.3
 
   steps:
