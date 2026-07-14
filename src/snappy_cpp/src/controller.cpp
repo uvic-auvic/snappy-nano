@@ -176,20 +176,20 @@ class Controller : public rclcpp::Node {
 
         // Given the target and current poses in global space, determine the vector between them in local space
         std::pair<Eigen::Vector3d, Eigen::Quaterniond> generate_trajectory() {
-            Eigen::Vector3d current_position(x, y, current_depth);
+            //Eigen::Vector3d current_position(0.0, 0.0, current_depth);
             //Eigen::Quaterniond current_orientation;
             //current_orientation =
                 //Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
                 //Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
                 // Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
 
-            Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
+            //Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
             Eigen::Quaterniond relative_orientation = target_orientation * current_orientation.inverse();
 
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> result;
 
-            result.first = relative_position;
-            result.second = relative_orientation;
+            result.first = target_position - current_position;//relative_position;
+            result.second = relative_orientation;//relative_orientation;
 
             return result;
         }
@@ -198,29 +198,33 @@ class Controller : public rclcpp::Node {
         Eigen::VectorXd generate_wrench(Eigen::Vector3d relative_position, Eigen::Quaterniond relative_orientation) {
             Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
 
+	    if (relative_orientation.w() < 0) {
+		relative_orientation.coeffs() *= -1;
+	    }
+
             float roll = euler[0];
             float pitch = euler[1];
-            float yaw = euler[2];
+            float yaw = 2.0f * std::atan2(relative_orientation.z(), relative_orientation.w());//euler[2];
 
-            double pi = EIGEN_PI;
+            //double pi = EIGEN_PI;
 
-            if(yaw < -pi) {
-                yaw += 2*pi;
-            }else if (yaw > pi) {
-                yaw -= 2*pi;
-            }
+            //if(yaw < -pi) {
+            //    yaw += 2*pi;
+            //}else if (yaw > pi) {
+            //    yaw -= 2*pi;
+            //}
 
-            if(pitch < -pi) {
-                pitch += 2*pi;
-            }else if (pitch > pi) {
-                pitch -= 2*pi;
-            }
+            //if(pitch < -pi) {
+            //    pitch += 2*pi;
+            //}else if (pitch > pi) {
+            //    pitch -= 2*pi;
+            //}
 
-            if(roll < -pi) {
-                roll += 2*pi;
-            }else if (roll > pi) {
-                roll -= 2*pi;
-            }
+            //if(roll < -pi) {
+            //    roll += 2*pi;
+            //}else if (roll > pi) {
+            //    roll -= 2*pi;
+            //}
 
             // Relative position of AUV from target is negated
             float thrust_x = pid_x_.update(-relative_position[0]);
@@ -232,8 +236,12 @@ class Controller : public rclcpp::Node {
             float thrust_roll = pid_roll_.update(-roll);
 
             // Create wrench vector to be returned
+            //float thrust_pitch = pid_pitch_.update(-pitch);
+            //float thrust_roll = pid_roll_.update(-roll);
+
+            // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << 2.0, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
+            wrench << thrust_x, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }
@@ -366,7 +374,7 @@ class Controller : public rclcpp::Node {
 	    if(msg.data < 0){
 		return;
 	    }else {
-		    current_depth = msg.data;
+		    current_position[2] = msg.data;
 	    }
         }
 
@@ -428,10 +436,10 @@ class Controller : public rclcpp::Node {
         }
 
         void state_callback(const snappy_cpp::msg::Pose & msg) {
-            // current_position = Eigen::Vector3d(
-            //     msg.position.x,
-            //     msg.position.y,
-            //     msg.position.z);
+            current_position = Eigen::Vector3d(
+                 msg.position.x,
+                 msg.position.y,
+                 current_position[2]);
 
             current_orientation = Eigen::Quaterniond(
                 msg.orientation.w,
