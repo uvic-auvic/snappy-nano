@@ -98,6 +98,7 @@ def generate_launch_description():
                 executable="front_camera_vision",
                 name="front_camera_vision",
                 output="screen",
+                parameters=[{"engine_path": "/ros2_ws/models/ffc_rs_26.engine"}],
             )
         ],
     )
@@ -110,6 +111,7 @@ def generate_launch_description():
                 executable="bottom_camera_vision",
                 name="bottom_camera_vision",
                 output="screen",
+                parameters=[{"engine_path": "/ros2_ws/models/dfc_rs_26.engine"}],
             )
         ],
     )
@@ -122,5 +124,6 @@ def generate_launch_description():
             d405_launch,
             front_camera_vision,
             bottom_camera_vision,
+            
         ]
     )
