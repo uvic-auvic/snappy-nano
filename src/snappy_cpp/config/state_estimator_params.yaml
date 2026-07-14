@@ -1,0 +1,22 @@
+state_estimator:
+  ros__parameters:
+    # Initial Accel Bias [x, y, z]
+    accel_bias_init: [-0.5, 0.5, 0.2]
+
+    # Initial Error-State Covariance (P_init)
+    p_init:
+      pos: 0.01
+      vel: 0.01
+      ori: 0.01
+      bias: 0.01
+
+    # Process Noise (Q)
+    q_init:
+      accel: 0.1
+      bias: 0.000001 # 1e-6
+
+    # Measurement Noise (R)
+    r_noise:
+      imu1: 1.0
+      depth: 0.01
+      dvl: 0.09
