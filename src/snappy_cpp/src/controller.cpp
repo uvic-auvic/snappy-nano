@@ -309,14 +309,47 @@ class Controller : public rclcpp::Node {
             //}
 
             // Relative position of AUV from target is negated
-            float thrust_x = pid_x_.update(-relative_position[0]);
-            float thrust_y = pid_y_.update(-relative_position[1]);
-            float thrust_z = pid_z_.update(-relative_position[2]);
+            if (relative_position[0] > 0.5) {
+                thrust_x = 2.0;
+                pid_x_.set_target(0);
+            } else if (relative_position[0] < -0.5) {
+                thrust_x = -2.0;
+                pid_x_.set_target(0);
+            } else {
+                float thrust_x = pid_x_.update(-relative_position[0]);
+            }
+            
+            if (relative_position[1] > 0.5) {
+                thrust_y = 2.0;
+                pid_y_.set_target(0);
+            } else if (relative_position[1] < -0.5) {
+                thrust_x = -2.0;
+            } else {
+                float thrust_y = pid_y_.update(-relative_position[1]);
+            }
+
+            if (relative_position[2] > 0.5) {
+                thrust_z = 2.0;
+                pid_z_.set_target(0);
+            } else if (relative_position[2] < -0.5) {
+                thrust_z = -2.0;
+                pid_z_.set_target(0);
+            } else {
+                float thrust_z = pid_z_.update(-relative_position[2]);
+            }
 
             const float z_bias = -1.5f;
             thrust_z += z_bias;
 
-            float thrust_yaw = pid_yaw_.update(-yaw);
+            if (yaw > 1.0) {
+                thrust_yaw = 2.0;
+                pid_yaw_.set_target(0);
+            } else if (yaw < -1.0) {
+                thrust_yaw = -2.0;
+                pid_yaw_.set_target(0);
+            } else {
+                float thrust_yaw = pid_yaw_.update(-yaw);
+            }
             float thrust_pitch = pid_pitch_.update(-pitch);
             float thrust_roll = pid_roll_.update(-roll);
 
