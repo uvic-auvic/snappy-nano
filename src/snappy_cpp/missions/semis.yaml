@@ -1,0 +1,58 @@
+mission:
+  name: semis
+  # global clock; when it expires the sub surfaces
+  max_seconds: 480 #8 Mins
+
+  defaults:                 # every step may override any of these
+    timeout: 30.0
+    on_fail: abort
+    depth_tolerance: 0.15   # metres
+    yaw_tolerance_deg: 7.0
+    xy_tolerance: 0.3       # metres
+
+  steps:
+    - name: dive
+      type: depth
+      depth: 1.0
+    #  timeout: 45
+
+    - name: through_gate
+      type: x
+      meters: 3.0
+    #  timeout: 30
+
+    - name: strafe_left1
+      type: y
+      meters: -0.75
+    #  timeout: 30
+
+    - name: enter_slalom
+      type: x
+      meters: 1.5
+    #  timeout: 30
+
+    - name: strafe_left2
+      type: y
+      meters: -1.0
+    #  timeout: 30
+
+    - name: slalom_second_gate
+      type: x
+      meters: 2.0
+    #  timeout: 30
+
+    - name: strafe_right
+      type: y
+      meters: 0.75
+    #  timeout: 30
+
+    - name: exit_gate
+      type: x
+      meters: 2.0
+    #  timeout: 30
+
+    - name: come_up
+      type: depth
+      depth: 0.2
+      timeout: 25
+      on_fail: surface
