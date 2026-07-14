@@ -97,17 +97,19 @@ public:
         x0.segment<3>(10) = accel_bias_init_;
 
         // Error-state covariance: [δp(3), δv(3), δθ(3), δb_a(3)] = 12 dims
+
         P_init_ = MatrixXd::Identity(12, 12);
-        P_init_.block<3,3>(0,0) *= p_pos;  // position uncertainty of initial guess
-        P_init_.block<3,3>(3,3) *= p_vel;   // velocity uncertainty of initial guess
-        P_init_.block<3,3>(6,6) *= p_ori;  // orientation error uncertainty of initial guess
-        P_init_.block<3,3>(9,9) *= p_bias;  // accel bias uncertainty of initial guess
+        P_init_.block<3,3>(0,0) *= 0.01;  // position uncertainty of initial guess
+        P_init_.block<3,3>(3,3) *= 0.01;   // velocity uncertainty of initial guess
+        P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty of initial guess
+        P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty of initial guess
 
         // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
         MatrixXd Q_init = MatrixXd::Zero(6, 6);
         Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.01;   // accel noise → velocity growth
         Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-5;   // accel bias random walk (fast enough to converge in-run)
         kf.setProcessNoise(Q_init);
+
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
         MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 2.5e-3; // depth sensor noise
