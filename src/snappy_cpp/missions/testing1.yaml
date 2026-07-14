@@ -18,7 +18,7 @@ mission:
     - name: dive            # held for the rest of the mission
       type: depth
       depth: 0.5
-      timeout: 25
+      timeout: 50
 
     - name: set_x_2         # set x target 2 m
       type: x

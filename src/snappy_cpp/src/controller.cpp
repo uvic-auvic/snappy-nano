@@ -40,10 +40,10 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.0f, 0.0f, 0.0f),
             pid_y_(0.0f, 0.0f, 0.0f),
-            pid_z_(6.0f, 0.5f, 0.0f),
+            pid_z_(0.0f, 0.0f, 0.0f),
             pid_roll_(0.0f, 0.0f, 0.0f),
             pid_pitch_(0.0f, 0.0f, 0.0f),
-            pid_yaw_(0.5f, 0.0f, 0.5f)
+            pid_yaw_(0.0f, 0.0f, 0.0f)
          {
              declare_parameter("target_position", std::vector<double>{0.0, 0.0, 0.0});
              declare_parameter("target_roll", 0.0);
