@@ -39,10 +39,10 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.0f, 0.0f, 0.0f),
             pid_y_(0.0f, 0.0f, 0.0f),
-            pid_z_(6.0f, 0.5f, 0.0f),
+            pid_z_(0.0f, 0.0f, 0.0f),
             pid_roll_(0.0f, 0.0f, 0.0f),
             pid_pitch_(0.0f, 0.0f, 0.0f),
-            pid_yaw_(0.5f, 0.0f, 0.5f)
+            pid_yaw_(0.0f, 0.0f, 0.0f)
          {
              declare_parameter("target_position", std::vector<double>{0.0, 0.0, 0.0});
              declare_parameter("target_roll", 0.0);
@@ -261,7 +261,7 @@ class Controller : public rclcpp::Node {
 
             // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << thrust_x, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
+            wrench << thrust_x, thrust_y, thrust_z + 1.0f, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }
