@@ -18,6 +18,10 @@ install(DIRECTORY config/
 	DESTINATION share/${PROJECT_NAME}/config
 )
 
+install(DIRECTORY missions/
+	DESTINATION share/${PROJECT_NAME}/missions
+)
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -34,10 +38,12 @@ find_package(tf2_geometry_msgs REQUIRED)
 # ThrusterCommand now lives in the shared snappy_interfaces package so the
 # Jetson publisher and the STM32 micro-ROS subscriber register the SAME type.
 find_package(snappy_interfaces REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Task.msg"
+  "msg/ControllerStatus.msg"
   "msg/Pose.msg"
   "msg/BoundingBox2D.msg"
   "msg/ObjectDetection.msg"
@@ -73,7 +79,7 @@ add_executable(test_kalman tests/test_kalman.cpp src/include/src/kalman.cpp)
 target_link_libraries(test_kalman Eigen3::Eigen)
 
 add_executable(planner src/planner.cpp)
-ament_target_dependencies(planner rclcpp std_msgs geometry_msgs)
+ament_target_dependencies(planner rclcpp std_msgs geometry_msgs yaml_cpp_vendor)
 add_dependencies(planner ${PROJECT_NAME})
 
 add_executable(sensorTest

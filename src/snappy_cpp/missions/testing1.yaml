@@ -1,0 +1,66 @@
+# First movement pool test.
+# Depth 0.5 m is commanded once and held by the controller for the whole run.
+# Run:
+#   ros2 launch snappy_cpp snappy_realsense.launch.py \
+#       mission_file:=/ros2_ws/src/snappy_cpp/missions/testing1.yaml
+mission:
+  name: testing1
+  max_seconds: 300
+
+  defaults:
+    timeout: 40.0
+    on_fail: abort
+    depth_tolerance: 0.15
+    yaw_tolerance_deg: 7.0
+    xy_tolerance: 0.3
+
+  steps:
+    - name: dive            # held for the rest of the mission
+      type: depth
+      depth: 0.5
+      timeout: 25
+
+    - name: set_x_2         # set x target 2 m
+      type: x
+      meters: 2.0
+
+    - name: set_y_2       # call set x 2 again -> should move 2 m further
+      type: y
+      meters: 2.0
+
+    # A single "turn by 360" is a no-op (the target orientation is identical),
+    # so spin in four 90-degree quarters.
+    - name: spin_quarter_1
+      type: heading
+      yaw_deg: 90.0
+      absolute: false
+      timeout: 20
+
+    - name: spin_quarter_2
+      type: heading
+      yaw_deg: 90.0
+      absolute: false
+      timeout: 20
+
+    - name: spin_quarter_3
+      type: heading
+      yaw_deg: 90.0
+      absolute: false
+      timeout: 20
+
+    - name: spin_quarter_4
+      type: heading
+      yaw_deg: 90.0
+      absolute: false
+      timeout: 20
+
+    - name: back_x_2        # set x -2
+      type: x
+      meters: -2.0
+
+    - name: over_y_2        # set y -2
+      type: y
+      meters: -2.0
+    
+    - name: abort_test
+      type: abort 

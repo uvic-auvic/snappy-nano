@@ -18,6 +18,7 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "snappy_cpp/msg/task.hpp"
+#include "snappy_cpp/msg/controller_status.hpp"
 #include "snappy_cpp/msg/pose.hpp"
 #include "snappy_interfaces/msg/thruster_command.hpp"
 #include <tf2/LinearMath/Quaternion.h>
@@ -110,14 +111,14 @@ class Controller : public rclcpp::Node {
             motorboard_ = std::make_unique<Motor::Motorboard>(motor_publisher_);
 
             // Publish state status to planner
-            status_publisher_ = this->create_publisher<std_msgs::msg::String>("/controller/status", 10);
+            status_publisher_ = this->create_publisher<snappy_cpp::msg::ControllerStatus>("/controller/status", 10);
 
             // Publish trajectory vectors to state estimator
             trajectory_publisher_ = this->create_publisher<snappy_cpp::msg::Pose>("/controller/trajectory", 10);
 
             // Receive tasks from planner
-            //task_subscription_ = this->create_subscription<snappy_cpp::msg::Task>(
-            //    "/planner/task", 10, std::bind(&Controller::task_callback, this, _1));
+            task_subscription_ = this->create_subscription<snappy_cpp::msg::Task>(
+                "/planner/task", 10, std::bind(&Controller::task_callback, this, _1));
 
             // Receive states from state estimator
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
@@ -153,6 +154,10 @@ class Controller : public rclcpp::Node {
 
     private:
         void timer_callback() {
+            if (killed_) {
+                return;
+            }
+
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> trajectory = generate_trajectory();
 
             Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(0, 1, 2);
@@ -172,6 +177,63 @@ class Controller : public rclcpp::Node {
                 allocation[0], allocation[1], allocation[2], allocation[3], allocation[4], allocation[5], allocation[6], allocation[7]);
 
             motorboard_->sendCmd(255, &allocation[0]);
+
+            publish_status();
+        }
+
+        // Feedback to the planner: echo of the last applied task seq plus the
+        // current setpoint errors. Tolerances are judged planner-side.
+        void publish_status() {
+            snappy_cpp::msg::ControllerStatus status;
+            status.seq = last_seq_;
+
+            Eigen::Vector3d delta = target_position - current_position;
+            status.err_xy = std::hypot(delta[0], delta[1]);
+            status.err_z = delta[2];
+
+            // Same shortest-angle yaw error formulation as generate_wrench
+            Eigen::Quaterniond rel = target_orientation * current_orientation.inverse();
+            if (rel.w() < 0) {
+                rel.coeffs() *= -1;
+            }
+            status.err_yaw = 2.0 * std::atan2(rel.z(), rel.w());
+
+            status_publisher_->publish(status);
+        }
+
+        // Verb contract with the planner (see missions/*.yaml and planner.cpp).
+        // Moves are given in the sub's local frame; the set_* helpers convert to
+        // global targets and the control loop does the rest.
+        //   move/z    magnitude = depth in metres (+down)
+        //   move/yaw  magnitude = radians; msg.absolute: true = face, false = turn by
+        //   move/x    magnitude = metres along the sub's x (forward/backward)
+        //   move/y    magnitude = metres along the sub's y (lateral)
+        // Unknown verbs are ignored so future verbs (e.g. actuate) don't break old controllers.
+        void task_callback(const snappy_cpp::msg::Task & msg) {
+            last_seq_ = msg.seq;
+
+            if (msg.type == "move" && msg.direction == "z") {
+                set_z(msg.magnitude);
+            } else if (msg.type == "move" && msg.direction == "yaw") {
+                set_yaw(msg.magnitude, msg.absolute);
+            } else if (msg.type == "move" && msg.direction == "x") {
+                set_x(msg.magnitude);
+            } else if (msg.type == "move" && msg.direction == "y") {
+                set_y(msg.magnitude);
+            } else if (msg.type == "move" && msg.direction == "stop") {
+                // Halt in place: stop chasing any x/y target (used by mission abort)
+                target_position[0] = current_position[0];
+                target_position[1] = current_position[1];
+            } else if (msg.type == "move" && msg.direction == "kill") {
+                // Halt in place: stop chasing any x/y target (used by mission abort)
+                //spin down controllers and stop sending commands to the motorboard
+                killed_ = true;
+                motorboard_->stop();
+                rclcpp::shutdown();
+            } else {
+                RCLCPP_WARN(this->get_logger(), "Ignoring unknown task '%s/%s'",
+                    msg.type.c_str(), msg.direction.c_str());
+            }
         }
 
         // Given the target and current poses in global space, determine the vector between them in local space
@@ -450,7 +512,7 @@ class Controller : public rclcpp::Node {
 
         std::unique_ptr<Motor::Motorboard> motorboard_;
         rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher_;
-        rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
+        rclcpp::Publisher<snappy_cpp::msg::ControllerStatus>::SharedPtr status_publisher_;
         rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr trajectory_publisher_;
         rclcpp::Subscription<snappy_cpp::msg::Task>::SharedPtr task_subscription_;
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
@@ -481,6 +543,7 @@ class Controller : public rclcpp::Node {
         rclcpp::TimerBase::SharedPtr timer_;
 
         int flag_;
+        bool killed_ = false;
 
         int dvl_first_;
         int timer_first_;
@@ -498,6 +561,10 @@ class Controller : public rclcpp::Node {
 
     	Eigen::Vector3d target_position;
     	Eigen::Quaterniond target_orientation;
+
+        // seq of the last task applied, echoed back on /controller/status so the
+        // planner knows the errors it reads refer to its latest command
+        int32_t last_seq_ = -1;
 
     	Eigen::MatrixXd configuration;
     	ThrusterAllocator thruster_allocator;

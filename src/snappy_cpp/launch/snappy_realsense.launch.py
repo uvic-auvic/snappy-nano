@@ -86,6 +86,21 @@ def generate_launch_description():
         "controller_params.yaml",
     )
 
+    # Default mission ships with the package; pass a source-tree path
+    # (e.g. /ros2_ws/src/snappy_cpp/missions/pool_test.yaml) to edit
+    # missions poolside without rebuilding.
+    mission_file_arg = DeclareLaunchArgument(
+        "mission_file",
+        default_value=str(
+            Path(
+                get_package_share_directory("snappy_cpp"),
+                "missions",
+                "pool_test.yaml",
+            )
+        ),
+        description="Mission YAML for the planner",
+    )
+
     state_estimator_parameters_file_path = Path(
         get_package_share_directory("snappy_cpp"),
         "config",
@@ -135,6 +150,7 @@ def generate_launch_description():
                 executable="planner",
                 name="planner",
                 output="screen",
+                parameters=[{"mission_file": LaunchConfiguration("mission_file")}],
             )
         ],
     )
@@ -157,6 +173,7 @@ def generate_launch_description():
             #snappyComputerVision,
             dvl,
             serial_dev_arg,
+            mission_file_arg,
             micro_ros_agent,
             pressure_sensor_node,
             planner_node,

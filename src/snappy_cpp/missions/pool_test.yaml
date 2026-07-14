@@ -1,0 +1,87 @@
+# ============================================================================
+# Snappy mission file — edit poolside, relaunch the planner, NO rebuild needed:
+#   ros2 launch snappy_cpp snappy_realsense.launch.py \
+#       mission_file:=/ros2_ws/src/snappy_cpp/missions/pool_test.yaml
+# Lint a mission without moving the sub:
+#   ros2 run snappy_cpp planner --ros-args -p mission_file:=<path> -p validate_only:=true
+#
+# Steps run strictly in order. Every step has:
+#   timeout   seconds before the step counts as failed (default from defaults:)
+#   on_fail   skip    -> log it and move to the next step
+#             abort   -> stop the mission and surface immediately (default)
+#             surface -> same as abort
+#
+# Step types (all movement is local to the sub; the controller converts to
+# global setpoints and handles the driving):
+#   depth               depth: metres, +down, from the pressure sensor.
+#                       Done when |depth error| < depth_tolerance for ~1 s.
+#   heading             yaw_deg + absolute (REQUIRED):
+#                         absolute: true  -> face yaw_deg (0 = launch heading)
+#                         absolute: false -> turn BY yaw_deg
+#                       (sign of a positive turn: confirm on first pool run)
+#                       Done when |yaw error| < yaw_tolerance_deg for ~1 s.
+#   x                   meters forward (+) / backward (-) in the sub's local frame.
+#                       Done when horizontal error < xy_tolerance for ~1 s.
+#   y                   meters sideways in the sub's local frame (sign: confirm
+#                       at the pool). Done like x.
+#   hold                seconds: sit still holding the current setpoints.
+#   wait_for_detection  object + camera (front/bottom) + min_confidence:
+#                       done when vision reports that object fresh (<1 s old).
+# ============================================================================
+mission:
+  name: pool_test
+  max_seconds: 480          # global clock; when it expires the sub surfaces
+
+  defaults:                 # every step may override any of these
+    timeout: 30.0
+    on_fail: abort
+    depth_tolerance: 0.15   # metres
+    yaw_tolerance_deg: 7.0
+    xy_tolerance: 0.3       # metres
+
+  steps:
+    - name: dive
+      type: depth
+      depth: 1.0
+      timeout: 25
+
+    - name: find_gate
+      type: wait_for_detection
+      camera: front
+      object: gate
+      min_confidence: 0.6
+      timeout: 45
+      on_fail: skip         # can't see it? drive the planned line anyway
+
+    - name: through_gate
+      type: x
+      meters: 3.0
+      timeout: 25
+
+    - name: turn_around
+      type: heading
+      yaw_deg: 180.0
+      absolute: false       # turn BY 180 degrees
+      timeout: 20
+
+    - name: stabilize
+      type: hold
+      seconds: 5.0
+
+    - name: drive_back
+      type: x
+      meters: 3.0
+      timeout: 25
+
+    - name: face_home
+      type: heading
+      yaw_deg: 0.0
+      absolute: true        # face the launch heading
+      timeout: 20
+      on_fail: skip
+
+    - name: come_up
+      type: depth
+      depth: 0.2
+      timeout: 25
+      on_fail: surface
