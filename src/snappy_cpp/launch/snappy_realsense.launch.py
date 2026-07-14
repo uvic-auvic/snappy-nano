@@ -101,12 +101,6 @@ def generate_launch_description():
         description="Mission YAML for the planner",
     )
 
-    state_estimator_parameters_file_path = Path(
-        get_package_share_directory("snappy_cpp"),
-        "config",
-        "state_estimator_params.yaml",
-    )
-
     xsens_mti_node = Node(
         package="xsens_mti_ros2_driver",
         executable="xsens_mti_node",
@@ -137,7 +131,6 @@ def generate_launch_description():
                 executable="state_estimator",
                 name="state_estimator",
                 output="screen",
-                parameters=[state_estimator_parameters_file_path]
             )
         ],
     )
