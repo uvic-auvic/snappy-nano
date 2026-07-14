@@ -12,7 +12,7 @@ mission:
 
   steps:
     - name: dive
-      type: depth
+      type: z
       depth: 1.0
     #  timeout: 45
 
