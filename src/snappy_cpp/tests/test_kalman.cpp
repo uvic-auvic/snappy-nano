@@ -99,10 +99,9 @@ public:
     // recover the node's mission-frame alignment (see try_initialize).
     Quaterniond ref_q0_;
     bool have_ref_q0_ = false;
-
     OfflineStateEstimator()
     {
-        accel_bias_init_ << -0.5, 0.5, 0.2;
+        accel_bias_init_ << 0.0, 0.0, 0.0;
 
         // Default state before frame initialization fires (filter not yet active)
         VectorXd x0 = VectorXd::Zero(13);
@@ -111,7 +110,7 @@ public:
 
         // Error-state covariance: [δp(3), δv(3), δθ(3), δb_a(3)] = 12 dims
         P_init_ = MatrixXd::Identity(12, 12);
-        P_init_.block<3,3>(0,0) *= 0.01;   // position uncertainty of initial guess
+        P_init_.block<3,3>(0,0) *= 1;   // position uncertainty of initial guess
         P_init_.block<3,3>(3,3) *= 0.01;   // velocity uncertainty of initial guess
         P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty of initial guess
         P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty of initial guess
@@ -216,7 +215,7 @@ public:
     void dvl_callback(const CsvRow& row)
     {
         if (!frame_initialized_) return;
-        //const float epsilon = 1e-6f;
+        const float epsilon = 1e-6f;
         // The node writes the ALREADY-TRANSFORMED v_body (-x, y, -z applied) to
         // the dvl CSV, so replay it verbatim. (Recordings made before the node's
         // z-sign fix would need -z here — those predate the mission frame and
@@ -225,7 +224,7 @@ public:
         //if (!v_body.allFinite()) return;
         
         // Should test this next pool test, may crate better results hard to tell
-        //if (abs(v_body.x()) < epsilon && abs(v_body.y()) < epsilon && abs(v_body.z()) < epsilon) return; // skip bad samples
+        if (abs(v_body.x()) < epsilon && abs(v_body.y()) < epsilon && abs(v_body.z()) < epsilon) return; // skip bad samples
         
 
         kf.updateDVLVelocity(v_body);
@@ -520,9 +519,20 @@ int main(int argc, char* argv[])
         std::vector<std::pair<size_t, double>> anchors{{0, t_first_depth}};
         struct Jump { double t, z; };
         std::vector<Jump> jumps;
-        for (size_t i = 1; i < ref.size(); ++i)
-            if (std::abs(ref[i].v[2] - ref[i - 1].v[2]) > 0.02)
+        // A depth update shows up as z INNOVATION: z deviating from its own
+        // velocity-propagated prediction. Comparing against the prediction
+        // (not just the previous z) catches updates far smaller than the
+        // sub's normal descent rate — a plain |dz| threshold misses updates
+        // whenever the sub moves slowly and z snaps by under the threshold.
+        // 8 mm sits in the gap between the two residual populations (predict
+        // noise + DVL cross-corrections stay below ~6 mm; the pool runs show
+        // a stable ~1 Hz jump cadence anywhere in the 6-15 mm range).
+        for (size_t i = 1; i < ref.size(); ++i) {
+            const double dt = (ref[i].t_ns - ref[i - 1].t_ns) * 1e-9;
+            const double resid = ref[i].v[2] - (ref[i - 1].v[2] + ref[i - 1].v[5] * dt);
+            if (std::abs(resid) > 0.008)
                 jumps.push_back({ref[i].t_ns * 1e-9 - t0_imu2, ref[i].v[2]});
+        }
 
         // Globally assign every jump to one depth row (row order preserved;
         // rows may be skipped — those are updates too small to see). Dynamic
