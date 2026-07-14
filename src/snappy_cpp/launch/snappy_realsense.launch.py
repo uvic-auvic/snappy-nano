@@ -153,6 +153,6 @@ def generate_launch_description():
             pressure_sensor_node,
             planner_node,
             state_estimator_node,
-            #controller_node,
+            controller_node,
         ]
     )

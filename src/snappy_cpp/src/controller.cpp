@@ -186,6 +186,10 @@ class Controller : public rclcpp::Node {
             //Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
             Eigen::Quaterniond relative_orientation = target_orientation * current_orientation.inverse();
 
+	    if (relative_orientation.w() < 0) {
+		relative_orientation.coeffs() *= -1;
+	    }
+
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> result;
 
             result.first = target_position - current_position;//relative_position;
@@ -196,16 +200,32 @@ class Controller : public rclcpp::Node {
 
         // Given the relative position and orientation of the target, generate the wrench to move in that direction
         Eigen::VectorXd generate_wrench(Eigen::Vector3d relative_position, Eigen::Quaterniond relative_orientation) {
-            Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
+            Eigen::AngleAxisd aa(relative_orientation);
 
-	    if (relative_orientation.w() < 0) {
-		relative_orientation.coeffs() *= -1;
+            Eigen::Vector3d trajectory = aa.angle() * aa.axis();  
+		
+	    //Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
+            
+	    float roll = trajectory[0];
+            float pitch = trajectory[1];
+            float yaw = trajectory[2];//2.0f * std::atan2(relative_orientation.z(), relative_orientation.w());//euler[2];
+
+
+	    /*
+	    double pi = EIGEN_PI;
+
+	    if (roll > pi) {
+		roll -= 2*pi;
 	    }
 
-            float roll = euler[0];
-            float pitch = euler[1];
-            float yaw = 2.0f * std::atan2(relative_orientation.z(), relative_orientation.w());//euler[2];
+	    if (pitch > pi) {
+		pitch -= 2*pi;
+	    }
 
+	    if (yaw > pi) {
+		yaw -= 2*pi;
+	    }
+	    */
             //double pi = EIGEN_PI;
 
             //if(yaw < -pi) {
@@ -437,8 +457,8 @@ class Controller : public rclcpp::Node {
 
         void state_callback(const snappy_cpp::msg::Pose & msg) {
             current_position = Eigen::Vector3d(
-                 msg.position.x,
-                 msg.position.y,
+                 0.0,//msg.position.x,
+                 0.0,//msg.position.y,
                  current_position[2]);
 
             current_orientation = Eigen::Quaterniond(
