@@ -17,6 +17,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "snappy_cpp/msg/task.hpp"
 #include "snappy_cpp/msg/pose.hpp"
 #include "snappy_interfaces/msg/thruster_command.hpp"
@@ -115,9 +116,16 @@ class Controller : public rclcpp::Node {
             // Publish trajectory vectors to state estimator
             trajectory_publisher_ = this->create_publisher<snappy_cpp::msg::Pose>("/controller/trajectory", 10);
 
-            // Receive tasks from planner
-            //task_subscription_ = this->create_subscription<snappy_cpp::msg::Task>(
-            //    "/planner/task", 10, std::bind(&Controller::task_callback, this, _1));
+            // Receive tasks from planner. Transient local matches the
+            // planner's latched publisher, so the current task is delivered
+            // even if this node starts after it was published.
+            task_subscription_ = this->create_subscription<snappy_cpp::msg::Task>(
+                "/planner/task", rclcpp::QoS(1).transient_local(),
+                std::bind(&Controller::task_callback, this, _1));
+
+            // Ack completed task seqs back to the planner
+            task_done_publisher_ = this->create_publisher<std_msgs::msg::Int32>(
+                "/controller/task_done", 10);
 
             // Receive states from state estimator
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
@@ -154,6 +162,21 @@ class Controller : public rclcpp::Node {
     private:
         void timer_callback() {
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> trajectory = generate_trajectory();
+
+            // Ack the current task once its tracking error (position error
+            // norm + orientation error angle) drops under error_threshold.
+            if (current_task_ && in_progress_) {
+                double error = trajectory.first.norm()
+                    + std::abs(Eigen::AngleAxisd(trajectory.second).angle());
+                if (error < error_threshold) {
+                    auto done_msg = std_msgs::msg::Int32();
+                    done_msg.data = current_task_->seq;
+                    task_done_publisher_->publish(done_msg);
+                    in_progress_ = false;
+                    RCLCPP_INFO(this->get_logger(), "Task %d done (error %.4f)",
+                        current_task_->seq, error);
+                }
+            }
 
             Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(0, 1, 2);
 
@@ -455,6 +478,22 @@ class Controller : public rclcpp::Node {
             //}
         }
 
+        void task_callback(const snappy_cpp::msg::Task & msg) {
+            target_position.x() = msg.x;
+            target_position.y() = msg.y;
+            // Depth is pinned: target_position[2] comes from the
+            // target_position param at construction — never from a task.
+
+            target_orientation = Eigen::AngleAxisd(msg.roll, Eigen::Vector3d::UnitX())
+                * Eigen::AngleAxisd(msg.pitch, Eigen::Vector3d::UnitY())
+                * Eigen::AngleAxisd(msg.yaw, Eigen::Vector3d::UnitZ());
+
+            current_task_ = msg;
+            in_progress_ = true;
+            RCLCPP_INFO(this->get_logger(), "Received task %d: x=%.2f y=%.2f roll=%.2f pitch=%.2f yaw=%.2f",
+                msg.seq, msg.x, msg.y, msg.roll, msg.pitch, msg.yaw);
+        }
+
         void state_callback(const snappy_cpp::msg::Pose & msg) {
             current_position = Eigen::Vector3d(
                  msg.position.x,
@@ -472,6 +511,7 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher_;
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
         rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr trajectory_publisher_;
+        rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr task_done_publisher_;
         rclcpp::Subscription<snappy_cpp::msg::Task>::SharedPtr task_subscription_;
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
     	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
@@ -489,7 +529,7 @@ class Controller : public rclcpp::Node {
 
         std::queue<snappy_cpp::msg::Task> tasks_;
         std::optional<snappy_cpp::msg::Task> current_task_;
-        bool in_progress_ = false; // set to true in task_callback, reset to false in status_callback
+        bool in_progress_ = false; // set to true in task_callback, reset to false once the task is acked
 
         geometry_msgs::msg::Point position_current_;
         std::optional<geometry_msgs::msg::Point> position_target_;
