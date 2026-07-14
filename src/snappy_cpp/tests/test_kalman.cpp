@@ -6,8 +6,11 @@
 // writes kalman_replay_<run>.csv in the same format as kalman_<run>.csv,
 // and compares the two row by row.
 //
-// Usage:   test_kalman [path/to/state_estimator_outputs] [dvl_offset_sec]
+// Usage:   test_kalman [path/to/state_estimator_outputs | path/to/run_dir] [dvl_offset_sec]
 //          (default folder: ./state_estimator_outputs; default offset: auto)
+// Runs live in per-run subdirectories named by timestamp
+// (state_estimator_outputs/<run_id>/); with no run dir given, the newest
+// run is replayed. Pass a specific run's directory to replay an older one.
 //
 // ---- Timing reconstruction ----
 // The recorded CSVs do not store message ARRIVAL times for every stream, so
@@ -23,9 +26,11 @@
 //  - Depth rows have NO timestamps. The arrival of the FIRST depth message is
 //    recovered from the reference kalman CSV: the first row whose state moved
 //    off the pre-init default (zeros + identity quaternion) marks frame
-//    initialization, which only happens once depth has arrived. The remaining
-//    depth messages are spread evenly from there to the end of the run
-//    (the recorded data implies ~1 Hz).
+//    initialization, which only happens once depth has arrived. Later rows
+//    are anchored to the reference by VALUE: R_depth is tiny, so every depth
+//    update snaps the reference z to ~the measured value, and each z-jump is
+//    one depth row landing. Rows that made no visible jump are spread evenly
+//    between the surrounding anchors.
 // Because DVL/depth arrival times are reconstructed rather than recorded, the
 // replay matches the recorded output closely but not bit-for-bit.
 
@@ -89,6 +94,11 @@ public:
     // One row per IMU2 message: t_ns, pos(3), vel(3), quat(w,x,y,z) —
     // the same thing the node writes to its kalman_*.csv.
     std::vector<CsvRow> output;
+
+    // First post-init quaternion from the reference kalman CSV, used to
+    // recover the node's mission-frame alignment (see try_initialize).
+    Quaterniond ref_q0_;
+    bool have_ref_q0_ = false;
 
     OfflineStateEstimator()
     {
@@ -161,6 +171,11 @@ public:
             init_imu2_quat_ = Quaterniond(row.v[6], row.v[3], row.v[4], row.v[5]);  // (w, x, y, z)
             init_imu2_ready_ = true;
             try_initialize();
+            // In the live node depth arrives last, so the depth message that
+            // completes frame init falls through to updateDepth(). Here the
+            // buffered depth event was consumed before this row (it could not
+            // init without the quat), so apply it now the filter exists.
+            if (frame_initialized_ && init_depth_ready_) kf.updateDepth(init_depth_);
         }
 
         const double dt = now_sec - last_time_imu2_sec_;
@@ -202,7 +217,11 @@ public:
     {
         if (!frame_initialized_) return;
         //const float epsilon = 1e-6f;
-        Vector3d v_body(row.v[0], row.v[1], -row.v[2]);
+        // The node writes the ALREADY-TRANSFORMED v_body (-x, y, -z applied) to
+        // the dvl CSV, so replay it verbatim. (Recordings made before the node's
+        // z-sign fix would need -z here — those predate the mission frame and
+        // fail the comparison anyway.)
+        Vector3d v_body(row.v[0], row.v[1], row.v[2]);
         //if (!v_body.allFinite()) return;
         
         // Should test this next pool test, may crate better results hard to tell
@@ -233,7 +252,22 @@ private:
         // Mission frame (same as state_estimator.cpp): Rz(-yaw0) cancels the
         // starting NED yaw, so world +x = initial heading, +y right of it.
         // Startup yaw is exactly 0; roll/pitch as measured.
-        const Quaterniond q_align(AngleAxisd(-yaw0, Vector3d::UnitZ()));
+        //
+        // The live node aligns from its very FIRST IMU2 message, which never
+        // reaches the CSV (pre-init rows are skipped), so aligning from our
+        // first available row leaves a small constant yaw offset (~0.4 deg
+        // observed). When the reference's first row is already post-init,
+        // recover the node's ACTUAL alignment from it instead: the filter's
+        // attitude is slaved to q_ned_to_world * (ENU/mount-fixed IMU2 quat),
+        // so the yaw of q_ref0 * q_body0^-1 is the node's q_align.
+        double align_yaw = -yaw0;
+        if (have_ref_q0_) {
+            const Quaterniond q_off = (ref_q0_ * q_body0.conjugate()).normalized();
+            align_yaw = std::atan2(
+                2.0 * (q_off.w() * q_off.z() + q_off.x() * q_off.y()),
+                1.0 - 2.0 * (q_off.y() * q_off.y() + q_off.z() * q_off.z()));
+        }
+        const Quaterniond q_align(AngleAxisd(align_yaw, Vector3d::UnitZ()));
         kf.q_ned_to_world_ = q_align;
         Quaterniond q0 = (q_align * q_body0).normalized();
 
@@ -275,6 +309,8 @@ struct ReplayInputs {
     std::vector<CsvRow> imu1, imu2, dvl;
     std::vector<CsvRow> depth;
     std::vector<double> depth_times;  // reconstructed arrival times (rel. seconds)
+    Quaterniond ref_q0;               // reference row-1 quaternion (frame anchor)
+    bool have_ref_q0 = false;
 };
 
 // Replays the whole run with the given DVL clock offset and returns the
@@ -302,6 +338,8 @@ static std::vector<CsvRow> runReplay(const ReplayInputs& in, double dvl_offset_s
     });
 
     OfflineStateEstimator est;
+    est.ref_q0_ = in.ref_q0;
+    est.have_ref_q0_ = in.have_ref_q0;
     for (const Event& e : events) {
         switch (e.kind) {
             case 0: est.depth_callback(static_cast<float>(in.depth[e.idx].v[0])); break;
@@ -363,21 +401,53 @@ static double rmsSpeedError(const std::vector<CsvRow>& replay, const std::vector
     return std::sqrt(sum / double(ref.size()));
 }
 
-int main(int argc, char* argv[])
+// A run is identified by its kalman_<run>.csv (the other filenames derive from
+// it). Returns the run id, or "" if the directory holds no recorded run.
+// kalman_replay_*.csv files (this test's own output) are not runs.
+static std::string findRunId(const fs::path& dir)
 {
-    const fs::path dir = (argc > 1) ? fs::path(argv[1]) : fs::path("state_estimator_outputs");
-
-    // Find the run by its kalman_<run>.csv, then derive the other filenames.
-    std::string run_id;
     for (const auto& entry : fs::directory_iterator(dir)) {
         const std::string name = entry.path().filename().string();
-        if (name.rfind("kalman_", 0) == 0 && name.size() > 11) {
-            run_id = name.substr(7, name.size() - 7 - 4);  // strip "kalman_" and ".csv"
-            break;
+        if (name.rfind("kalman_", 0) == 0 && name.rfind("kalman_replay_", 0) != 0
+            && name.size() > 11) {
+            return name.substr(7, name.size() - 7 - 4);  // strip "kalman_" and ".csv"
+        }
+    }
+    return "";
+}
+
+int main(int argc, char* argv[])
+{
+    fs::path dir = (argc > 1) ? fs::path(argv[1]) : fs::path("state_estimator_outputs");
+
+    // Runs are sorted into per-run subdirectories named by their timestamp
+    // (state_estimator_outputs/<run_id>/). If `dir` holds a run directly it is
+    // used as-is; otherwise pick the NEWEST run subdirectory. Pass a specific
+    // run's directory as the 1st argument to replay an older run.
+    std::string run_id = findRunId(dir);
+    if (run_id.empty()) {
+        std::vector<fs::path> run_dirs;
+        for (const auto& entry : fs::directory_iterator(dir)) {
+            if (entry.is_directory() && !findRunId(entry.path()).empty())
+                run_dirs.push_back(entry.path());
+        }
+        // Names are nanosecond timestamps: compare by length then value so
+        // chronological order survives any width difference.
+        std::sort(run_dirs.begin(), run_dirs.end(),
+                  [](const fs::path& a, const fs::path& b) {
+                      const std::string sa = a.filename().string(), sb = b.filename().string();
+                      return sa.size() != sb.size() ? sa.size() < sb.size() : sa < sb;
+                  });
+        if (!run_dirs.empty()) {
+            dir = run_dirs.back();
+            run_id = findRunId(dir);
+            std::cout << "Newest of " << run_dirs.size() << " runs in "
+                      << dir.parent_path() << ": " << dir.filename() << std::endl;
         }
     }
     if (run_id.empty()) {
-        std::cerr << "ERROR: no kalman_*.csv found in " << dir << std::endl;
+        std::cerr << "ERROR: no kalman_*.csv found in " << dir
+                  << " or its subdirectories" << std::endl;
         return 1;
     }
     std::cout << "Replaying run " << run_id << " from " << dir << std::endl;
@@ -406,6 +476,19 @@ int main(int argc, char* argv[])
     const double t0_imu2 = in.imu2.front().t_ns * 1e-9;
     const double t_end   = in.imu2.back().t_ns * 1e-9 - t0_imu2;
 
+    // Mission-frame anchor: usable only when the reference starts post-init
+    // (new-format recordings — the node skips pre-init rows entirely).
+    {
+        const auto& s = ref.front().v;
+        const bool pre_init = s[0] == 0 && s[1] == 0 && s[2] == 0 &&
+                              s[3] == 0 && s[4] == 0 && s[5] == 0 &&
+                              s[6] == 1 && s[7] == 0 && s[8] == 0 && s[9] == 0;
+        if (!pre_init) {
+            in.ref_q0 = Quaterniond(s[6], s[7], s[8], s[9]);
+            in.have_ref_q0 = true;
+        }
+    }
+
     // Depth has no timestamps: recover the first arrival from the reference
     // output (first row whose state left the pre-init default), then spread
     // the remaining messages evenly to the end of the run.
@@ -424,15 +507,73 @@ int main(int argc, char* argv[])
             t_first_depth = 0.5 * (in.imu2[first_active_row - 1].t_ns
                                    + in.imu2[first_active_row].t_ns) * 1e-9 - t0_imu2;
         }
-        const double spacing = (in.depth.size() > 1)
-            ? (t_end - t_first_depth) / double(in.depth.size() - 1)
-            : 0.0;
-        for (size_t i = 0; i < in.depth.size(); ++i)
-            in.depth_times.push_back(t_first_depth + spacing * double(i));
+        // Later arrivals: anchor depth rows to the reference by VALUE. R_depth
+        // is tiny, so every depth update snaps the reference z to ~the measured
+        // value — each z-jump in the reference is one depth row landing. Match
+        // rows to jumps monotonically, then spread unmatched rows (updates too
+        // small to detect) evenly between the surrounding anchors. Rows left
+        // after the last anchor continue at the run's average cadence: readings
+        // logged after the IMU2 stream ended (e.g. the sub surfacing with the
+        // recorder still up) land past the last IMU2 event and — exactly like
+        // in the live node — never affect a compared row.
+        // Row 0 stays pinned to t_first_depth: it seeds frame initialization.
+        std::vector<std::pair<size_t, double>> anchors{{0, t_first_depth}};
+        struct Jump { double t, z; };
+        std::vector<Jump> jumps;
+        for (size_t i = 1; i < ref.size(); ++i)
+            if (std::abs(ref[i].v[2] - ref[i - 1].v[2]) > 0.02)
+                jumps.push_back({ref[i].t_ns * 1e-9 - t0_imu2, ref[i].v[2]});
+
+        // Globally assign every jump to one depth row (row order preserved;
+        // rows may be skipped — those are updates too small to see). Dynamic
+        // programming: greedy matching gets trapped when z oscillates and
+        // near-equal values repeat. dp[j][k] = best total |value error| for
+        // the first j jumps using rows 1..k.
+        const size_t J = jumps.size(), K = in.depth.size();
+        if (J > 0 && K > J) {
+            const double INF = 1e18;
+            std::vector<std::vector<double>> dp(J + 1, std::vector<double>(K, INF));
+            for (size_t k = 0; k < K; ++k) dp[0][k] = 0.0;
+            for (size_t j = 1; j <= J; ++j)
+                for (size_t k = j; k < K; ++k) {
+                    dp[j][k] = dp[j][k - 1];  // row k unused by jump j
+                    const double c = dp[j - 1][k - 1]
+                                     + std::abs(in.depth[k].v[0] - jumps[j - 1].z);
+                    if (c < dp[j][k]) dp[j][k] = c;
+                }
+            if (dp[J][K - 1] < INF) {
+                std::vector<size_t> row_of(J);
+                size_t k = K - 1;
+                for (size_t j = J; j > 0; --j) {
+                    while (k > j && dp[j][k] == dp[j][k - 1]) --k;
+                    row_of[j - 1] = k--;
+                }
+                for (size_t j = 0; j < J; ++j)
+                    if (jumps[j].t > anchors.back().second && row_of[j] > anchors.back().first)
+                        anchors.push_back({row_of[j], jumps[j].t});
+            }
+        }
+
+        in.depth_times.assign(in.depth.size(), 0.0);
+        for (size_t a = 0; a + 1 < anchors.size(); ++a) {
+            const auto [r0, ta] = anchors[a];
+            const auto [r1, tb] = anchors[a + 1];
+            for (size_t r = r0; r < r1; ++r)
+                in.depth_times[r] = ta + (tb - ta) * double(r - r0) / double(r1 - r0);
+        }
+        const auto [r_last, t_last] = anchors.back();
+        in.depth_times[r_last] = t_last;
+        const double cadence = (r_last > 0)
+            ? (t_last - t_first_depth) / double(r_last)
+            : (in.depth.size() > 1 ? (t_end - t_first_depth) / double(in.depth.size() - 1)
+                                   : 0.0);  // no jumps at all: even spread
+        for (size_t r = r_last + 1; r < in.depth.size(); ++r)
+            in.depth_times[r] = t_last + cadence * double(r - r_last);
 
         std::cout << "Depth timing reconstructed: first at t=" << t_first_depth
-                  << " s (reference row " << first_active_row + 1 << "), spacing "
-                  << spacing << " s" << std::endl;
+                  << " s (reference row " << first_active_row + 1 << "), "
+                  << anchors.size() - 1 << " rows anchored to reference z-jumps, "
+                  << "cadence " << cadence << " s" << std::endl;
     }
 
     // DVL clock offset: use the value from the command line, or estimate it by
@@ -469,7 +610,8 @@ int main(int argc, char* argv[])
     // ---- Final replay, output CSV, and report ----
     const auto replay = runReplay(in, dvl_offset);
 
-    const std::string out_filename = "kalman_replay_" + run_id + ".csv";
+    // Written next to the run's input CSVs (findRunId ignores kalman_replay_*).
+    const fs::path out_filename = dir / ("kalman_replay_" + run_id + ".csv");
     std::ofstream out(out_filename);
     for (const auto& row : replay) {
         out << row.t_ns;
