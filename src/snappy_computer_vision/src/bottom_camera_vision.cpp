@@ -120,6 +120,7 @@ private:
         float confidence;
         int class_id;
         float distance_m = -1.0f;
+        std::vector<uint8_t> quadrants;
         std::vector<cv::Point2f> mask_polygon;
     };
 
@@ -204,7 +205,7 @@ private:
                 last_save_s_ = frame_s;
                 save_image(job.image, job.timestamp);
             }
-            publish_detections(detections, job.timestamp, inference_ms);
+            publish_detections(detections, job.image.cols, job.image.rows, job.timestamp, inference_ms);
         }
     }
 
@@ -518,9 +519,44 @@ private:
         return *middle;
     }
 
+    std::vector<uint8_t> compute_quadrants(const Detection & det, int image_w, int image_h) const
+    {
+        std::vector<uint8_t> quadrants;
+        const float x1 = std::clamp(det.x1, 0.0f, static_cast<float>(image_w));
+        const float y1 = std::clamp(det.y1, 0.0f, static_cast<float>(image_h));
+        const float x2 = std::clamp(det.x2, 0.0f, static_cast<float>(image_w));
+        const float y2 = std::clamp(det.y2, 0.0f, static_cast<float>(image_h));
+
+        if (x2 <= x1 || y2 <= y1) {
+            return quadrants;
+        }
+
+        constexpr int grid_size = 5;
+        const float cell_w = static_cast<float>(image_w) / static_cast<float>(grid_size);
+        const float cell_h = static_cast<float>(image_h) / static_cast<float>(grid_size);
+
+        for (int row = 0; row < grid_size; ++row) {
+            const float cell_top = row * cell_h;
+            const float cell_bottom = (row + 1) * cell_h;
+            for (int col = 0; col < grid_size; ++col) {
+                const float cell_left = col * cell_w;
+                const float cell_right = (col + 1) * cell_w;
+                const bool intersects = !(x2 <= cell_left || x1 >= cell_right ||
+                                          y2 <= cell_top || y1 >= cell_bottom);
+                if (intersects) {
+                    quadrants.push_back(static_cast<uint8_t>(row * grid_size + col + 1));
+                }
+            }
+        }
+
+        return quadrants;
+    }
+
     // ---- Publishing --------------------------------------------------------
 
     void publish_detections(const std::vector<Detection> & detections,
+                            int image_w,
+                            int image_h,
                             const rclcpp::Time & timestamp,
                             float inference_ms)
     {
@@ -535,6 +571,7 @@ private:
             obj.confidence = det.confidence;
             obj.object_class = class_name_for(det.class_id);
             obj.distance_m = det.distance_m;
+            obj.quadrants = compute_quadrants(det, image_w, image_h);
             obj.timestamp = timestamp;
 
             snappy_cpp::msg::BoundingBox2D bbox;
