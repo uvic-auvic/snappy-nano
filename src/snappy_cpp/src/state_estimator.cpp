@@ -89,8 +89,32 @@ public:
 
 
         // need to update for imu2,
-        // May want to get better values here
-        accel_bias_init_ << -0.5, 0.5, 0.2;
+        // Pull values from state estimator parameters yaml file
+        declare_parameter("accel_bias_init", std::vector<double>{0.0, 0.0, 0.0});
+        declare_parameter("p_init.pos", 0.01);
+        declare_parameter("p_init.vel", 0.01);
+        declare_parameter("p_init.ori", 0.01);
+        declare_parameter("p_init.bias", 0.01);
+        declare_parameter("q_init.accel", 0.1);
+        declare_parameter("q_init.bias", 1e-6);
+        declare_parameter("r_noise.imu1", 1.0);
+        declare_parameter("r_noise.depth", 0.01);
+        declare_parameter("r_noise.dvl", 0.09);
+
+        //Cast variables to required type
+        std::vector<double> accel_bias_vec = get_parameter("accel_bias_init").as_double_array();
+        double p_pos = get_parameter("p_init.pos").as_double();
+        double p_vel = get_parameter("p_init.vel").as_double();
+        double p_ori = get_parameter("p_init.ori").as_double();
+        double p_bias = get_parameter("p_init.bias").as_double();
+        double q_accel = get_parameter("q_init.accel").as_double();
+        double q_bias = get_parameter("q_init.bias").as_double();
+        double r_imu1 = get_parameter("r_noise.imu1").as_double();
+        double r_depth = get_parameter("r_noise.depth").as_double();
+        double r_dvl = get_parameter("r_noise.dvl").as_double();
+
+        // Initial Accel Bias
+        accel_bias_init_ << accel_bias_vec[0], accel_bias_vec[1], accel_bias_vec[2];
 
         // Default state before frame initialization fires (filter not yet active)
         VectorXd x0 = VectorXd::Zero(13);
@@ -98,23 +122,22 @@ public:
         x0.segment<3>(10) = accel_bias_init_;
 
         // Error-state covariance: [δp(3), δv(3), δθ(3), δb_a(3)] = 12 dims
-
         P_init_ = MatrixXd::Identity(12, 12);
-        P_init_.block<3,3>(0,0) *= 0.01;  // position uncertainty of initial guess
-        P_init_.block<3,3>(3,3) *= 0.01;   // velocity uncertainty of initial guess
-        P_init_.block<3,3>(6,6) *= 0.01;  // orientation error uncertainty of initial guess
-        P_init_.block<3,3>(9,9) *= 0.01;  // accel bias uncertainty of initial guess
+        P_init_.block<3,3>(0,0) *= p_pos;  // position uncertainty of initial guess
+        P_init_.block<3,3>(3,3) *= p_vel;   // velocity uncertainty of initial guess
+        P_init_.block<3,3>(6,6) *= p_ori;  // orientation error uncertainty of initial guess
+        P_init_.block<3,3>(9,9) *= p_bias;  // accel bias uncertainty of initial guess
 
         // Q: 6x6 — two active noise sources: IMU2 accel noise and accel bias random walk
         MatrixXd Q_init = MatrixXd::Zero(6, 6);
-        Q_init.block<3,3>(0,0) = Matrix3d::Identity() * 0.1;    // accel noise → velocity growth
-        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * 1e-6;   // accel bias random walk
+        Q_init.block<3,3>(0,0) = Matrix3d::Identity() * q_accel;    
+        Q_init.block<3,3>(3,3) = Matrix3d::Identity() * q_bias;
         kf.setProcessNoise(Q_init);
-
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
-        MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
-        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 0.01; // depth sensor noise
-        MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * 0.09; // DVL velocity measurement noise, high trust
+        //This block
+        MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * r_imu1;   // IMU1 gravity update noise (low trust)
+        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * r_depth; // depth sensor noise
+        MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * r_dvl; // DVL velocity measurement noise, high trust
 
         kf.setIMU1MeasurementNoise(R_imu1_init);
         kf.setDepthMeasurementNoise(R_depth_init);
