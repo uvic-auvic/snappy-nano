@@ -313,6 +313,9 @@ class Controller : public rclcpp::Node {
             float thrust_y = pid_y_.update(-relative_position[1]);
             float thrust_z = pid_z_.update(-relative_position[2]);
 
+            const float z_bias = -1.5f;
+            thrust_z += z_bias;
+
             float thrust_yaw = pid_yaw_.update(-yaw);
             float thrust_pitch = pid_pitch_.update(-pitch);
             float thrust_roll = pid_roll_.update(-roll);
