@@ -124,8 +124,8 @@ class Controller : public rclcpp::Node {
                "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
 
              //Receive dpeth value from pressure node
-             depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-              "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+             //depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+              //"depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
 
             //get yaw info from the imu
             // imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -457,9 +457,9 @@ class Controller : public rclcpp::Node {
 
         void state_callback(const snappy_cpp::msg::Pose & msg) {
             current_position = Eigen::Vector3d(
-                 0.0,//msg.position.x,
-                 0.0,//msg.position.y,
-                 current_position[2]);
+                 msg.position.x,
+                 msg.position.y,
+                 msg.position.z);
 
             current_orientation = Eigen::Quaterniond(
                 msg.orientation.w,

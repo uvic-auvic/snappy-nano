@@ -318,7 +318,7 @@ private:
 
 
         Vector3d v_body(-msg->twist.twist.linear.x,
-                        msg->twist.twist.linear.y,
+                        -msg->twist.twist.linear.y,
                         -msg->twist.twist.linear.z);
 
         if (abs(v_body.x()) < epsilon && abs(v_body.y()) < epsilon && abs(v_body.z()) < epsilon) return; // skip bad samples
