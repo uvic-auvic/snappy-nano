@@ -27,12 +27,8 @@ public:
 
         // Inititalize subscribers
         color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/camera/color/image_raw", rclcpp::SensorDataQoS(),
-            bind(&ImageCapture::color_callback, this, placeholders::_1));
-
-        depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/camera/camera/depth/image_rect_raw", rclcpp::SensorDataQoS(),
-            bind(&ImageCapture::depth_callback, this, placeholders::_1));
+            "/d455/color/image_raw", rclcpp::SensorDataQoS(),
+            std::bind(&ImageCapture::color_callback, this, std::placeholders::_1));
     }
 
 private:
@@ -167,21 +163,8 @@ private:
             //imshow("RealSense Depth Colorized Stream", depth_colorized);
 
 		cout << "Test3" << std::endl;
-
-            // Save image with timestamped filename
-            string filename = name_image("depth");
-            imwrite(filename, depth_colorized);
-
-            // Apply Sobel edge detection on the grayscale depth image
-            Mat edges = compute_sobel_edges(display, /*ksize=*/3, /*scale=*/1.0, /*delta=*/0.0);
-	    //imshow("Sobel Edge Detected Stream", edges);
-
-            // Save image with timestamped filename
-            string filename_edge = name_image("edges");
-            imwrite(filename_edge, edges);
-	    cout << "Test2" << std::endl;
-
             // Publish Sobel edges as mono8 image
+            Mat edges = compute_sobel_edges(display);
             cv_bridge::CvImage out_msg(msg->header, sensor_msgs::image_encodings::MONO8, edges);
             sensor_msgs::msg::Image::SharedPtr ros_img = out_msg.toImageMsg();
 
@@ -194,7 +177,6 @@ private:
 
     // Subscriptions
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr color_sub_;
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_sub_;
 };
 
 int main(int argc, char **argv){
