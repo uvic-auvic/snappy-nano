@@ -112,6 +112,16 @@ def load_run(path: str, trim_preinit: bool = False, unwrap: bool = False) -> Run
     if col0.size and col0[0] > 1e6:
         t = (col0 - col0[0]) * 1e-9
         t_label = "Time [s]"
+        # Drop everything after a backwards clock jump (e.g. the IMU driver's
+        # clock resetting mid-run) -- otherwise the tail plots at negative time
+        # and draws flat lines across every subplot.
+        jumps = np.where(np.diff(t) < -0.5)[0]
+        if jumps.size:
+            cut = jumps[0] + 1
+            print(f"warning: {os.path.basename(path)}: timestamps jump backwards "
+                  f"{t[cut - 1] - t[cut]:.1f} s at row {cut}; dropping the "
+                  f"{len(t) - cut} rows after it", file=sys.stderr)
+            data, col0, pos, quat, t = (a[:cut] for a in (data, col0, pos, quat, t))
     else:
         t = col0.astype(float)
         t_label = "Step"
