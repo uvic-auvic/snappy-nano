@@ -13,6 +13,12 @@
 
 using std::placeholders::_1;
 
+float total_x =0.0f;
+float total_y =0.0f;
+float total_z =0.0f;
+
+
+
 class Planner : public rclcpp::Node
 {
 public:
@@ -42,7 +48,7 @@ public:
             tasks_(i, 4) = t["roll"].as<double>();
             tasks_(i, 5) = t["yaw"].as<double>();
         }
-        RCLCPP_INFO(this->get_logger(), "Loaded %ld tasks from %s", tasks_.rows(), task_file.c_str());
+        //RCLCPP_INFO(this->get_logger(), "Loaded %ld tasks from %s", tasks_.rows(), task_file.c_str());
 
         // Transient local so the controller still gets the current task if it
         // starts (or restarts) after the planner published it.
@@ -60,16 +66,21 @@ private:
     {
         auto msg = snappy_cpp::msg::Task();
         msg.seq = seq;
-        msg.x = tasks_(seq, 0);
-        msg.y = tasks_(seq, 1);
-        msg.z = tasks_(seq, 2);
+        msg.x = tasks_(seq, 0) + total_x;
+        msg.y = tasks_(seq, 1) + total_y;
+        msg.z = tasks_(seq, 2) + total_z;
+
         msg.pitch = tasks_(seq, 3) * EIGEN_PI / 180.0;
         msg.roll = tasks_(seq, 4) * EIGEN_PI / 180.0;
         msg.yaw = tasks_(seq, 5) * EIGEN_PI / 180.0;
 
         current_seq_ = seq;
         task_publisher_->publish(msg);
-        RCLCPP_INFO(this->get_logger(), "Published task %d of %ld", seq, tasks_.rows());
+        //RCLCPP_INFO(this->get_logger(), "Published task %d of %ld", seq, tasks_.rows());
+
+        total_x += msg.x;
+        total_y += msg.y;
+        total_z += msg.z;
     }
 
     void done_callback(const std_msgs::msg::Int32 & msg)
@@ -81,7 +92,7 @@ private:
         int next = current_seq_ + 1;
         if (next >= tasks_.rows()) {
             mission_complete_ = true;
-            RCLCPP_INFO(this->get_logger(), "mission complete");
+            //RCLCPP_INFO(this->get_logger(), "mission complete");
             return;
         }
         publish_task(next);

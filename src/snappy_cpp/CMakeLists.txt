@@ -36,6 +36,11 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(snappy_interfaces REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 
+find_library(GPIODCXX_LIBRARY
+	NAMES gpiodcxx 
+	REQUIRED
+)
+
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Task.msg"
@@ -91,6 +96,14 @@ ament_target_dependencies(sensorTest
   snappy_interfaces
 )
 
+add_executable(solenoid_channel
+	src/solenoid_channel.cpp
+)
+ament_target_dependencies(solenoid_channel
+  rclcpp
+  std_msgs
+)
+add_dependencies(solenoid_channel ${PROJECT_NAME})
 
 add_executable(controller
   src/controller.cpp
@@ -114,11 +127,16 @@ target_link_libraries(controller "${cpp_typesupport_target}")
 target_link_libraries(sensorTest "${cpp_typesupport_target}")
 target_link_libraries(state_estimator "${cpp_typesupport_target}")
 target_link_libraries(planner "${cpp_typesupport_target}")
+target_link_libraries(solenoid_channel "${cpp_typesupport_target}"
+	${GPIODCXX_LIBRARY}
+)
+
 
 # Install all executables
 install(TARGETS
   pressureSensor
   controller
+  solenoid_channel
   sensorTest
   state_estimator
   test_kalman

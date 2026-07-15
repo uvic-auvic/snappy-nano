@@ -93,12 +93,12 @@ class Controller : public rclcpp::Node {
             // Rows: Fx, Fy, Fz, Tx, Ty, Tz
             // Columns: Thrusters
             configuration = Eigen::MatrixXd(6, 8);
-            configuration << 0, 0, 1, 0, 0, 0, 1, 0,
-                             -1, 0, 0, 0, 1, 0, 0, 0,
-                             0, 1, 0, 1, 0, 1, 0, 1,
-                             0.1302, 0.1654, 0, 0.1654, -0.1302, -0.1648, 0, -0.1648,
-                             0, 0.3125, -0.0159, -0.2878, 0, -0.2878, -0.0159, 0.3125,
-                             -0.3142, 0, -0.2739, 0, -0.3022, 0, 0.2734, 0;
+            configuration <<0,    0,    1,    0,    0,    0,    1,    0,
+-1,    0,    0,    0,    1,    0,    0,    0,
+0,    1,    0,    1,    0,    1,    0,    1,
+0.1301,    0.1653,    0,    0.1653,    -0.1301,    -0.1648,    0,    -0.1648,
+0,    0.3024,    -0.0158,    -0.2977,    0,    -0.2977,    -0.0159,    0.3024,
+-0.3041,    0,    -0.2739,    0,    -0.3121,    0,    0.2734,    0; 
 
             // // Allocate thrusters based on the configuration matrix
             // // Blue Robotics T200 thrusters can achieve ~5.0 kgf backwards and 5.0 kgf forwards
@@ -154,8 +154,8 @@ class Controller : public rclcpp::Node {
             //    100ms, std::bind(&Controller::trajectory_callback, this));
 
 
-            timer_ = this->create_wall_timer(200ms, std::bind(&Controller::timer_callback, this));
-            RCLCPP_INFO(this->get_logger(), "Timer Node started");
+            timer_ = this->create_wall_timer(20ms, std::bind(&Controller::timer_callback, this));
+            //RCLCPP_INFO(this->get_logger(), "Timer Node started");
 
         }
 
@@ -168,32 +168,32 @@ class Controller : public rclcpp::Node {
             if (current_task_ && in_progress_) {
                 double error = trajectory.first.norm()
                     + std::abs(Eigen::AngleAxisd(trajectory.second).angle());
-		RCLCPP_INFO(this->get_logger(), "Error: %0.3f", error);
+		//RCLCPP_INFO(this->get_logger(), "Error: %0.3f", error);
                 if (error < error_threshold) {
                     auto done_msg = std_msgs::msg::Int32();
                     done_msg.data = current_task_->seq;
                     task_done_publisher_->publish(done_msg);
                     in_progress_ = false;
-                    RCLCPP_INFO(this->get_logger(), "Task %d done (error %.4f)",
-                        current_task_->seq, error);
+                    //RCLCPP_INFO(this->get_logger(), "Task %d done (error %.4f)",
+              //          current_task_->seq, error);
                 }
             }
 
             Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(0, 1, 2);
 
             //this is used to calculate the w value needed
-            RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, R, P, Y]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
-                trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[0], euler[1], euler[2]);
+            //RCLCPP_INFO(this->get_logger(), "Trajectory [X, Y, Z, R, P, Y]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+               // trajectory.first[0], trajectory.first[1], trajectory.first[2], euler[0], euler[1], euler[2]);
 
             // this is w aka the wrench value, it is a 6x1 vector
             Eigen::VectorXd wrench = generate_wrench(trajectory.first, trajectory.second);
-            RCLCPP_INFO(this->get_logger(), "Wrench     [X, Y, Z, Y, P, R]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
-                wrench[0], wrench[1], wrench[2], wrench[3], wrench[4], wrench[5]);
+            //RCLCPP_INFO(this->get_logger(), "Wrench     [X, Y, Z, Y, P, R]: %.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+              //  wrench[0], wrench[1], wrench[2], wrench[3], wrench[4], wrench[5]);
 
             // this calculates the thrust that gets sent to every thruster
             std::vector<int8_t> allocation = allocate_thrusters(wrench);
-            RCLCPP_INFO(this->get_logger(), "Allocation [ Thrusters  1-8 ]: %d, %d, %d, %d, %d, %d, %d, %d",
-                allocation[0], allocation[1], allocation[2], allocation[3], allocation[4], allocation[5], allocation[6], allocation[7]);
+            //RCLCPP_INFO(this->get_logger(), "Allocation [ Thrusters  1-8 ]: %d, %d, %d, %d, %d, %d, %d, %d",
+              //  allocation[0], allocation[1], allocation[2], allocation[3], allocation[4], allocation[5], allocation[6], allocation[7]);
 
             motorboard_->sendCmd(255, &allocation[0]);
         }
@@ -285,7 +285,7 @@ class Controller : public rclcpp::Node {
 
             // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << thrust_x, thrust_y, thrust_z + 1.0f, thrust_roll, thrust_pitch, thrust_yaw;
+            wrench << thrust_x, thrust_y, thrust_z + 5.0f, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }
@@ -482,6 +482,7 @@ class Controller : public rclcpp::Node {
         void task_callback(const snappy_cpp::msg::Task & msg) {
             target_position.x() = msg.x;
             target_position.y() = msg.y;
+//	    target_position.z() = msg.z;
             // Depth is pinned: target_position[2] comes from the
             // target_position param at construction — never from a task.
 
@@ -491,8 +492,8 @@ class Controller : public rclcpp::Node {
 
             current_task_ = msg;
             in_progress_ = true;
-            RCLCPP_INFO(this->get_logger(), "Received task %d: x=%.2f y=%.2f roll=%.2f pitch=%.2f yaw=%.2f",
-                msg.seq, msg.x, msg.y, msg.roll, msg.pitch, msg.yaw);
+            //RCLCPP_INFO(this->get_logger(), "Received task %d: x=%.2f y=%.2f roll=%.2f pitch=%.2f yaw=%.2f",
+              //  msg.seq, msg.x, msg.y, msg.roll, msg.pitch, msg.yaw);
         }
 
         void state_callback(const snappy_cpp::msg::Pose & msg) {
@@ -536,7 +537,7 @@ class Controller : public rclcpp::Node {
         std::optional<geometry_msgs::msg::Point> position_target_;
         geometry_msgs::msg::Quaternion orientation_current_;
         std::optional<geometry_msgs::msg::Quaternion> orientation_target_;
-        const double error_threshold = 0.5;
+        const double error_threshold = 0.2;
 
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;

@@ -48,7 +48,7 @@ public:
 
     StateEstimator() : Node("state_estimator")
     {
-        RCLCPP_INFO(this->get_logger(), "State Estimator starting...");
+        //RCLCPP_INFO(this->get_logger(), "State Estimator starting...");
 
         // imu1_file: accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
         // imu2_file: accel_x, accel_y, accel_z, quat_x, quat_y, quat_z, quat_w
@@ -112,7 +112,7 @@ public:
 
         // These show how much we trust each sensor. Smaller values = more trust, larger values = less trust.
         MatrixXd R_imu1_init = MatrixXd::Identity(3, 3) * 1.0;   // IMU1 gravity update noise (low trust)
-        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 2.5e-3; // depth sensor noise
+        MatrixXd R_depth_init = MatrixXd::Identity(1, 1) * 2.5e-4; // depth sensor noise
         MatrixXd R_dvl_vel_ = MatrixXd::Identity(3, 3) * 0.01; // DVL velocity noise
 
         kf.setIMU1MeasurementNoise(R_imu1_init);
@@ -132,12 +132,12 @@ public:
             "state_estimator/state", 10
         );
 
-        RCLCPP_INFO(this->get_logger(), "State Estimator subscribed to:");
-        RCLCPP_INFO(this->get_logger(), "  - /camera/camera/imu");
-        RCLCPP_INFO(this->get_logger(), "  - /imu/data");
-        RCLCPP_INFO(this->get_logger(), "  - depth_data");
-        RCLCPP_INFO(this->get_logger(), "  - /waterlinked_dvl_driver/odom");
-        RCLCPP_INFO(this->get_logger(), "Waiting for IMU data...");
+        //RCLCPP_INFO(this->get_logger(), "State Estimator subscribed to:");
+        //RCLCPP_INFO(this->get_logger(), "  - /camera/camera/imu");
+        //RCLCPP_INFO(this->get_logger(), "  - /imu/data");
+        //RCLCPP_INFO(this->get_logger(), "  - depth_data");
+        //RCLCPP_INFO(this->get_logger(), "  - /waterlinked_dvl_driver/odom");
+        //RCLCPP_INFO(this->get_logger(), "Waiting for IMU data...");
 
         // Timer to check status
         check_timer_ = this->create_wall_timer(
@@ -149,7 +149,7 @@ private:
     void imu1_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         if (!imu_received_) {
-            RCLCPP_INFO(this->get_logger(), "✅ First IMU1 message received!");
+            //RCLCPP_INFO(this->get_logger(), "✅ First IMU1 message received!");
             imu_received_ = true;
         }
         const double now_sec = rclcpp::Time(msg->header.stamp).seconds();
@@ -171,10 +171,10 @@ private:
 
         // Print combined IMU data every 20 messages
         if (imu_count_ % 20 == 0) {
-            RCLCPP_INFO(this->get_logger(),
-                "[IMU 1] Gyro: [%.3f, %.3f, %.3f] rad/s | Accel: [%.3f, %.3f, %.3f] m/s²",
-                msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z,
-                msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
+            //RCLCPP_INFO(this->get_logger(),
+              //  "[IMU 1] Gyro: [%.3f, %.3f, %.3f] rad/s | Accel: [%.3f, %.3f, %.3f] m/s²",
+                //msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z,
+                //msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
         }
 
         // Write all data to file
@@ -196,7 +196,7 @@ private:
 
 
         if (!imu_received_) {
-            RCLCPP_INFO(this->get_logger(), "✅ First IMU2 message received!");
+            //RCLCPP_INFO(this->get_logger(), "✅ First IMU2 message received!");
             imu_received_ = true;
         }
         imu2_count_++;
@@ -222,7 +222,7 @@ private:
         last_time_imu2_sec_ = now_sec;
 
         if (!frame_initialized_) {
-            RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
+            //RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
             return;
         }
 
@@ -245,16 +245,16 @@ private:
         
         // Print combined IMU data every 20 messages
         if (imu2_count_ % 20 == 0) {
-            RCLCPP_INFO(this->get_logger(),
-                "[IMU 2] Orient: [%.3f, %.3f, %.3f, %.3f] rad | Accel: [%.3f, %.3f, %.3f] m/s²",
-                msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
-                msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
+            //RCLCPP_INFO(this->get_logger(),
+             //   "[IMU 2] Orient: [%.3f, %.3f, %.3f, %.3f] rad | Accel: [%.3f, %.3f, %.3f] m/s²",
+              //  msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w,
+              //  msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
 
-        RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f], Pitch=%.2f, Roll=%.2f, Yaw=%.2f",
-            kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
-            kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
-            kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w(),
-            getPitch(kf.getOrientation()), getRoll(kf.getOrientation()), getYaw(kf.getOrientation()));
+//        RCLCPP_INFO(this->get_logger(), "  State Estimate: Pos=[%.2f, %.2f, %.2f] Vel=[%.2f, %.2f, %.2f] Ori=[%.2f, %.2f, %.2f, %.2f], Pitch=%.2f, Roll=%.2f, Yaw=%.2f",
+  //          kf.getPosition().x(), kf.getPosition().y(), kf.getPosition().z(),
+    //        kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z(),
+      //      kf.getOrientation().x(), kf.getOrientation().y(), kf.getOrientation().z(), kf.getOrientation().w(),
+        //    getPitch(kf.getOrientation()), getRoll(kf.getOrientation()), getYaw(kf.getOrientation()));
         }
 
 
@@ -285,7 +285,7 @@ private:
    void depth_callback(const std_msgs::msg::Float32 & msg)
     {
         float depth_data = msg.data;
-        RCLCPP_INFO(this->get_logger(), "Depth data received: %f", depth_data);
+        //RCLCPP_INFO(this->get_logger(), "Depth data received: %f", depth_data);
 
         // Buffer first depth to seed z0 for world frame initialization
         if (!init_depth_ready_) {
@@ -295,7 +295,7 @@ private:
         }
 
         if (!frame_initialized_) {
-            RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
+            //RCLCPP_INFO(this->get_logger(), "Waiting for frame initialization...");
             return;
         }
         kf.updateDepth(depth_data);
@@ -307,7 +307,7 @@ private:
     void dvl_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
         if (!dvl_received_) {
-            RCLCPP_INFO(this->get_logger(), "First DVL message received!");
+            //RCLCPP_INFO(this->get_logger(), "First DVL message received!");
             dvl_received_ = true;
         }
         dvl_count_++;
@@ -325,10 +325,10 @@ private:
         kf.updateDVLVelocity(v_body);
 
         if (dvl_count_ % 20 == 0) {
-            RCLCPP_INFO(this->get_logger(),
-                "[DVL] v_body=[%.3f, %.3f, %.3f] m/s | Vel est=[%.2f, %.2f, %.2f]",
-                v_body.x(), v_body.y(), v_body.z(),
-                kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z());
+            //RCLCPP_INFO(this->get_logger(),
+              //  "[DVL] v_body=[%.3f, %.3f, %.3f] m/s | Vel est=[%.2f, %.2f, %.2f]",
+                //v_body.x(), v_body.y(), v_body.z(),
+                //kf.getVelocity().x(), kf.getVelocity().y(), kf.getVelocity().z());
         }
 
         // write to dvl file
@@ -390,9 +390,9 @@ private:
         kf.reset(x0, P_init_);
         frame_initialized_ = true;
         
-        RCLCPP_INFO(this->get_logger(),
-            "KF mission frame initialized: pos=(0, 0, %.3f) m, +x = initial heading  [depth=%.3f m, NED yaw0=%.1f deg]",
-            z0, init_depth_, yaw0 * 180.0 / M_PI);
+        //RCLCPP_INFO(this->get_logger(),
+          //  "KF mission frame initialized: pos=(0, 0, %.3f) m, +x = initial heading  [depth=%.3f m, NED yaw0=%.1f deg]",
+            //z0, init_depth_, yaw0 * 180.0 / M_PI);
     }
 
     // RADIANS in — do not pass degrees. ZYX composition q = Rz(yaw)*Ry(pitch)*Rx(roll)
@@ -405,13 +405,13 @@ private:
     void check_status()
     {
         if (!imu_received_ && !gyro_received_ && !accel_received_) {
-            RCLCPP_WARN(this->get_logger(),
-                "❌ No IMU data received yet. Total: IMU=%d, Gyro=%d, Accel=%d",
-                imu_count_, gyro_count_, accel_count_);
+            //RCLCPP_WARN(this->get_logger(),
+              //  "❌ No IMU data received yet. Total: IMU=%d, Gyro=%d, Accel=%d",
+                //imu_count_, gyro_count_, accel_count_);
         } else {
-            RCLCPP_INFO(this->get_logger(),
-                "✅ Receiving - IMU:%d Gyro:%d Accel:%d msgs",
-                imu_count_, gyro_count_, accel_count_);
+            //RCLCPP_INFO(this->get_logger(),
+              //  "✅ Receiving - IMU:%d Gyro:%d Accel:%d msgs",
+                //imu_count_, gyro_count_, accel_count_);
         }
     }
 

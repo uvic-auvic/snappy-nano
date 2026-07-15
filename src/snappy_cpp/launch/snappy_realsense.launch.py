@@ -80,11 +80,13 @@ def generate_launch_description():
         "param",
         "xsens_mti_node.yaml",
     )
+
     controller_parameters_file_path = Path(
         get_package_share_directory("snappy_cpp"),
         "config",
         "controller_params.yaml",
     )
+
     xsens_mti_node = Node(
         package="xsens_mti_ros2_driver",
         executable="xsens_mti_node",
@@ -118,6 +120,18 @@ def generate_launch_description():
             )
         ],
     )
+
+  #  solenoid_channel_node = TimerAction(
+  #      period=3.0,
+  #      actions=[
+  #          Node(
+  #              package="snappy_cpp",
+  #              executable="solenoid_channel",
+  #              name="solenoid_channel",
+  #              output="screen",
+  #          )
+  #      ],
+  #  )
 
     task_file_path = Path(
         get_package_share_directory("snappy_cpp"),
@@ -153,13 +167,14 @@ def generate_launch_description():
     return LaunchDescription(
         [
             xsens_mti_node,
-            #snappyComputerVision,
-            dvl,
             serial_dev_arg,
             micro_ros_agent,
+            #snappyComputerVision,
             pressure_sensor_node,
-            planner_node,
+            dvl,
             state_estimator_node,
             controller_node,
+#            planner_node,
+  #          solenoid_channel_node,
         ]
     )

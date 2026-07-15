@@ -2,6 +2,5 @@
 # Angles are in degrees; z is carried for schema consistency but the
 # controller's target depth is pinned by controller_params.yaml.
 tasks:
-  - {x: 0.0, y: 0.0, z: 0.5, pitch: 0.0, roll: 0.0, yaw: 0.0} # Depth 
-  - {x: 2.0, y: 0.0, z: 0.5, pitch: 0.0, roll: 0.0, yaw: 0.0} # Gate
-  - {x: 2.0, y: -1.0, z: 0.5, pitch: 0.0, roll: 0.0, yaw: 0.0} #
+  - {x: 0.0, y: 0.0, z: 1.0, pitch: 0.0, roll: 0.0, yaw: 0.0} # Gate
+  - {x: 1.0, y: 0.0, z: 0.0, pitch: 0.0, roll: 0.0, yaw: 0.0} # Gate

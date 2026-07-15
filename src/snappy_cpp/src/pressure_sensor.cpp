@@ -30,7 +30,7 @@ public:
         // returning EAGAIN immediately on a partially-arrived line.
         serial_fd_ = open("/dev/ttyUSB0", O_RDONLY | O_NOCTTY);
         if (serial_fd_ < 0) {
-            RCLCPP_ERROR(this->get_logger(), "Failed to open /dev/ttyUSB0");
+            //RCLCPP_ERROR(this->get_logger(), "Failed to open /dev/ttyUSB0");
             return;
         }
 
@@ -38,7 +38,7 @@ public:
         // never pass a garbage struct to tcsetattr if the fd is not a real tty.
         struct termios tty{};
         if (tcgetattr(serial_fd_, &tty) < 0) {
-            RCLCPP_ERROR(this->get_logger(), "tcgetattr failed: %s", strerror(errno));
+            //RCLCPP_ERROR(this->get_logger(), "tcgetattr failed: %s", strerror(errno));
             close(serial_fd_);
             serial_fd_ = -1;
             return;
@@ -79,7 +79,7 @@ public:
 
         // FIX (bug 3): Check tcsetattr return value.
         if (tcsetattr(serial_fd_, TCSANOW, &tty) < 0) {
-            RCLCPP_ERROR(this->get_logger(), "tcsetattr failed: %s", strerror(errno));
+            //RCLCPP_ERROR(this->get_logger(), "tcsetattr failed: %s", strerror(errno));
             close(serial_fd_);
             serial_fd_ = -1;
             return;
@@ -95,7 +95,7 @@ public:
         // O_NONBLOCK and never verified termios was applied correctly first.
         int flags = fcntl(serial_fd_, F_GETFL, 0);
         if (flags < 0 || fcntl(serial_fd_, F_SETFL, flags | O_NONBLOCK) < 0) {
-            RCLCPP_ERROR(this->get_logger(), "fcntl F_SETFL failed: %s", strerror(errno));
+            //RCLCPP_ERROR(this->get_logger(), "fcntl F_SETFL failed: %s", strerror(errno));
             close(serial_fd_);
             serial_fd_ = -1;
             return;
@@ -105,7 +105,7 @@ public:
             std::chrono::milliseconds(100),
             std::bind(&DepthSensorNode::read_and_publish, this));
 
-        RCLCPP_INFO(this->get_logger(), "Depth sensor node started on /dev/ttyUSB0 at 115200 baud");
+        //RCLCPP_INFO(this->get_logger(), "Depth sensor node started on /dev/ttyUSB0 at 115200 baud");
     }
 
     // Close the serial port if it was opened.
@@ -183,7 +183,7 @@ private:
             }
             if (bytes_read < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) break;  // buffer empty
-                RCLCPP_ERROR(this->get_logger(), "Error reading from serial: %s", strerror(errno));
+                //RCLCPP_ERROR(this->get_logger(), "Error reading from serial: %s", strerror(errno));
                 return;
             }
             break;  // bytes_read == 0, EOF
@@ -198,7 +198,7 @@ private:
                 auto message = std_msgs::msg::Float32();
                 message.data = depth;
                 publisher_->publish(message);
-                RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth);
+                //RCLCPP_INFO(this->get_logger(), "Depth: %.4f m", depth);
                 return;
             }
         }
