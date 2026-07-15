@@ -17,6 +17,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "snappy_cpp/msg/task.hpp"
 #include "snappy_cpp/msg/pose.hpp"
 #include "snappy_interfaces/msg/thruster_command.hpp"
@@ -39,10 +40,10 @@ class Controller : public rclcpp::Node {
         Controller() : Node("controller"),
             pid_x_(0.0f, 0.0f, 0.0f),
             pid_y_(0.0f, 0.0f, 0.0f),
-            pid_z_(6.0f, 0.5f, 0.0f),
+            pid_z_(0.0f, 0.0f, 0.0f),
             pid_roll_(0.0f, 0.0f, 0.0f),
             pid_pitch_(0.0f, 0.0f, 0.0f),
-            pid_yaw_(0.5f, 0.0f, 0.5f)
+            pid_yaw_(0.0f, 0.0f, 0.0f)
          {
              declare_parameter("target_position", std::vector<double>{0.0, 0.0, 0.0});
              declare_parameter("target_roll", 0.0);
@@ -80,7 +81,7 @@ class Controller : public rclcpp::Node {
              double yaw = get_parameter("target_yaw").as_double();
 
              current_position = Eigen::Vector3d(0.0, 0.0, 0.0);
-             current_orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+             current_orientation = Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0);
 
              flag_ = 0;
 
@@ -115,17 +116,24 @@ class Controller : public rclcpp::Node {
             // Publish trajectory vectors to state estimator
             trajectory_publisher_ = this->create_publisher<snappy_cpp::msg::Pose>("/controller/trajectory", 10);
 
-            // Receive tasks from planner
-            //task_subscription_ = this->create_subscription<snappy_cpp::msg::Task>(
-            //    "/planner/task", 10, std::bind(&Controller::task_callback, this, _1));
+            // Receive tasks from planner. Transient local matches the
+            // planner's latched publisher, so the current task is delivered
+            // even if this node starts after it was published.
+            task_subscription_ = this->create_subscription<snappy_cpp::msg::Task>(
+                "/planner/task", rclcpp::QoS(1).transient_local(),
+                std::bind(&Controller::task_callback, this, _1));
+
+            // Ack completed task seqs back to the planner
+            task_done_publisher_ = this->create_publisher<std_msgs::msg::Int32>(
+                "/controller/task_done", 10);
 
             // Receive states from state estimator
             state_subscription_ = this->create_subscription<snappy_cpp::msg::Pose>(
                "state_estimator/state", 10, std::bind(&Controller::state_callback, this, _1));
 
-            // Receive dpeth value from pressure node
-            // depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
-            //   "depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
+             //Receive dpeth value from pressure node
+             //depth_subscription_ = this->create_subscription<std_msgs::msg::Float32>(
+              //"depth_data", 10, std::bind(&Controller::depth_callback, this, _1));
 
             //get yaw info from the imu
             // imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -155,6 +163,22 @@ class Controller : public rclcpp::Node {
         void timer_callback() {
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> trajectory = generate_trajectory();
 
+            // Ack the current task once its tracking error (position error
+            // norm + orientation error angle) drops under error_threshold.
+            if (current_task_ && in_progress_) {
+                double error = trajectory.first.norm()
+                    + std::abs(Eigen::AngleAxisd(trajectory.second).angle());
+		RCLCPP_INFO(this->get_logger(), "Error: %0.3f", error);
+                if (error < error_threshold) {
+                    auto done_msg = std_msgs::msg::Int32();
+                    done_msg.data = current_task_->seq;
+                    task_done_publisher_->publish(done_msg);
+                    in_progress_ = false;
+                    RCLCPP_INFO(this->get_logger(), "Task %d done (error %.4f)",
+                        current_task_->seq, error);
+                }
+            }
+
             Eigen::Vector3d euler = trajectory.second.toRotationMatrix().eulerAngles(0, 1, 2);
 
             //this is used to calculate the w value needed
@@ -176,51 +200,75 @@ class Controller : public rclcpp::Node {
 
         // Given the target and current poses in global space, determine the vector between them in local space
         std::pair<Eigen::Vector3d, Eigen::Quaterniond> generate_trajectory() {
-            //Eigen::Vector3d current_position(x, y, current_depth);
+            //Eigen::Vector3d current_position(0.0, 0.0, current_depth);
             //Eigen::Quaterniond current_orientation;
             //current_orientation =
                 //Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
                 //Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
                 // Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
 
-            Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
+            //Eigen::Vector3d relative_position = current_orientation * (target_position - current_position);
             Eigen::Quaterniond relative_orientation = target_orientation * current_orientation.inverse();
+
+	    if (relative_orientation.w() < 0) {
+		relative_orientation.coeffs() *= -1;
+	    }
 
             std::pair<Eigen::Vector3d, Eigen::Quaterniond> result;
 
-            result.first = relative_position;
-            result.second = relative_orientation;
+            result.first = target_position - current_position;//relative_position;
+            result.second = relative_orientation;//relative_orientation;
 
             return result;
         }
 
         // Given the relative position and orientation of the target, generate the wrench to move in that direction
         Eigen::VectorXd generate_wrench(Eigen::Vector3d relative_position, Eigen::Quaterniond relative_orientation) {
-            Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
+            Eigen::AngleAxisd aa(relative_orientation);
 
-            float roll = euler[0];
-            float pitch = euler[1];
-            float yaw = euler[2];
+            Eigen::Vector3d trajectory = aa.angle() * aa.axis();  
+		
+	    //Eigen::Vector3d euler = relative_orientation.toRotationMatrix().eulerAngles(0, 1, 2);
+            
+	    float roll = trajectory[0];
+            float pitch = trajectory[1];
+            float yaw = trajectory[2];//2.0f * std::atan2(relative_orientation.z(), relative_orientation.w());//euler[2];
 
-            double pi = EIGEN_PI;
 
-            if(yaw < -pi) {
-                yaw += 2*pi;
-            }else if (yaw > pi) {
-                yaw -= 2*pi;
-            }
+	    /*
+	    double pi = EIGEN_PI;
 
-            if(pitch < -pi) {
-                pitch += 2*pi;
-            }else if (pitch > pi) {
-                pitch -= 2*pi;
-            }
+	    if (roll > pi) {
+		roll -= 2*pi;
+	    }
 
-            if(roll < -pi) {
-                roll += 2*pi;
-            }else if (roll > pi) {
-                roll -= 2*pi;
-            }
+	    if (pitch > pi) {
+		pitch -= 2*pi;
+	    }
+
+	    if (yaw > pi) {
+		yaw -= 2*pi;
+	    }
+	    */
+            //double pi = EIGEN_PI;
+
+            //if(yaw < -pi) {
+            //    yaw += 2*pi;
+            //}else if (yaw > pi) {
+            //    yaw -= 2*pi;
+            //}
+
+            //if(pitch < -pi) {
+            //    pitch += 2*pi;
+            //}else if (pitch > pi) {
+            //    pitch -= 2*pi;
+            //}
+
+            //if(roll < -pi) {
+            //    roll += 2*pi;
+            //}else if (roll > pi) {
+            //    roll -= 2*pi;
+            //}
 
             // Relative position of AUV from target is negated
             float thrust_x = pid_x_.update(-relative_position[0]);
@@ -232,8 +280,12 @@ class Controller : public rclcpp::Node {
             float thrust_roll = pid_roll_.update(-roll);
 
             // Create wrench vector to be returned
+            //float thrust_pitch = pid_pitch_.update(-pitch);
+            //float thrust_roll = pid_roll_.update(-roll);
+
+            // Create wrench vector to be returned
             Eigen::VectorXd wrench(6);
-            wrench << 2.0, thrust_y, thrust_z, thrust_roll, thrust_pitch, thrust_yaw;
+            wrench << thrust_x, thrust_y, thrust_z + 1.0f, thrust_roll, thrust_pitch, thrust_yaw;
 
             return wrench;
         }
@@ -366,7 +418,7 @@ class Controller : public rclcpp::Node {
 	    if(msg.data < 0){
 		return;
 	    }else {
-		    current_depth = msg.data;
+		    current_position[2] = msg.data;
 	    }
         }
 
@@ -427,11 +479,27 @@ class Controller : public rclcpp::Node {
             //}
         }
 
+        void task_callback(const snappy_cpp::msg::Task & msg) {
+            target_position.x() = msg.x;
+            target_position.y() = msg.y;
+            // Depth is pinned: target_position[2] comes from the
+            // target_position param at construction — never from a task.
+
+            target_orientation = Eigen::AngleAxisd(msg.roll, Eigen::Vector3d::UnitX())
+                * Eigen::AngleAxisd(msg.pitch, Eigen::Vector3d::UnitY())
+                * Eigen::AngleAxisd(msg.yaw, Eigen::Vector3d::UnitZ());
+
+            current_task_ = msg;
+            in_progress_ = true;
+            RCLCPP_INFO(this->get_logger(), "Received task %d: x=%.2f y=%.2f roll=%.2f pitch=%.2f yaw=%.2f",
+                msg.seq, msg.x, msg.y, msg.roll, msg.pitch, msg.yaw);
+        }
+
         void state_callback(const snappy_cpp::msg::Pose & msg) {
             current_position = Eigen::Vector3d(
-                msg.position.x,
-                msg.position.y,
-                msg.position.z);
+                 msg.position.x,
+                 msg.position.y,
+                 msg.position.z);
 
             current_orientation = Eigen::Quaterniond(
                 msg.orientation.w,
@@ -444,6 +512,7 @@ class Controller : public rclcpp::Node {
         rclcpp::Publisher<snappy_interfaces::msg::ThrusterCommand>::SharedPtr motor_publisher_;
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
         rclcpp::Publisher<snappy_cpp::msg::Pose>::SharedPtr trajectory_publisher_;
+        rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr task_done_publisher_;
         rclcpp::Subscription<snappy_cpp::msg::Task>::SharedPtr task_subscription_;
         rclcpp::Subscription<snappy_cpp::msg::Pose>::SharedPtr state_subscription_;
     	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr depth_subscription_;
@@ -461,13 +530,13 @@ class Controller : public rclcpp::Node {
 
         std::queue<snappy_cpp::msg::Task> tasks_;
         std::optional<snappy_cpp::msg::Task> current_task_;
-        bool in_progress_ = false; // set to true in task_callback, reset to false in status_callback
+        bool in_progress_ = false; // set to true in task_callback, reset to false once the task is acked
 
         geometry_msgs::msg::Point position_current_;
         std::optional<geometry_msgs::msg::Point> position_target_;
         geometry_msgs::msg::Quaternion orientation_current_;
         std::optional<geometry_msgs::msg::Quaternion> orientation_target_;
-        const double error_threshold = 0.005;
+        const double error_threshold = 0.5;
 
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
@@ -478,12 +547,12 @@ class Controller : public rclcpp::Node {
         int timer_first_;
         int state_;
 
-    	float pitch;
-    	float yaw;
-    	float roll;
-    	float x;
-    	float y;
-    	float current_depth;
+    	float pitch = 0.0f;
+    	float yaw = 0.0f;
+    	float roll = 0.0f;
+    	float x = 0.0f;
+    	float y = 0.0f;
+    	float current_depth = 0.0f;
 
         Eigen::Vector3d current_position;
         Eigen::Quaterniond current_orientation;

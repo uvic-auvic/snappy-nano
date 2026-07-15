@@ -119,14 +119,21 @@ def generate_launch_description():
         ],
     )
 
+    task_file_path = Path(
+        get_package_share_directory("snappy_cpp"),
+        "config",
+        "tasks_example.yaml"
+        )
+
     planner_node = TimerAction(
-        period=3.0,
+        period=10.0,
         actions=[
             Node(
                 package="snappy_cpp",
                 executable="planner",
                 name="planner",
                 output="screen",
+                parameters=[{"task_file": str(task_file_path)}]
             )
         ],
     )
@@ -146,7 +153,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             xsens_mti_node,
-            snappyComputerVision,
+            #snappyComputerVision,
             dvl,
             serial_dev_arg,
             micro_ros_agent,

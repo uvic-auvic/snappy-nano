@@ -69,11 +69,11 @@ public:
 
         // Subscribe to D455 color and aligned depth feeds together so objects get range estimate from the same frame
         color_sub_.subscribe(
-            this, "/d455/color/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
+            this, "/d455/d455/color/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
         depth_sub_.subscribe(
-            this, "/d455/aligned_depth_to_color/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
+            this, "/d455/d455/aligned_depth_to_color/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
 
-        sync_ = std::make_shared<SyncPolicy>(10);
+        sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(SyncPolicy(10));
         sync_->connectInput(color_sub_, depth_sub_);
         sync_->registerCallback(
             std::bind(&FrontCameraVision::image_callback, this,
@@ -226,7 +226,7 @@ private:
     {
         // imwrite does NOT create directories and returns false (never throws)
         // on a bad path -- so the dir must exist first, and we check the result.
-        static const std::string dir = "/home/kraken/Desktop/snappy_inference/d455";
+        static const std::string dir = "/ros2_ws/snappy_inference/d455";
         std::error_code ec;
         std::filesystem::create_directories(dir, ec);
         const std::string filename = "front_camera_" + std::to_string(timestamp.seconds()) + ".jpg";
@@ -541,7 +541,7 @@ private:
     float estimate_distance_m(
         const cv::Mat & depth_image,
         const std::string & depth_encoding,
-        const Detection & det) const
+        const Detection & det)
     {
         if (depth_image.empty()) {
             return -1.0f;
@@ -803,7 +803,7 @@ private:
     // ROS
     message_filters::Subscriber<sensor_msgs::msg::Image> color_sub_;
     message_filters::Subscriber<sensor_msgs::msg::Image> depth_sub_;
-    std::shared_ptr<SyncPolicy> sync_;
+    std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
     rclcpp::Publisher<snappy_cpp::msg::DetectionArray>::SharedPtr detection_pub_;
 
     // TensorRT / CUDA
