@@ -13,6 +13,11 @@
 
 using std::placeholders::_1;
 
+
+float world_x = 0.0f;
+float world_y = 0.0f;
+float world_z = 0.0f;
+
 class Planner : public rclcpp::Node
 {
 public:
@@ -60,12 +65,15 @@ private:
     {
         auto msg = snappy_cpp::msg::Task();
         msg.seq = seq;
-        msg.x = tasks_(seq, 0);
-        msg.y = tasks_(seq, 1);
-        msg.z = tasks_(seq, 2);
+        msg.x = tasks_(seq, 0) + world_x;
+        msg.y = tasks_(seq, 1) + world_y;
+        msg.z = tasks_(seq, 2) + world_z;
+
         msg.pitch = tasks_(seq, 3) * EIGEN_PI / 180.0;
         msg.roll = tasks_(seq, 4) * EIGEN_PI / 180.0;
         msg.yaw = tasks_(seq, 5) * EIGEN_PI / 180.0;
+
+
 
         current_seq_ = seq;
         task_publisher_->publish(msg);
