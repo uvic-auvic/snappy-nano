@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cmath>
+#include <array>
 #include <condition_variable>
 #include <cstdint>
 #include <cstring>
@@ -34,6 +35,7 @@
 
 #include "snappy_cpp/msg/detection_array.hpp"
 #include "snappy_cpp/msg/object_detection.hpp"
+#include "snappy_cpp/msg/quadrant.hpp"
 #include "snappy_cpp/msg/bounding_box2_d.hpp"
 #include "snappy_cpp/msg/polygon2_d.hpp"
 #include <geometry_msgs/msg/point32.hpp>
@@ -120,6 +122,7 @@ private:
         float confidence;
         int class_id;
         float distance_m = -1.0f;
+        std::vector<snappy_cpp::msg::Quadrant> quadrants;
         std::vector<cv::Point2f> mask_polygon;
     };
 
@@ -197,6 +200,7 @@ private:
             // depth/distance of object calculated by a median of the depth pixels within the segmented object
             for (auto & det : detections) {
                 det.distance_m = estimate_distance_m(job.depth_image, job.depth_encoding, det);
+                det.quadrants = compute_quadrants(det, job.image.cols, job.image.rows);
             }
             // Save a frame for later review, at most once every 5 seconds.
             const double frame_s = job.timestamp.seconds();
@@ -204,7 +208,7 @@ private:
                 last_save_s_ = frame_s;
                 save_image(job.image, job.timestamp);
             }
-            publish_detections(detections, job.timestamp, inference_ms);
+            publish_detections(detections, job.image.cols, job.image.rows, job.timestamp, inference_ms);
         }
     }
 
@@ -518,9 +522,46 @@ private:
         return *middle;
     }
 
+    std::vector<snappy_cpp::msg::Quadrant> compute_quadrants(const Detection & det, int image_w, int image_h) const
+    {
+        constexpr int grid_size = 5;
+        const float cell_w = static_cast<float>(image_w) / static_cast<float>(grid_size);
+        const float cell_h = static_cast<float>(image_h) / static_cast<float>(grid_size);
+        const float x1 = std::clamp(det.x1, 0.0f, static_cast<float>(image_w));
+        const float y1 = std::clamp(det.y1, 0.0f, static_cast<float>(image_h));
+        const float x2 = std::clamp(det.x2, 0.0f, static_cast<float>(image_w));
+        const float y2 = std::clamp(det.y2, 0.0f, static_cast<float>(image_h));
+
+        std::vector<snappy_cpp::msg::Quadrant> quadrants;
+        if (x2 <= x1 || y2 <= y1) {
+            return quadrants;
+        }
+
+        for (int row = 0; row < grid_size; ++row) {
+            const float cell_top = row * cell_h;
+            const float cell_bottom = (row + 1) * cell_h;
+            for (int column = 0; column < grid_size; ++column) {
+                const float cell_left = column * cell_w;
+                const float cell_right = (column + 1) * cell_w;
+                const bool intersects = !(x2 <= cell_left || x1 >= cell_right ||
+                                          y2 <= cell_top || y1 >= cell_bottom);
+                if (intersects) {
+                    snappy_cpp::msg::Quadrant quadrant;
+                    quadrant.row = static_cast<uint8_t>(row + 1);
+                    quadrant.column = static_cast<uint8_t>(column + 1);
+                    quadrants.push_back(std::move(quadrant));
+                }
+            }
+        }
+
+        return quadrants;
+    }
+
     // ---- Publishing --------------------------------------------------------
 
     void publish_detections(const std::vector<Detection> & detections,
+                            int image_w,
+                            int image_h,
                             const rclcpp::Time & timestamp,
                             float inference_ms)
     {
@@ -535,6 +576,7 @@ private:
             obj.confidence = det.confidence;
             obj.object_class = class_name_for(det.class_id);
             obj.distance_m = det.distance_m;
+            obj.quadrants = det.quadrants;
             obj.timestamp = timestamp;
 
             snappy_cpp::msg::BoundingBox2D bbox;

@@ -43,6 +43,7 @@ find_package(snappy_interfaces REQUIRED)
 # Generate message files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BoundingBox2D.msg"
+  "msg/Quadrant.msg"
   "msg/ObjectDetection.msg"
   "msg/DetectionArray.msg"
   "msg/Polygon2D.msg"

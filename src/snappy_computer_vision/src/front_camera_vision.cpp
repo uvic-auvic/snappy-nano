@@ -15,15 +15,18 @@
 #include <chrono>
 #include <cstddef>
 #include <cmath>
+#include <array>
 #include <condition_variable>
 #include <cstring>
 #include <cstdint>
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <sstream>
 #include <thread>
 #include <vector>
 #include <algorithm>
@@ -33,6 +36,7 @@
 
 #include "snappy_cpp/msg/detection_array.hpp"
 #include "snappy_cpp/msg/object_detection.hpp"
+#include "snappy_cpp/msg/quadrant.hpp"
 #include "snappy_cpp/msg/bounding_box2_d.hpp"
 #include "snappy_cpp/msg/polygon2_d.hpp"
 #include <geometry_msgs/msg/point32.hpp>
@@ -94,6 +98,10 @@ public:
             worker_thread_.join();
         }
 
+        if (csv_file_.is_open()) {
+            csv_file_.close();
+        }
+
         if (context_) { delete context_; context_ = nullptr; }
         if (engine_) { delete engine_; engine_ = nullptr; }
         if (runtime_) { delete runtime_; runtime_ = nullptr; }
@@ -121,6 +129,7 @@ private:
         float confidence;
         int class_id;
         float distance_m = -1.0f;
+        std::vector<snappy_cpp::msg::Quadrant> quadrants;
         std::vector<cv::Point2f> mask_polygon;
     };
 
@@ -197,30 +206,36 @@ private:
             // depth/distance of object calculated by a median of the depth pixels within the segmented object
             for (auto & det : detections) {
                 det.distance_m = estimate_distance_m(job.depth_image, job.depth_encoding, det);
+                det.quadrants = compute_quadrants(det, job.image.cols, job.image.rows);
             }
             // Save a frame for later review, at most once every 5 seconds.
             const double frame_s = job.timestamp.seconds();
+            std::string saved_image_name;
             if (frame_s - last_save_s_ >= 5.0) {
                 last_save_s_ = frame_s;
-                save_image(job.image, job.timestamp);
+                saved_image_name = save_image(job.image, job.timestamp);
             }
+            log_detections_to_csv(detections, saved_image_name, job.timestamp, inference_ms);
+            // Switch the line above to log_detections_to_terminal(...) to print instead of writing CSV.
             publish_detections(detections, job.timestamp, inference_ms);
         }
     }
 
     // take image and save to desktop
-    void save_image(const cv::Mat &image, const rclcpp::Time &timestamp)
+    std::string save_image(const cv::Mat &image, const rclcpp::Time &timestamp)
     {
         // imwrite does NOT create directories and returns false (never throws)
         // on a bad path -- so the dir must exist first, and we check the result.
         static const std::string dir = "/ros2_ws/snappy_inference/d455";
         std::error_code ec;
         std::filesystem::create_directories(dir, ec);
-        const std::string path =
-            dir + "/front_camera_" + std::to_string(timestamp.seconds()) + ".jpg";
+        const std::string filename = "front_camera_" + std::to_string(timestamp.seconds()) + ".jpg";
+        const std::string path = dir + "/" + filename;
         if (!cv::imwrite(path, image)) {
             RCLCPP_WARN(get_logger(), "save_image: failed to write %s", path.c_str());
+            return {};
         }
+        return filename;
     }
 
     // ---- Core inference pipeline -------------------------------------------
@@ -266,9 +281,6 @@ private:
 
         auto t1 = std::chrono::steady_clock::now();
         inference_ms = std::chrono::duration<float, std::milli>(t1 - t0).count();
-        RCLCPP_INFO_THROTTLE(get_logger(), *this->get_clock(), 1000,
-                             "Inference: %.2f ms (%.1f FPS), %zu detections",
-                             inference_ms, 1000.0f / inference_ms, detections.size());
 
         return detections;
     }
@@ -337,16 +349,102 @@ private:
             detections.push_back(std::move(det));
         }
 
-        // Debug: dump the top detection's raw values so the box format can be
-        // verified (xyxy vs xywh) against ground truth.
-        if (num_det > 0) {
-            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 5000,
-                "raw det0: [%.1f %.1f %.1f %.1f] conf=%.3f cls=%.1f | kept=%zu",
-                output0[0], output0[1], output0[2], output0[3],
-                output0[4], output0[5], detections.size());
+        return detections;
+    }
+
+    void log_detections_to_terminal(const std::vector<Detection> & detections,
+                                    const std::string & image_name,
+                                    const rclcpp::Time & timestamp,
+                                    float inference_ms)
+    {
+        const std::string printable_image_name = image_name.empty() ? "N/A" : image_name;
+        RCLCPP_INFO(get_logger(),
+            "front_camera frame=%s timestamp_ns=%ld inference_ms=%.3f detections=%zu",
+            printable_image_name.c_str(),
+            static_cast<long>(timestamp.nanoseconds()),
+            inference_ms,
+            detections.size());
+
+        for (size_t i = 0; i < detections.size(); ++i) {
+            const auto & det = detections[i];
+            RCLCPP_INFO(get_logger(),
+                "  [%zu] class=%s conf=%.3f dist=%.3f bbox=(%.3f,%.3f,%.3f,%.3f) quadrants=%s",
+                i,
+                class_name_for(det.class_id).c_str(),
+                det.confidence,
+                det.distance_m,
+                det.x1,
+                det.y1,
+                det.x2 - det.x1,
+                det.y2 - det.y1,
+                quadrants_to_string(det.quadrants).c_str());
+        }
+    }
+
+    void log_detections_to_csv(const std::vector<Detection> & detections,
+                               const std::string & image_name,
+                               const rclcpp::Time & timestamp,
+                               float inference_ms)
+    {
+        const std::filesystem::path csv_path = "/home/kraken/Desktop/snappy_inference/d455/front_camera_detections.csv";
+        if (!csv_file_.is_open()) {
+            std::filesystem::create_directories(csv_path.parent_path());
+            csv_file_.open(csv_path, std::ios::out | std::ios::trunc);
+            if (!csv_file_.is_open()) {
+                RCLCPP_WARN(get_logger(), "Failed to open front camera CSV log: %s", csv_path.c_str());
+                return;
+            }
+            csv_file_ << "timestamp_ns,image_name,inference_ms,detection_index,object_class,confidence,distance_m,bbox_x,bbox_y,bbox_width,bbox_height,quadrants\n";
         }
 
-        return detections;
+        if (!csv_file_.is_open()) {
+            return;
+        }
+
+        for (size_t i = 0; i < detections.size(); ++i) {
+            const auto & det = detections[i];
+            csv_file_ << timestamp.nanoseconds() << ','
+                      << image_name << ','
+                      << std::fixed << std::setprecision(3) << inference_ms << ','
+                      << i << ','
+                      << class_name_for(det.class_id) << ','
+                      << std::fixed << std::setprecision(3) << det.confidence << ','
+                      << std::fixed << std::setprecision(3) << det.distance_m << ','
+                      << std::fixed << std::setprecision(3) << det.x1 << ','
+                      << std::fixed << std::setprecision(3) << det.y1 << ','
+                      << std::fixed << std::setprecision(3) << (det.x2 - det.x1) << ','
+                      << std::fixed << std::setprecision(3) << (det.y2 - det.y1) << ',';
+
+            if (det.quadrants.empty()) {
+                csv_file_ << "";
+            } else {
+                for (size_t q = 0; q < det.quadrants.size(); ++q) {
+                    if (q > 0) {
+                        csv_file_ << ';';
+                    }
+                    csv_file_ << '(' << static_cast<int>(det.quadrants[q].row)
+                              << ',' << static_cast<int>(det.quadrants[q].column) << ')';
+                }
+            }
+            csv_file_ << '\n';
+        }
+
+        csv_file_.flush();
+    }
+
+    static std::string quadrants_to_string(const std::vector<snappy_cpp::msg::Quadrant> & quadrants)
+    {
+        std::ostringstream stream;
+        stream << '[';
+        for (size_t i = 0; i < quadrants.size(); ++i) {
+            if (i > 0) {
+                stream << ',';
+            }
+            stream << '(' << static_cast<int>(quadrants[i].row)
+                   << ',' << static_cast<int>(quadrants[i].column) << ')';
+        }
+        stream << ']';
+        return stream.str();
     }
 
     // ---- Mask decoding: proto matmul -> sigmoid -> threshold -> contour ----
@@ -518,6 +616,41 @@ private:
         return *middle;
     }
 
+    std::vector<snappy_cpp::msg::Quadrant> compute_quadrants(const Detection & det, int image_w, int image_h) const
+    {
+        constexpr int grid_size = 5;
+        const float cell_w = static_cast<float>(image_w) / static_cast<float>(grid_size);
+        const float cell_h = static_cast<float>(image_h) / static_cast<float>(grid_size);
+        const float x1 = std::clamp(det.x1, 0.0f, static_cast<float>(image_w));
+        const float y1 = std::clamp(det.y1, 0.0f, static_cast<float>(image_h));
+        const float x2 = std::clamp(det.x2, 0.0f, static_cast<float>(image_w));
+        const float y2 = std::clamp(det.y2, 0.0f, static_cast<float>(image_h));
+
+        std::vector<snappy_cpp::msg::Quadrant> quadrants;
+        if (x2 <= x1 || y2 <= y1) {
+            return quadrants;
+        }
+
+        for (int row = 0; row < grid_size; ++row) {
+            const float cell_top = row * cell_h;
+            const float cell_bottom = (row + 1) * cell_h;
+            for (int column = 0; column < grid_size; ++column) {
+                const float cell_left = column * cell_w;
+                const float cell_right = (column + 1) * cell_w;
+                const bool intersects = !(x2 <= cell_left || x1 >= cell_right ||
+                                          y2 <= cell_top || y1 >= cell_bottom);
+                if (intersects) {
+                    snappy_cpp::msg::Quadrant quadrant;
+                    quadrant.row = static_cast<uint8_t>(row + 1);
+                    quadrant.column = static_cast<uint8_t>(column + 1);
+                    quadrants.push_back(std::move(quadrant));
+                }
+            }
+        }
+
+        return quadrants;
+    }
+
     // ---- Publishing --------------------------------------------------------
 
     void publish_detections(const std::vector<Detection> & detections,
@@ -535,6 +668,7 @@ private:
             obj.confidence = det.confidence;
             obj.object_class = class_name_for(det.class_id);
             obj.distance_m = det.distance_m;
+            obj.quadrants = det.quadrants;
             obj.timestamp = timestamp;
 
             snappy_cpp::msg::BoundingBox2D bbox;
@@ -702,6 +836,7 @@ private:
     std::string engine_path_;
     std::optional<rclcpp::Time> last_inference_time_;
     double last_save_s_ = 0.0;
+    std::ofstream csv_file_;
 
     int mask_h_ = 0, mask_w_ = 0;
 
