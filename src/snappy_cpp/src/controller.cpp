@@ -168,6 +168,7 @@ class Controller : public rclcpp::Node {
             if (current_task_ && in_progress_) {
                 double error = trajectory.first.norm()
                     + std::abs(Eigen::AngleAxisd(trajectory.second).angle());
+		RCLCPP_INFO(this->get_logger(), "Error: %0.3f", error);
                 if (error < error_threshold) {
                     auto done_msg = std_msgs::msg::Int32();
                     done_msg.data = current_task_->seq;
@@ -535,7 +536,7 @@ class Controller : public rclcpp::Node {
         std::optional<geometry_msgs::msg::Point> position_target_;
         geometry_msgs::msg::Quaternion orientation_current_;
         std::optional<geometry_msgs::msg::Quaternion> orientation_target_;
-        const double error_threshold = 0.005;
+        const double error_threshold = 0.5;
 
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr pub_;
         rclcpp::TimerBase::SharedPtr timer_;
