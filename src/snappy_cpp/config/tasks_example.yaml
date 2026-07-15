@@ -6,7 +6,7 @@ tasks:
   - {x: 4.0, y: 2.0, z: 0.5, pitch: 0.0, roll: 0.0, yaw: 0.0} # Gate
  # - {x: 2.0, y: 2.0, z: 0.5, pitch: 0.0, roll: 0.0, yaw: 0.0} #
 
- semis:
+semis:
   - {x: 0.0, y: 0.0, z: 1.0, pitch: 0.0, roll: 0.0, yaw: 0.0} # get to depth
   - {x: 4.0, y: 0.0, z: 0.0, pitch: 0.0, roll: 0.0, yaw: 0.0} # move past gate measure this! 
   - {x: 0.0, y: 0.75, z: 0.0, pitch: 0.0, roll: 0.0, yaw: 0.0} # go right
