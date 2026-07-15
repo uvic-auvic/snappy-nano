@@ -66,9 +66,9 @@ private:
     {
         auto msg = snappy_cpp::msg::Task();
         msg.seq = seq;
-        msg.x = tasks_(seq, 0) + total_x;
-        msg.y = tasks_(seq, 1) + total_y;
-        msg.z = tasks_(seq, 2) + total_z;
+        msg.x = tasks_(seq, 0);
+        msg.y = tasks_(seq, 1);
+        msg.z = tasks_(seq, 2);
 
         msg.pitch = tasks_(seq, 3) * EIGEN_PI / 180.0;
         msg.roll = tasks_(seq, 4) * EIGEN_PI / 180.0;
@@ -78,9 +78,9 @@ private:
         task_publisher_->publish(msg);
         //RCLCPP_INFO(this->get_logger(), "Published task %d of %ld", seq, tasks_.rows());
 
-        total_x += msg.x;
-        total_y += msg.y;
-        total_z += msg.z;
+//        total_x += msg.x;
+//        total_y += msg.y;
+//        total_z += msg.z;
     }
 
     void done_callback(const std_msgs::msg::Int32 & msg)

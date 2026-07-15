@@ -140,7 +140,7 @@ def generate_launch_description():
         )
 
     planner_node = TimerAction(
-        period=10.0,
+        period=15.0,
         actions=[
             Node(
                 package="snappy_cpp",
@@ -169,12 +169,12 @@ def generate_launch_description():
             xsens_mti_node,
             serial_dev_arg,
             micro_ros_agent,
-            #snappyComputerVision,
+            snappyComputerVision,
             pressure_sensor_node,
             dvl,
             state_estimator_node,
             controller_node,
-#            planner_node,
+            planner_node,
   #          solenoid_channel_node,
         ]
     )
