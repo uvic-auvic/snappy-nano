@@ -2,7 +2,7 @@ repositories:
   xsens_mti_ros2_driver:
     type: git
     url: https://github.com/uvic-auvic/Xsens_MTi_ROS_Driver_and_Ntrip_Client.git
-    version: 9f6ba2d
+    version: f0b093ce 
 
   realsense-ros:
     type: git
