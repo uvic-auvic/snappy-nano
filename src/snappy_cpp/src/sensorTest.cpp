@@ -34,11 +34,6 @@ public:
   {
     std::vector<SensorEntry> sensors = {
       // --- Cameras ---
-      {"D455 Color",          "/d455/color/image_raw",              "sensor_msgs/msg/Image"},
-      {"D455 Depth",          "/d455/depth/image_rect_raw",         "sensor_msgs/msg/Image"},
-      {"D455 IMU",            "/d455/imu",                          "sensor_msgs/msg/Imu"},
-      {"D405 Color",          "/d405/color/image_raw",              "sensor_msgs/msg/Image"},
-      {"D405 Depth",          "/d405/depth/image_rect_raw",         "sensor_msgs/msg/Image"},
       // --- IMU (Xsens) ---
       {"Xsens Euler",         "/filter/euler",                      "geometry_msgs/msg/Vector3Stamped"},
       // --- Pressure / Depth ---
